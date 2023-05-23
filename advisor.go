@@ -47,6 +47,10 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info Wo
 	}
 
 	info = compress(info)
-	indexableCols := indexable(info)
+	indexableCols, err := indexable(info)
+	if err != nil {
+		return AdvisorResult{}, err
+	}
+
 	return selection(info, param, indexableCols, optimizer), nil
 }
