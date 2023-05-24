@@ -1,16 +1,20 @@
 package main
 
 type SQL struct { // DQL or DML
-	Text      string
-	Frequency int
+	SchemaName string
+	Text       string
+	Frequency  int
 }
 
 type TableSchema struct {
+	SchemaName     string
 	TableName      string
+	ColumnNames    []string
 	CreateStmtText string // `create table t (...)`
 }
 
 type TableStats struct {
+	SchemaName    string
 	TableName     string
 	StatsFilePath string
 }

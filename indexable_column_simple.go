@@ -12,19 +12,21 @@ import (
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
 type simpleIndexableColumnsVisitor struct {
-	cols map[string]struct{} // key = 'schema.table.column'
+	cols       map[string]struct{} // key = 'schema.table.column'
+	schemaName string
+	tables     []TableSchema
 }
 
 func (v *simpleIndexableColumnsVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
 	switch x := n.(type) {
 	case *ast.GroupByClause: // group by {col}
 		for _, item := range x.Items {
-			v.collectColumn(item)
+			v.collectColumn(item.Expr)
 		}
 		return n, true
 	case *ast.OrderByClause: // order by {col}
 		for _, item := range x.Items {
-			v.collectColumn(item)
+			v.collectColumn(item.Expr)
 		}
 		return n, true
 	case *ast.BetweenExpr: // {col} between ? and ?
@@ -47,9 +49,41 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 	case *ast.ColumnNameExpr:
 		v.collectColumn(x.Name)
 	case *ast.ColumnName:
-		key := fmt.Sprintf("%v.%v.%v", x.Schema.L, x.Table.L, x.Name.L)
+		var schemaName, tableName, colName string
+		if x.Schema.L != "" {
+			schemaName = x.Schema.L
+		} else {
+			schemaName = v.schemaName
+		}
+		colName = x.Name.L
+		if x.Table.L != "" {
+			tableName = x.Table.L
+		} else {
+			tableName = v.findTableName(schemaName, colName)
+		}
+
+		if schemaName == "" || tableName == "" {
+			// TODO: can not find the corresponding schema and table name
+		}
+
+		key := fmt.Sprintf("%v.%v.%v", schemaName, tableName, colName)
 		v.cols[key] = struct{}{}
 	}
+}
+
+func (v *simpleIndexableColumnsVisitor) findTableName(schemaName, columnName string) string {
+	// find the corresponding table
+	for _, table := range v.tables {
+		if table.SchemaName != schemaName {
+			continue
+		}
+		for _, col := range table.ColumnNames {
+			if col == columnName {
+				return table.TableName
+			}
+		}
+	}
+	return ""
 }
 
 func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
@@ -60,14 +94,15 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]IndexableColumn, error) {
 	p := parser.New()
 	v := &simpleIndexableColumnsVisitor{
-		cols: make(map[string]struct{}),
+		cols:   make(map[string]struct{}),
+		tables: workloadInfo.TableSchemas,
 	}
-
 	for _, sql := range workloadInfo.SQLs {
 		stmt, err := p.ParseOneStmt(sql.Text, "", "")
 		if err != nil {
 			return nil, err
 		}
+		v.schemaName = sql.SchemaName
 		stmt.Accept(v)
 	}
 
