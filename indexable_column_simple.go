@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/opcode"
+	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/opcode"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
