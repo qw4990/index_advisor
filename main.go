@@ -48,7 +48,7 @@ func newAdviseCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.storageBudgetInBytes, "storage-budget", 0, "storage budget in bytes, 0 means no budget")
 	cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
-	cmd.Flags().StringVar(&opt.dsn, "dsn", "mysql://root:@127.0.0.1:4000/test", "dsn")
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
 	cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")

@@ -6,7 +6,7 @@ import (
 )
 
 func TestWhatIfOptimizer(t *testing.T) {
-	dsn := "mysql://root:@127.0.0.1:4000/test"
+	dsn := "root:@tcp(127.0.0.1:4000)/test"
 	o, err := NewTiDBWhatIfOptimizer(dsn)
 	must(err)
 	defer o.Close()
