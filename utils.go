@@ -9,7 +9,7 @@ func must(err error) {
 func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, error) {
 	var workloadCost float64
 	for _, sql := range info.SQLs {
-		if sql.SQLType != SQLTypeSelect {
+		if sql.Type() != SQLTypeSelect {
 			continue
 		}
 		cost, err := optimizer.GetPlanCost(sql.Text)

@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 type SQLType int
 
 const (
@@ -13,7 +15,24 @@ type SQL struct { // DQL or DML
 	SchemaName string
 	Text       string
 	Frequency  int
-	SQLType    SQLType
+}
+
+func (sql SQL) Type() SQLType {
+	text := strings.TrimSpace(sql.Text)
+	if len(text) < 6 {
+		return SQLTypeOthers
+	}
+	prefix := strings.ToLower(text[:6])
+	if strings.HasPrefix(prefix, "select") {
+		return SQLTypeSelect
+	}
+	if strings.HasPrefix(prefix, "insert") {
+		return SQLTypeInsert
+	}
+	if strings.HasPrefix(prefix, "update") {
+		return SQLTypeUpdate
+	}
+	return SQLTypeOthers
 }
 
 type TableSchema struct {
