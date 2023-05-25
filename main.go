@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-sql-driver/mysql"
-	"github.com/spf13/cobra"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -40,13 +40,10 @@ func newLoadWorkloadCmd() *cobra.Command {
 			must(db.Execute(`use ` + opt.schemaName))
 
 			// create tables
-			schemaData, err := os.ReadFile(path.Join(opt.workloadPath, "schema.sql"))
+			schemaSQLPath := path.Join(opt.workloadPath, "schema.sql")
+			schemaSQLs, err := ParseRawSQLsFromFile(schemaSQLPath)
 			must(err)
-			for _, stmt := range strings.Split(string(schemaData), ";") {
-				stmt = strings.TrimSpace(stmt)
-				if stmt == "" {
-					continue
-				}
+			for _, stmt := range schemaSQLs {
 				must(db.Execute(stmt))
 			}
 

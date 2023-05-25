@@ -20,35 +20,27 @@ func must(err error, args ...interface{}) {
 // TODO: for simplification, assume all SQLs are under the same schema here.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
 	sqlFilePath := path.Join(workloadInfoPath, "sqls.sql")
-	data, err := os.ReadFile(sqlFilePath)
+	rawSQLs, err := ParseRawSQLsFromFile(sqlFilePath)
 	if err != nil {
 		return WorkloadInfo{}, err
 	}
 	var sqls []SQL
-	for _, line := range strings.Split(string(data), ";") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+	for _, rawSQL := range rawSQLs {
 		sqls = append(sqls, SQL{
 			SchemaName: schemaName,
-			Text:       line,
+			Text:       rawSQL,
 			Frequency:  1,
 		})
 	}
 
 	schemaFilePath := path.Join(workloadInfoPath, "schema.sql")
-	data, err = os.ReadFile(schemaFilePath)
+	rawSQLs, err = ParseRawSQLsFromFile(schemaFilePath)
 	if err != nil {
 		return WorkloadInfo{}, err
 	}
 	var tableSchemas []TableSchema
-	for _, createStmt := range strings.Split(string(data), ";") {
-		createStmt = strings.TrimSpace(createStmt)
-		if createStmt == "" {
-			continue
-		}
-		tableSchema, err := ParseCreateTableStmt(schemaName, createStmt)
+	for _, rawSQL := range rawSQLs {
+		tableSchema, err := ParseCreateTableStmt(schemaName, rawSQL)
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
@@ -60,6 +52,29 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 		SQLs:         sqls,
 		TableSchemas: tableSchemas,
 	}, nil
+}
+
+func ParseRawSQLsFromFile(fpath string) ([]string, error) {
+	data, err := os.ReadFile(fpath)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(data), "\n")
+	var filteredLines []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "--") { // empty line or comment
+			continue
+		}
+		filteredLines = append(filteredLines, line)
+	}
+	content := strings.Join(filteredLines, "\n")
+
+	sqls := strings.Split(content, ";")
+	for i := range sqls {
+		sqls[i] = strings.TrimSpace(sqls[i])
+	}
+	return sqls, nil
 }
 
 func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
