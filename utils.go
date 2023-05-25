@@ -1,17 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
-	
+
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 )
 
-func must(err error) {
+func must(err error, args ...interface{}) {
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%v %v", err, args))
 	}
 }
 
@@ -90,10 +91,9 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, e
 		if sql.Type() != SQLTypeSelect {
 			continue
 		}
+		must(optimizer.Execute(`use ` + sql.SchemaName))
 		cost, err := optimizer.GetPlanCost(sql.Text)
-		if err != nil {
-			return 0, err
-		}
+		must(err, sql.Text)
 		workloadCost += cost * float64(sql.Frequency)
 	}
 	return workloadCost, nil
