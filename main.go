@@ -1,7 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 )
 
 var (
@@ -12,13 +18,66 @@ var (
 	}
 )
 
+type loadWorkloadCmdOpt struct {
+	dsn          string
+	schemaName   string
+	workloadPath string
+}
+
+func newLoadWorkloadCmd() *cobra.Command {
+	var opt loadWorkloadCmdOpt
+	cmd := &cobra.Command{
+		Use:   "load-workload",
+		Short: "load workload into your cluster",
+		Long:  `load workload into your cluster`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// create a connection
+			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
+			must(err)
+
+			// create the corresponding database
+			must(db.Execute(`create database if not exists ` + opt.schemaName))
+			must(db.Execute(`use ` + opt.schemaName))
+
+			// create tables
+			schemaData, err := os.ReadFile(path.Join(opt.workloadPath, "schema.sql"))
+			must(err)
+			for _, stmt := range strings.Split(string(schemaData), ";") {
+				stmt = strings.TrimSpace(stmt)
+				if stmt == "" {
+					continue
+				}
+				must(db.Execute(stmt))
+			}
+
+			// load statistics
+			statsFiles, err := os.ReadDir(path.Join(opt.workloadPath, "stats"))
+			must(err)
+			for _, statsFile := range statsFiles {
+				statsPath := path.Join(opt.workloadPath, "stats", statsFile.Name())
+				absStatsPath, err := filepath.Abs(statsPath)
+				must(err, statsPath)
+				mysql.RegisterLocalFile(absStatsPath)
+				loadStatsSQL := fmt.Sprintf("load stats '%s'", absStatsPath)
+				must(db.Execute(loadStatsSQL))
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
+	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
+	return cmd
+}
+
 type adviseCmdOpt struct {
 	numIndexes             int
 	storageBudgetInBytes   int
 	considerTiFlashReplica bool
 
 	dsn                  string
-	defaultSchemaName    string
+	schemaName           string
 	workloadPath         string
 	workloadCompressAlgo string
 	indexableColsAlgo    string
@@ -32,7 +91,7 @@ func newAdviseCmd() *cobra.Command {
 		Short: "advise",
 		Long:  `advise`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := LoadWorkloadInfo(opt.defaultSchemaName, opt.workloadPath)
+			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
@@ -50,7 +109,7 @@ func newAdviseCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringVar(&opt.defaultSchemaName, "default-schema-name", "test", "the default schema name to run all queries on the workload")
+	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
 	cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
@@ -61,6 +120,7 @@ func newAdviseCmd() *cobra.Command {
 func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(newAdviseCmd())
+	rootCmd.AddCommand(newLoadWorkloadCmd())
 }
 
 func main() {
