@@ -1,7 +1,4 @@
-create database if not exists tpch;
-use tpch;
-
-CREATE TABLE `customer` (
+CREATE TABLE tpch.`customer` (
                             `C_CUSTKEY` bigint(20) NOT NULL,
                             `C_NAME` varchar(25) NOT NULL,
                             `C_ADDRESS` varchar(40) NOT NULL,
@@ -13,7 +10,7 @@ CREATE TABLE `customer` (
                             PRIMARY KEY (`C_CUSTKEY`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `lineitem` (
+CREATE TABLE tpch.`lineitem` (
                             `L_ORDERKEY` bigint(20) NOT NULL,
                             `L_PARTKEY` bigint(20) NOT NULL,
                             `L_SUPPKEY` bigint(20) NOT NULL,
@@ -33,7 +30,7 @@ CREATE TABLE `lineitem` (
                             PRIMARY KEY (`L_ORDERKEY`,`L_LINENUMBER`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `nation` (
+CREATE TABLE tpch.`nation` (
                           `N_NATIONKEY` bigint(20) NOT NULL,
                           `N_NAME` char(25) NOT NULL,
                           `N_REGIONKEY` bigint(20) NOT NULL,
@@ -41,7 +38,7 @@ CREATE TABLE `nation` (
                           PRIMARY KEY (`N_NATIONKEY`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `orders` (
+CREATE TABLE tpch.`orders` (
                           `O_ORDERKEY` bigint(20) NOT NULL,
                           `O_CUSTKEY` bigint(20) NOT NULL,
                           `O_ORDERSTATUS` char(1) NOT NULL,
@@ -54,7 +51,7 @@ CREATE TABLE `orders` (
                           PRIMARY KEY (`O_ORDERKEY`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `part` (
+CREATE TABLE tpch.`part` (
                         `P_PARTKEY` bigint(20) NOT NULL,
                         `P_NAME` varchar(55) NOT NULL,
                         `P_MFGR` char(25) NOT NULL,
@@ -68,7 +65,7 @@ CREATE TABLE `part` (
 );
 
 
-CREATE TABLE `partsupp` (
+CREATE TABLE tpch.`partsupp` (
                             `PS_PARTKEY` bigint(20) NOT NULL,
                             `PS_SUPPKEY` bigint(20) NOT NULL,
                             `PS_AVAILQTY` bigint(20) NOT NULL,
@@ -77,14 +74,14 @@ CREATE TABLE `partsupp` (
                             PRIMARY KEY (`PS_PARTKEY`,`PS_SUPPKEY`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `region` (
+CREATE TABLE tpch.`region` (
                           `R_REGIONKEY` bigint(20) NOT NULL,
                           `R_NAME` char(25) NOT NULL,
                           `R_COMMENT` varchar(152) DEFAULT NULL,
                           PRIMARY KEY (`R_REGIONKEY`) /*T![clustered_index] CLUSTERED */
 );
 
-CREATE TABLE `supplier` (
+CREATE TABLE tpch.`supplier` (
                             `S_SUPPKEY` bigint(20) NOT NULL,
                             `S_NAME` char(25) NOT NULL,
                             `S_ADDRESS` varchar(40) NOT NULL,

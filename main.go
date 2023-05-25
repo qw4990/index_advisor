@@ -31,7 +31,7 @@ func newAdviseCmd() *cobra.Command {
 		Short: "advise",
 		Long:  `advise`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := LoadWorkloadInfo(opt.workloadPath)
+			info, err := LoadWorkloadInfo("test", opt.workloadPath)
 			if err != nil {
 				return err
 			}

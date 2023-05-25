@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -92,13 +91,12 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 
 // FindIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
 func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]IndexableColumn, error) {
-	p := parser.New()
 	v := &simpleIndexableColumnsVisitor{
 		cols:   make(map[string]struct{}),
 		tables: workloadInfo.TableSchemas,
 	}
 	for _, sql := range workloadInfo.SQLs {
-		stmt, err := p.ParseOneStmt(sql.Text, "", "")
+		stmt, err := ParseOneSQL(sql.Text)
 		if err != nil {
 			return nil, err
 		}

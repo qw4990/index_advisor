@@ -70,7 +70,3 @@ type WorkloadInfo struct {
 	Plans        []Plans
 	SampleRows   []SampleRows
 }
-
-func LoadWorkloadInfo(workloadInfoPath string) (WorkloadInfo, error) {
-	return WorkloadInfo{}, nil
-}
