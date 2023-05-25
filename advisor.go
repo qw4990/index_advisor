@@ -13,6 +13,8 @@ var (
 
 	selectIndexAlgorithms = map[string]IndexSelectionAlgo{
 		"auto_admin": SelectIndexAAAlgo,
+		"example":    SelectIndexExample,
+		"genetic":    nil,
 	}
 )
 
