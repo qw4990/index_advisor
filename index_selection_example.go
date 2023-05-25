@@ -3,33 +3,15 @@ package main
 // SelectIndexExample select some indexes randomly.
 func SelectIndexExample(workloadInfo WorkloadInfo, parameter Parameter,
 	columns []IndexableColumn, optimizer WhatIfOptimizer) (AdvisorResult, error) {
-	var originalWorkloadCost float64
-	for _, sql := range workloadInfo.SQLs {
-		if sql.SQLType != SQLTypeSelect {
-			continue
-		}
-		cost, err := optimizer.GetPlanCost(sql.Text)
-		if err != nil {
-			return AdvisorResult{}, err
-		}
-		originalWorkloadCost += cost
+	originalCost, err := workloadQueryCost(workloadInfo, optimizer)
+	if err != nil {
+		return AdvisorResult{}, err
 	}
 
-	var optimizedWorkloadCost float64
-	for _, sql := range workloadInfo.SQLs {
-		if sql.SQLType != SQLTypeSelect {
-			continue
-		}
-		cost, err := optimizer.GetPlanCost(sql.Text)
-		if err != nil {
-			return AdvisorResult{}, err
-		}
-		optimizedWorkloadCost += cost
-	}
-
+	optimizedCost, err := workloadQueryCost(workloadInfo, optimizer)
 	return AdvisorResult{
 		RecommendedIndexes:    []TableIndex{},
-		OriginalWorkloadCost:  originalWorkloadCost,
-		OptimizedWorkloadCost: optimizedWorkloadCost,
-	}, nil
+		OriginalWorkloadCost:  originalCost,
+		OptimizedWorkloadCost: optimizedCost,
+	}, err
 }
