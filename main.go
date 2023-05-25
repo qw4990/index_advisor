@@ -18,6 +18,7 @@ type adviseCmdOpt struct {
 	considerTiFlashReplica bool
 
 	dsn                  string
+	defaultSchemaName    string
 	workloadPath         string
 	workloadCompressAlgo string
 	indexableColsAlgo    string
@@ -31,7 +32,7 @@ func newAdviseCmd() *cobra.Command {
 		Short: "advise",
 		Long:  `advise`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := LoadWorkloadInfo("test", opt.workloadPath)
+			info, err := LoadWorkloadInfo(opt.defaultSchemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
@@ -49,6 +50,7 @@ func newAdviseCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringVar(&opt.defaultSchemaName, "default-schema-name", "test", "the default schema name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
 	cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
