@@ -17,9 +17,10 @@ var (
 )
 
 type Parameter struct {
-	NumIndexesToRecommend  int
-	StorageBudgetInBytes   int
-	ConsiderTiFlashReplica bool
+	MaximumIndexesToRecommend     int
+	StorageBudgetInBytes          int
+	ConsiderTiFlashReplica        bool // whether to consider recommending TiFlash replica
+	ConsiderRemoveExistingIndexes bool // whether to consider removing existing indexes
 }
 
 type AdvisorResult struct {
