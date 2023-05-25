@@ -58,5 +58,21 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info Wo
 		return AdvisorResult{}, err
 	}
 
-	return selection(info, param, indexableCols, optimizer)
+	fmt.Println("========================== indexable columns ==========================")
+	for _, col := range indexableCols {
+		fmt.Println(col.String())
+	}
+
+	result, err := selection(info, param, indexableCols, optimizer)
+	if err != nil {
+		return AdvisorResult{}, err
+	}
+	fmt.Println("========================== advise result ==========================")
+	for _, index := range result.RecommendedIndexes {
+		fmt.Println(index.DDL())
+	}
+	fmt.Println("original workload cost: ", result.OriginalWorkloadCost)
+	fmt.Println("optimized workload cost: ", result.OptimizedWorkloadCost)
+
+	return result, err
 }

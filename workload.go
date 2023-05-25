@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type SQLType int
 
@@ -54,6 +57,10 @@ type TableIndex struct {
 	TableName   string
 	IndexName   string
 	ColumnNames []string
+}
+
+func (i TableIndex) DDL() string {
+	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.ColumnNames, ", "))
 }
 
 type Plans struct {
