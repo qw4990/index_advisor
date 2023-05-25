@@ -24,6 +24,9 @@ type Parameter struct {
 }
 
 type AdvisorResult struct {
+	RecommendedIndexes    []TableIndex
+	OriginalWorkloadCost  float64 // the total workload cost without these recommended indexes
+	OptimizedWorkloadCost float64 // the total workload cost with these recommended indexes
 }
 
 func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info WorkloadInfo, param Parameter) (AdvisorResult, error) {
@@ -53,5 +56,5 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info Wo
 		return AdvisorResult{}, err
 	}
 
-	return selection(info, param, indexableCols, optimizer), nil
+	return selection(info, param, indexableCols, optimizer)
 }

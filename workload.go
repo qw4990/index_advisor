@@ -1,15 +1,26 @@
 package main
 
+type SQLType int
+
+const (
+	SQLTypeSelect SQLType = iota
+	SQLTypeInsert
+	SQLTypeUpdate
+	SQLTypeOthers
+)
+
 type SQL struct { // DQL or DML
 	SchemaName string
 	Text       string
 	Frequency  int
+	SQLType    SQLType
 }
 
 type TableSchema struct {
 	SchemaName     string
 	TableName      string
 	ColumnNames    []string
+	Indexes        []TableIndex
 	CreateStmtText string // `create table t (...)`
 }
 
@@ -17,6 +28,13 @@ type TableStats struct {
 	SchemaName    string
 	TableName     string
 	StatsFilePath string
+}
+
+type TableIndex struct {
+	SchemaName  string
+	TableName   string
+	IndexName   string
+	ColumnNames []string
 }
 
 type Plans struct {

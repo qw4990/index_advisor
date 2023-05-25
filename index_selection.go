@@ -5,11 +5,11 @@ type IndexSelectionAlgo func(
 	parameter Parameter, // the input parameters
 	columns []IndexableColumn, // indexable column candidates
 	optimizer WhatIfOptimizer, // the what-if optimizer
-) AdvisorResult
+) (AdvisorResult, error)
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
 func SelectIndexAAAlgo(workloadInfo WorkloadInfo, parameter Parameter,
-	columns []IndexableColumn, optimizer WhatIfOptimizer) AdvisorResult {
+	columns []IndexableColumn, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	// TODO
-	return AdvisorResult{}
+	return AdvisorResult{}, nil
 }

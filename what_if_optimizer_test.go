@@ -21,9 +21,3 @@ func TestWhatIfOptimizer(t *testing.T) {
 	must(err)
 	fmt.Println(cost1, cost2, cost3) // cost2 > cost1 = cost3
 }
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}

@@ -36,9 +36,9 @@ func newAdviseCmd() *cobra.Command {
 				return err
 			}
 			_, err = IndexAdvise(opt.workloadCompressAlgo, opt.indexableColsAlgo, opt.indexSelectionAlgo, opt.dsn, info, Parameter{
-				NumIndexesToRecommend:  opt.numIndexes,
-				StorageBudgetInBytes:   opt.storageBudgetInBytes,
-				ConsiderTiFlashReplica: opt.considerTiFlashReplica,
+				MaximumIndexesToRecommend: opt.numIndexes,
+				StorageBudgetInBytes:      opt.storageBudgetInBytes,
+				ConsiderTiFlashReplica:    opt.considerTiFlashReplica,
 			})
 			return err
 		},
