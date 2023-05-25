@@ -33,7 +33,7 @@ type AdvisorResult struct {
 	OptimizedWorkloadCost float64 // the total workload cost with these recommended indexes
 }
 
-func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info WorkloadInfo, param Parameter) (AdvisorResult, error) {
+func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, originalWorkloadInfo WorkloadInfo, param Parameter) (AdvisorResult, error) {
 	compress, ok := compressAlgorithms[compressAlgo]
 	if !ok {
 		return AdvisorResult{}, fmt.Errorf("compress algorithm %s not found", compressAlgo)
@@ -54,8 +54,8 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info Wo
 		return AdvisorResult{}, err
 	}
 
-	info = compress(info)
-	indexableCols, err := indexable(info)
+	compressedWorkloadInfo := compress(originalWorkloadInfo)
+	indexableCols, err := indexable(originalWorkloadInfo)
 	if err != nil {
 		return AdvisorResult{}, err
 	}
@@ -65,7 +65,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, info Wo
 		fmt.Println(col.String())
 	}
 
-	result, err := selection(info, param, indexableCols, optimizer)
+	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, indexableCols, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}

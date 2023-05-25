@@ -6,9 +6,9 @@ import (
 )
 
 // SelectIndexExample select some indexes randomly.
-func SelectIndexExample(workloadInfo WorkloadInfo, parameter Parameter,
+func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter,
 	columns []IndexableColumn, optimizer WhatIfOptimizer) (AdvisorResult, error) {
-	originalCost, err := workloadQueryCost(workloadInfo, optimizer)
+	originalCost, err := workloadQueryCost(originalWorkloadInfo, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}
@@ -27,7 +27,7 @@ func SelectIndexExample(workloadInfo WorkloadInfo, parameter Parameter,
 		}
 	}
 
-	optimizedCost, err := workloadQueryCost(workloadInfo, optimizer)
+	optimizedCost, err := workloadQueryCost(originalWorkloadInfo, optimizer)
 	return AdvisorResult{
 		RecommendedIndexes:    indexes,
 		OriginalWorkloadCost:  originalCost,
