@@ -4,7 +4,9 @@ import "fmt"
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
-		"none": NoneWorkloadInfoCompress,
+		"none":       NoneWorkloadInfoCompress,
+		"naive":      NaiveWorkloadInfoCompress,
+		"clustering": ClusteringWorkloadInfoCompress,
 	}
 
 	findIndexableColsAlgorithms = map[string]IndexableColumnsFindingAlgo{
