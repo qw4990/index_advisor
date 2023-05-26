@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -104,10 +105,15 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 
 func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, error) {
 	var workloadCost float64
-	for _, sql := range info.SQLs {
+	var queryCnt int
+	defer func(beginAt time.Time) {
+		fmt.Printf("workloadQueryCost took %v for %v queries\n", time.Since(beginAt), queryCnt)
+	}(time.Now())
+	for _, sql := range info.SQLs { // TODO: run them concurrently to save time
 		if sql.Type() != SQLTypeSelect {
 			continue
 		}
+		queryCnt++
 		must(optimizer.Execute(`use ` + sql.SchemaName))
 		cost, err := optimizer.GetPlanCost(sql.Text)
 		must(err, sql.Text)

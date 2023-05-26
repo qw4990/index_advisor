@@ -97,9 +97,7 @@ func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]IndexableColumn, e
 	}
 	for _, sql := range workloadInfo.SQLs {
 		stmt, err := ParseOneSQL(sql.Text)
-		if err != nil {
-			return nil, err
-		}
+		must(err, sql.Text)
 		v.schemaName = sql.SchemaName
 		stmt.Accept(v)
 	}
