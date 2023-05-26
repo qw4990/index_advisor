@@ -12,7 +12,8 @@ import (
 
 func must(err error, args ...interface{}) {
 	if err != nil {
-		panic(fmt.Sprintf("%v %v", err, args))
+		fmt.Println("panic args: ", args)
+		panic(err)
 	}
 }
 
@@ -21,9 +22,7 @@ func must(err error, args ...interface{}) {
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
 	sqlFilePath := path.Join(workloadInfoPath, "sqls.sql")
 	rawSQLs, err := ParseRawSQLsFromFile(sqlFilePath)
-	if err != nil {
-		return WorkloadInfo{}, err
-	}
+	must(err, workloadInfoPath)
 	var sqls []SQL
 	for _, rawSQL := range rawSQLs {
 		sqls = append(sqls, SQL{
@@ -70,18 +69,21 @@ func ParseRawSQLsFromFile(fpath string) ([]string, error) {
 	}
 	content := strings.Join(filteredLines, "\n")
 
-	sqls := strings.Split(content, ";")
-	for i := range sqls {
-		sqls[i] = strings.TrimSpace(sqls[i])
+	tmp := strings.Split(content, ";")
+	var sqls []string
+	for _, sql := range tmp {
+		sql = strings.TrimSpace(sql)
+		if sql == "" {
+			continue
+		}
+		sqls = append(sqls, sql)
 	}
 	return sqls, nil
 }
 
 func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
 	stmt, err := ParseOneSQL(createTableStmt)
-	if err != nil {
-		return TableSchema{}, err
-	}
+	must(err, createTableStmt)
 	createTable := stmt.(*ast.CreateTableStmt)
 	t := TableSchema{
 		SchemaName:     schemaName,
