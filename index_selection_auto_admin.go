@@ -20,6 +20,7 @@ func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo
 		maxIndexesNative: 2,
 		maxIndexWidth:    3,
 	}
+	aa.calculateBestIndexes()
 
 	// TODO
 	return AdvisorResult{}, nil
@@ -54,23 +55,29 @@ func (aa *autoAdmin) calculateBestIndexes() []TableIndex {
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
 		// TODO
 	}
+
+	// TODO
+	return nil
 }
 
 func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []TableIndex) []TableIndex {
-	candidates := make(map[string]TableIndex)
+	//candidates := make(map[string]TableIndex)
+	//
+	//for i, query := range aa.compWorkloadInfo.SQLs {
+	//	if query.Type() != SQLTypeSelect {
+	//		continue
+	//	}
+	//	queryWorkload := WorkloadInfo{
+	//		SQLs:         aa.compWorkloadInfo.SQLs[i : i+1],
+	//		TableSchemas: aa.compWorkloadInfo.TableSchemas,
+	//		TableStats:   aa.compWorkloadInfo.TableStats,
+	//		Plans:        aa.compWorkloadInfo.Plans[i : i+1],
+	//		SampleRows:   aa.compWorkloadInfo.SampleRows,
+	//	}
+	//}
 
-	for i, query := range aa.compWorkloadInfo.SQLs {
-		if query.Type() != SQLTypeSelect {
-			continue
-		}
-		queryWorkload := WorkloadInfo{
-			SQLs:         aa.compWorkloadInfo.SQLs[i : i+1],
-			TableSchemas: aa.compWorkloadInfo.TableSchemas,
-			TableStats:   aa.compWorkloadInfo.TableStats,
-			Plans:        aa.compWorkloadInfo.Plans[i : i+1],
-			SampleRows:   aa.compWorkloadInfo.SampleRows,
-		}
-	}
+	// TODO
+	return nil
 }
 
 func (aa *autoAdmin) potentialIndexesForQuery(queryWorkload WorkloadInfo, potentialIndexes []TableIndex) []TableIndex {
