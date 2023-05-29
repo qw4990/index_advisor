@@ -63,6 +63,10 @@ func (i TableIndex) DDL() string {
 	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.ColumnNames, ", "))
 }
 
+func (i TableIndex) Key() string {
+	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.ColumnNames, ","))
+}
+
 type Plans struct {
 }
 

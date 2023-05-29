@@ -121,3 +121,13 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, e
 	}
 	return workloadCost, nil
 }
+
+func TempIndexName(cols ...IndexableColumn) string {
+	var names []string
+	for _, col := range cols {
+		names = append(names, col.ColumnName)
+	}
+	schemaName := cols[0].SchemaName
+	tableName := cols[0].TableName
+	return fmt.Sprintf("tmp_%v_%v_%v", schemaName, tableName, strings.Join(names, "_"))
+}
