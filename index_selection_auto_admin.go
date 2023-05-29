@@ -45,10 +45,10 @@ func (aa *autoAdmin) calculateBestIndexes() []Index {
 	var potentialIndexes []Index
 	for _, col := range aa.indexableCols {
 		potentialIndexes = append(potentialIndexes, Index{
-			SchemaName:  col.SchemaName,
-			TableName:   col.TableName,
-			IndexName:   TempIndexName(col),
-			ColumnNames: []string{col.ColumnName},
+			SchemaName: col.SchemaName,
+			TableName:  col.TableName,
+			IndexName:  TempIndexName(col),
+			Columns:    []Column{col},
 		})
 	}
 

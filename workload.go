@@ -18,6 +18,7 @@ type SQL struct { // DQL or DML
 	SchemaName string
 	Text       string
 	Frequency  int
+	Columns    []Column // columns in this SQL
 }
 
 func (sql SQL) Type() SQLType {
@@ -56,6 +57,10 @@ type Column struct {
 	SchemaName string
 	TableName  string
 	ColumnName string
+}
+
+func (c Column) Key() string {
+	return fmt.Sprintf("%v.%v.%v", c.SchemaName, c.TableName, c.ColumnName)
 }
 
 func (c Column) String() string {

@@ -12,8 +12,8 @@ func TestFindIndexableColumnsSimple(t *testing.T) {
 			{"test", "t", []string{"a", "b", "c", "d", "e"}, nil, ""},
 		},
 		SQLs: []SQL{
-			{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1},
-			{"test", "select * from t where c in (1, 2, 3) order by d", 1},
+			{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
+			{"test", "select * from t where c in (1, 2, 3) order by d", 1, nil},
 		},
 	})
 	if err != nil {

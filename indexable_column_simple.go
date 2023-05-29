@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
@@ -11,9 +8,10 @@ import (
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
 type simpleIndexableColumnsVisitor struct {
-	cols       map[string]struct{} // key = 'schema.table.column'
-	schemaName string
-	tables     []TableSchema
+	cols        map[Column]struct{} // key = 'schema.table.column'
+	currentCols map[Column]struct{} // columns related to the current sql
+	schemaName  string
+	tables      []TableSchema
 }
 
 func (v *simpleIndexableColumnsVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
@@ -64,9 +62,13 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 		if schemaName == "" || tableName == "" {
 			// TODO: can not find the corresponding schema and table name
 		}
-
-		key := fmt.Sprintf("%v.%v.%v", schemaName, tableName, colName)
-		v.cols[key] = struct{}{}
+		col := Column{
+			SchemaName: schemaName,
+			TableName:  tableName,
+			ColumnName: colName,
+		}
+		v.cols[col] = struct{}{}
+		v.currentCols[col] = struct{}{}
 	}
 }
 
@@ -92,24 +94,25 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 // FindIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
 func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]Column, error) {
 	v := &simpleIndexableColumnsVisitor{
-		cols:   make(map[string]struct{}),
+		cols:   make(map[Column]struct{}),
 		tables: workloadInfo.TableSchemas,
 	}
-	for _, sql := range workloadInfo.SQLs {
+	for i, sql := range workloadInfo.SQLs {
 		stmt, err := ParseOneSQL(sql.Text)
 		must(err, sql.Text)
 		v.schemaName = sql.SchemaName
+		v.currentCols = make(map[Column]struct{})
 		stmt.Accept(v)
+
+		workloadInfo.SQLs[i].Columns = nil
+		for col := range v.currentCols {
+			workloadInfo.SQLs[i].Columns = append(workloadInfo.SQLs[i].Columns, col)
+		}
 	}
 
 	var cols []Column
-	for key := range v.cols {
-		tmp := strings.Split(key, ".")
-		cols = append(cols, Column{
-			SchemaName: tmp[0],
-			TableName:  tmp[1],
-			ColumnName: tmp[2],
-		})
+	for col := range v.cols {
+		cols = append(cols, col)
 	}
 	return cols, nil
 }
