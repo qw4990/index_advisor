@@ -90,7 +90,7 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 }
 
 // FindIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
-func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]IndexableColumn, error) {
+func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]Column, error) {
 	v := &simpleIndexableColumnsVisitor{
 		cols:   make(map[string]struct{}),
 		tables: workloadInfo.TableSchemas,
@@ -102,10 +102,10 @@ func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]IndexableColumn, e
 		stmt.Accept(v)
 	}
 
-	var cols []IndexableColumn
+	var cols []Column
 	for key := range v.cols {
 		tmp := strings.Split(key, ".")
-		cols = append(cols, IndexableColumn{
+		cols = append(cols, Column{
 			SchemaName: tmp[0],
 			TableName:  tmp[1],
 			ColumnName: tmp[2],

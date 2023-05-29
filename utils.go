@@ -122,7 +122,7 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, e
 	return workloadCost, nil
 }
 
-func TempIndexName(cols ...IndexableColumn) string {
+func TempIndexName(cols ...Column) string {
 	var names []string
 	for _, col := range cols {
 		names = append(names, col.ColumnName)

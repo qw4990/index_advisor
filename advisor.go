@@ -28,7 +28,7 @@ type Parameter struct {
 }
 
 type AdvisorResult struct {
-	RecommendedIndexes    []TableIndex
+	RecommendedIndexes    []Index
 	OriginalWorkloadCost  float64 // the total workload cost without these recommended indexes
 	OptimizedWorkloadCost float64 // the total workload cost with these recommended indexes
 }

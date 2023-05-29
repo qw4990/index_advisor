@@ -10,7 +10,7 @@ package main
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
 func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter,
-	columns []IndexableColumn, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+	columns []Column, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	aa := &autoAdmin{
 		oriWorkloadInfo:  originalWorkloadInfo,
 		compWorkloadInfo: compressedWorkloadInfo,
@@ -29,7 +29,7 @@ func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo
 type autoAdmin struct {
 	oriWorkloadInfo  WorkloadInfo
 	compWorkloadInfo WorkloadInfo
-	indexableCols    []IndexableColumn
+	indexableCols    []Column
 	optimizer        WhatIfOptimizer
 
 	maxIndexes       int // The algorithm stops as soon as it has selected #max_indexes indexes
@@ -37,14 +37,14 @@ type autoAdmin struct {
 	maxIndexWidth    int // The number of columns an index can contain at maximum.
 }
 
-func (aa *autoAdmin) calculateBestIndexes() []TableIndex {
+func (aa *autoAdmin) calculateBestIndexes() []Index {
 	if aa.maxIndexes == 0 {
 		return nil
 	}
 
-	var potentialIndexes []TableIndex
+	var potentialIndexes []Index
 	for _, col := range aa.indexableCols {
-		potentialIndexes = append(potentialIndexes, TableIndex{
+		potentialIndexes = append(potentialIndexes, Index{
 			SchemaName:  col.SchemaName,
 			TableName:   col.TableName,
 			IndexName:   TempIndexName(col),
@@ -60,8 +60,8 @@ func (aa *autoAdmin) calculateBestIndexes() []TableIndex {
 	return nil
 }
 
-func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []TableIndex) []TableIndex {
-	//candidates := make(map[string]TableIndex)
+func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []Index) []Index {
+	//candidates := make(map[string]Index)
 	//
 	//for i, query := range aa.compWorkloadInfo.SQLs {
 	//	if query.Type() != SQLTypeSelect {
@@ -80,7 +80,7 @@ func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []TableIndex) []Tabl
 	return nil
 }
 
-func (aa *autoAdmin) potentialIndexesForQuery(queryWorkload WorkloadInfo, potentialIndexes []TableIndex) []TableIndex {
+func (aa *autoAdmin) potentialIndexesForQuery(queryWorkload WorkloadInfo, potentialIndexes []Index) []Index {
 	// TODO
 	return nil
 }

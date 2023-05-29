@@ -42,7 +42,7 @@ type TableSchema struct {
 	SchemaName     string
 	TableName      string
 	ColumnNames    []string
-	Indexes        []TableIndex
+	Indexes        []Index
 	CreateStmtText string // `create table t (...)`
 }
 
@@ -52,19 +52,37 @@ type TableStats struct {
 	StatsFilePath string
 }
 
-type TableIndex struct {
-	SchemaName  string
-	TableName   string
-	IndexName   string
-	ColumnNames []string
+type Column struct {
+	SchemaName string
+	TableName  string
+	ColumnName string
 }
 
-func (i TableIndex) DDL() string {
-	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.ColumnNames, ", "))
+func (c Column) String() string {
+	return fmt.Sprintf("%v.%v.%v", c.SchemaName, c.TableName, c.ColumnName)
 }
 
-func (i TableIndex) Key() string {
-	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.ColumnNames, ","))
+type Index struct {
+	SchemaName string
+	TableName  string
+	IndexName  string
+	Columns    []Column
+}
+
+func (i Index) columnNames() []string {
+	var names []string
+	for _, col := range i.Columns {
+		names = append(names, col.ColumnName)
+	}
+	return names
+}
+
+func (i Index) DDL() string {
+	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.columnNames(), ", "))
+}
+
+func (i Index) Key() string {
+	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.columnNames(), ","))
 }
 
 type Plans struct {

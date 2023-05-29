@@ -7,16 +7,16 @@ import (
 
 // SelectIndexExample select some indexes randomly.
 func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter,
-	columns []IndexableColumn, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+	columns []Column, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	originalCost, err := workloadQueryCost(originalWorkloadInfo, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}
 
-	var indexes []TableIndex
+	var indexes []Index
 	for _, column := range columns {
 		if rand.Intn(len(columns)) < parameter.MaximumIndexesToRecommend {
-			idx := TableIndex{
+			idx := Index{
 				SchemaName:  column.SchemaName,
 				TableName:   column.TableName,
 				IndexName:   fmt.Sprintf("key_%v", column.ColumnName),
