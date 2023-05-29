@@ -131,3 +131,40 @@ func TempIndexName(cols ...Column) string {
 	tableName := cols[0].TableName
 	return fmt.Sprintf("tmp_%v_%v_%v", schemaName, tableName, strings.Join(names, "_"))
 }
+
+type SetKey interface {
+	Key() string
+}
+
+type Set[T SetKey] struct {
+	s map[string]T
+}
+
+func (s *Set[T]) Add(item T) {
+	if s.s == nil {
+		s.s = make(map[string]T)
+	}
+	s.s[item.Key()] = item
+}
+
+func (s *Set[T]) Contains(item T) bool {
+	if s.s == nil {
+		return false
+	}
+	_, ok := s.s[item.Key()]
+	return ok
+}
+
+func (s *Set[T]) ToList() []T {
+	var list []T
+	for _, v := range s.s {
+		list = append(list, v)
+	}
+	return list
+}
+
+func (s *Set[T]) AddList(items ...T) {
+	for _, item := range items {
+		s.Add(item)
+	}
+}

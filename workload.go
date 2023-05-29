@@ -39,6 +39,15 @@ func (sql SQL) Type() SQLType {
 	return SQLTypeOthers
 }
 
+func (sql SQL) InColumns(col Column) bool {
+	for _, c := range sql.Columns {
+		if c.Key() == col.Key() {
+			return true
+		}
+	}
+	return false
+}
+
 type TableSchema struct {
 	SchemaName     string
 	TableName      string

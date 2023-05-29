@@ -42,7 +42,7 @@ func (aa *autoAdmin) calculateBestIndexes() []Index {
 		return nil
 	}
 
-	var potentialIndexes []Index
+	var potentialIndexes, indexes []Index
 	for _, col := range aa.indexableCols {
 		potentialIndexes = append(potentialIndexes, Index{
 			SchemaName: col.SchemaName,
@@ -53,34 +53,58 @@ func (aa *autoAdmin) calculateBestIndexes() []Index {
 	}
 
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
-		// TODO
+		candidates := aa.selectIndexCandidates(potentialIndexes)
+		indexes = aa.enumerateCombinations(aa.oriWorkloadInfo, candidates)
+
+		if currentMaxIndexWidth < aa.maxIndexWidth {
+			// Update potential indexes for the next iteration
+			potentialIndexes = indexes
+			potentialIndexes = append(potentialIndexes, aa.createMultiColumnIndexes()...)
+		}
 	}
 
+	return indexes
+}
+
+func (aa *autoAdmin) createMultiColumnIndexes() []Index {
 	// TODO
 	return nil
 }
 
 func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []Index) []Index {
-	//candidates := make(map[string]Index)
-	//
-	//for i, query := range aa.compWorkloadInfo.SQLs {
-	//	if query.Type() != SQLTypeSelect {
-	//		continue
-	//	}
-	//	queryWorkload := WorkloadInfo{
-	//		SQLs:         aa.compWorkloadInfo.SQLs[i : i+1],
-	//		TableSchemas: aa.compWorkloadInfo.TableSchemas,
-	//		TableStats:   aa.compWorkloadInfo.TableStats,
-	//		Plans:        aa.compWorkloadInfo.Plans[i : i+1],
-	//		SampleRows:   aa.compWorkloadInfo.SampleRows,
-	//	}
-	//}
+	candidates := new(Set[Index])
 
+	for i, query := range aa.compWorkloadInfo.SQLs {
+		if query.Type() != SQLTypeSelect {
+			continue
+		}
+		queryWorkload := WorkloadInfo{
+			SQLs:         aa.compWorkloadInfo.SQLs[i : i+1],
+			TableSchemas: aa.compWorkloadInfo.TableSchemas,
+			TableStats:   aa.compWorkloadInfo.TableStats,
+			Plans:        aa.compWorkloadInfo.Plans[i : i+1],
+			SampleRows:   aa.compWorkloadInfo.SampleRows,
+		}
+		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
+		indexes = aa.enumerateCombinations(queryWorkload, indexes)
+		candidates.AddList(indexes...)
+	}
+
+	return candidates.ToList()
+}
+
+func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes []Index) []Index {
 	// TODO
 	return nil
 }
 
-func (aa *autoAdmin) potentialIndexesForQuery(queryWorkload WorkloadInfo, potentialIndexes []Index) []Index {
-	// TODO
-	return nil
+func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes []Index) []Index {
+	var indexes []Index
+	for _, index := range potentialIndexes {
+		// The leading index column must be referenced by the query.
+		if query.InColumns(index.Columns[0]) {
+			indexes = append(indexes, index)
+		}
+	}
+	return indexes
 }
