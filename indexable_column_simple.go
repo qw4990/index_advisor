@@ -78,8 +78,8 @@ func (v *simpleIndexableColumnsVisitor) findTableName(schemaName, columnName str
 		if table.SchemaName != schemaName {
 			continue
 		}
-		for _, col := range table.ColumnNames {
-			if col == columnName {
+		for _, col := range table.Columns {
+			if col.ColumnName == columnName {
 				return table.TableName
 			}
 		}

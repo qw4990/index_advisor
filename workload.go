@@ -51,7 +51,7 @@ func (sql SQL) InColumns(col Column) bool {
 type TableSchema struct {
 	SchemaName     string
 	TableName      string
-	ColumnNames    []string
+	Columns        []Column
 	Indexes        []Index
 	CreateStmtText string // `create table t (...)`
 }
@@ -112,4 +112,13 @@ type WorkloadInfo struct {
 	TableStats   []TableStats
 	Plans        []Plans
 	SampleRows   []SampleRows
+}
+
+func (w WorkloadInfo) FindTableSchema(schemaName, tableName string) (TableSchema, bool) {
+	for _, t := range w.TableSchemas {
+		if t.SchemaName == schemaName && t.TableName == tableName {
+			return t, true
+		}
+	}
+	return TableSchema{}, false
 }

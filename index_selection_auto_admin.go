@@ -61,7 +61,7 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
 			potentialIndexes = indexes
-			potentialIndexes.AddSet(aa.createMultiColumnIndexes())
+			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.indexableCols, indexes))
 		}
 	}
 
@@ -69,10 +69,10 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(indexableCols []Column, indexes Set[Index]) Set[Index] {
-	multiColumnCandidates := NewSet[Index]()
-	for _, index := range indexes.ToList() {
-
-	}
+	//multiColumnCandidates := NewSet[Index]()
+	//for _, index := range indexes.ToList() {
+	//
+	//}
 
 	// TODO
 	return nil

@@ -92,7 +92,11 @@ func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, erro
 		CreateStmtText: createTableStmt,
 	}
 	for _, colDef := range createTable.Cols {
-		t.ColumnNames = append(t.ColumnNames, colDef.Name.Name.L)
+		t.Columns = append(t.Columns, Column{
+			SchemaName: schemaName,
+			TableName:  createTable.Table.Name.L,
+			ColumnName: colDef.Name.Name.L,
+		})
 	}
 	// TODO: parse indexes
 	return t, nil
