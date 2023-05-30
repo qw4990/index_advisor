@@ -61,21 +61,35 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
 			potentialIndexes = indexes
-			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.indexableCols, indexes))
+			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.compWorkloadInfo, aa.indexableCols, indexes))
 		}
 	}
 
 	return indexes
 }
 
-func (aa *autoAdmin) createMultiColumnIndexes(indexableCols []Column, indexes Set[Index]) Set[Index] {
-	//multiColumnCandidates := NewSet[Index]()
-	//for _, index := range indexes.ToList() {
-	//
-	//}
-
-	// TODO
-	return nil
+func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexableCols []Column, indexes Set[Index]) Set[Index] {
+	multiColumnCandidates := NewSet[Index]()
+	for _, index := range indexes.ToList() {
+		table, ok := workload.FindTableSchema(index.SchemaName, index.TableName)
+		if !ok {
+			continue
+		}
+		tableColsSet := ListToSet[Column](table.Columns...)
+		indexableColsSet := ListToSet[Column](indexableCols...)
+		indexColsSet := ListToSet[Column](index.Columns...)
+		for _, column := range DiffSet(AndSet(tableColsSet, indexableColsSet), indexColsSet).ToList() {
+			cols := append([]Column{}, index.Columns...)
+			cols = append(cols, column)
+			multiColumnCandidates.Add(Index{
+				SchemaName: index.SchemaName,
+				TableName:  index.TableName,
+				IndexName:  TempIndexName(cols...),
+				Columns:    cols,
+			})
+		}
+	}
+	return multiColumnCandidates
 }
 
 // selectIndexCandidates selects the best indexes for each single-query.
@@ -116,7 +130,7 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 	lowestCostIndexes := NewSet[Index]()
 	lowestCost := math.MaxFloat64
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
-		for _, indexCombination := range aa.combinations(candidateIndexes, numberOfIndexes) {
+		for _, indexCombination := range CombSet(candidateIndexes, numberOfIndexes) {
 			cost := aa.simulateAndEvaluateCost(indexCombination)
 			if cost < lowestCost {
 				lowestCostIndexes = indexCombination
@@ -125,11 +139,6 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 		}
 	}
 	return lowestCostIndexes, lowestCost
-}
-
-func (aa *autoAdmin) combinations(candidateIndexes Set[Index], numberIndexesNaive int) []Set[Index] {
-	// TODO
-	return nil
 }
 
 func (aa *autoAdmin) simulateAndEvaluateCost(indexes Set[Index]) float64 {
