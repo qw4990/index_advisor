@@ -55,8 +55,8 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 	}
 
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
-		candidates := aa.selectIndexCandidates(potentialIndexes)
-		indexes = aa.enumerateCombinations(aa.oriWorkloadInfo, candidates)
+		candidates := aa.selectIndexCandidates(aa.compWorkloadInfo, potentialIndexes)
+		indexes = aa.enumerateCombinations(aa.compWorkloadInfo, candidates)
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
@@ -68,30 +68,33 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 	return indexes
 }
 
-func (aa *autoAdmin) createMultiColumnIndexes() Set[Index] {
+func (aa *autoAdmin) createMultiColumnIndexes(indexableCols []Column, indexes Set[Index]) Set[Index] {
+	multiColumnCandidates := NewSet[Index]()
+	for _, index := range indexes.ToList() {
+
+	}
+
 	// TODO
 	return nil
 }
 
-func (aa *autoAdmin) selectIndexCandidates(potentialIndexes Set[Index]) Set[Index] {
+// selectIndexCandidates selects the best indexes for each single-query.
+func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndexes Set[Index]) Set[Index] {
 	candidates := NewSet[Index]()
-
-	for i, query := range aa.compWorkloadInfo.SQLs {
+	for i, query := range workload.SQLs {
 		if query.Type() != SQLTypeSelect {
 			continue
 		}
-		queryWorkload := WorkloadInfo{
-			SQLs:         aa.compWorkloadInfo.SQLs[i : i+1],
-			TableSchemas: aa.compWorkloadInfo.TableSchemas,
-			TableStats:   aa.compWorkloadInfo.TableStats,
-			Plans:        aa.compWorkloadInfo.Plans[i : i+1],
-			SampleRows:   aa.compWorkloadInfo.SampleRows,
+		queryWorkload := WorkloadInfo{ // each query as a workload
+			SQLs:         workload.SQLs[i : i+1],
+			TableSchemas: workload.TableSchemas,
+			TableStats:   workload.TableStats,
+			Plans:        workload.Plans[i : i+1],
+			SampleRows:   workload.SampleRows,
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
-		indexes = aa.enumerateCombinations(queryWorkload, indexes)
-		candidates.AddSet(indexes)
+		candidates.AddSet(aa.enumerateCombinations(queryWorkload, indexes)) // best indexes for each single-query
 	}
-
 	return candidates
 }
 
