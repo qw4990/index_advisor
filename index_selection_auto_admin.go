@@ -1,5 +1,7 @@
 package main
 
+import "math"
+
 /*
 	This algorithm resembles the index selection algorithm published in 1997 by Chaudhuri
 	and Narasayya. Details can be found in the original paper:
@@ -94,8 +96,42 @@ func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []Index) []Index {
 }
 
 func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes []Index) []Index {
+	numberIndexesNaive := int(math.Min(float64(aa.maxIndexesNative), float64(len(candidateIndexes))))
+	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
+
+	numberIndexes := int(math.Min(float64(aa.maxIndexes), float64(len(candidateIndexes))))
+	indexes, cost := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
+	return indexes
+}
+
+func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes []Index, currentCost float64, candidateIndexes []Index, numberIndexes int) ([]Index, float64) {
+	// TODO
+	return nil, 0
+}
+
+func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes []Index, numberIndexesNaive int) ([]Index, float64) {
+	var lowestCostIndexes []Index
+	lowestCost := math.MaxFloat64
+	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
+		for _, indexCombination := range aa.combinations(candidateIndexes, numberOfIndexes) {
+			cost := aa.simulateAndEvaluateCost(indexCombination)
+			if cost < lowestCost {
+				lowestCostIndexes = indexCombination
+				lowestCost = cost
+			}
+		}
+	}
+	return lowestCostIndexes, lowestCost
+}
+
+func (aa *autoAdmin) combinations(candidateIndexes []Index, numberIndexesNaive int) [][]Index {
 	// TODO
 	return nil
+}
+
+func (aa *autoAdmin) simulateAndEvaluateCost(indexes []Index) float64 {
+	// TODO
+	return 0
 }
 
 func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes []Index) []Index {
