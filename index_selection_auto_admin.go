@@ -39,14 +39,14 @@ type autoAdmin struct {
 	maxIndexWidth    int // The number of columns an index can contain at maximum.
 }
 
-func (aa *autoAdmin) calculateBestIndexes() []Index {
+func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 	if aa.maxIndexes == 0 {
 		return nil
 	}
 
-	var potentialIndexes, indexes []Index
-	for _, col := range aa.indexableCols {
-		potentialIndexes = append(potentialIndexes, Index{
+	potentialIndexes, indexes := NewSet[Index](), NewSet[Index]()
+	for _, col := range aa.indexableCols { // each indexable column as a single-column index
+		potentialIndexes.Add(Index{
 			SchemaName: col.SchemaName,
 			TableName:  col.TableName,
 			IndexName:  TempIndexName(col),
@@ -61,20 +61,20 @@ func (aa *autoAdmin) calculateBestIndexes() []Index {
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
 			potentialIndexes = indexes
-			potentialIndexes = append(potentialIndexes, aa.createMultiColumnIndexes()...)
+			potentialIndexes.AddSet(aa.createMultiColumnIndexes())
 		}
 	}
 
 	return indexes
 }
 
-func (aa *autoAdmin) createMultiColumnIndexes() []Index {
+func (aa *autoAdmin) createMultiColumnIndexes() Set[Index] {
 	// TODO
 	return nil
 }
 
-func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []Index) []Index {
-	candidates := new(Set[Index])
+func (aa *autoAdmin) selectIndexCandidates(potentialIndexes Set[Index]) Set[Index] {
+	candidates := NewSet[Index]()
 
 	for i, query := range aa.compWorkloadInfo.SQLs {
 		if query.Type() != SQLTypeSelect {
@@ -89,28 +89,28 @@ func (aa *autoAdmin) selectIndexCandidates(potentialIndexes []Index) []Index {
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
 		indexes = aa.enumerateCombinations(queryWorkload, indexes)
-		candidates.AddList(indexes...)
+		candidates.AddSet(indexes)
 	}
 
-	return candidates.ToList()
+	return candidates
 }
 
-func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes []Index) []Index {
-	numberIndexesNaive := int(math.Min(float64(aa.maxIndexesNative), float64(len(candidateIndexes))))
+func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes Set[Index]) Set[Index] {
+	numberIndexesNaive := int(math.Min(float64(aa.maxIndexesNative), float64(candidateIndexes.Len())))
 	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 
-	numberIndexes := int(math.Min(float64(aa.maxIndexes), float64(len(candidateIndexes))))
+	numberIndexes := int(math.Min(float64(aa.maxIndexes), float64(candidateIndexes.Len())))
 	indexes, cost := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes
 }
 
-func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes []Index, currentCost float64, candidateIndexes []Index, numberIndexes int) ([]Index, float64) {
+func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index], currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
 	// TODO
 	return nil, 0
 }
 
-func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes []Index, numberIndexesNaive int) ([]Index, float64) {
-	var lowestCostIndexes []Index
+func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[Index], numberIndexesNaive int) (Set[Index], float64) {
+	lowestCostIndexes := NewSet[Index]()
 	lowestCost := math.MaxFloat64
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range aa.combinations(candidateIndexes, numberOfIndexes) {
@@ -124,22 +124,22 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes []In
 	return lowestCostIndexes, lowestCost
 }
 
-func (aa *autoAdmin) combinations(candidateIndexes []Index, numberIndexesNaive int) [][]Index {
+func (aa *autoAdmin) combinations(candidateIndexes Set[Index], numberIndexesNaive int) []Set[Index] {
 	// TODO
 	return nil
 }
 
-func (aa *autoAdmin) simulateAndEvaluateCost(indexes []Index) float64 {
+func (aa *autoAdmin) simulateAndEvaluateCost(indexes Set[Index]) float64 {
 	// TODO
 	return 0
 }
 
-func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes []Index) []Index {
-	var indexes []Index
-	for _, index := range potentialIndexes {
+func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes Set[Index]) Set[Index] {
+	indexes := NewSet[Index]()
+	for _, index := range potentialIndexes.ToList() {
 		// The leading index column must be referenced by the query.
 		if query.InColumns(index.Columns[0]) {
-			indexes = append(indexes, index)
+			indexes.Add(index)
 		}
 	}
 	return indexes

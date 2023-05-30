@@ -17,13 +17,13 @@ func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInf
 	for _, column := range columns {
 		if rand.Intn(len(columns)) < parameter.MaximumIndexesToRecommend {
 			idx := Index{
-				SchemaName:  column.SchemaName,
-				TableName:   column.TableName,
-				IndexName:   fmt.Sprintf("key_%v", column.ColumnName),
-				ColumnNames: []string{column.ColumnName},
+				SchemaName: column.SchemaName,
+				TableName:  column.TableName,
+				IndexName:  fmt.Sprintf("key_%v", column.ColumnName),
+				Columns:    []Column{column},
 			}
 			indexes = append(indexes, idx)
-			optimizer.CreateHypoIndex(idx.SchemaName, idx.TableName, idx.IndexName, idx.ColumnNames)
+			optimizer.CreateHypoIndex(idx.SchemaName, idx.TableName, idx.IndexName, idx.columnNames())
 		}
 	}
 

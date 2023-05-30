@@ -136,18 +136,31 @@ type SetKey interface {
 	Key() string
 }
 
-type Set[T SetKey] struct {
+type Set[T SetKey] interface {
+	Add(item T)
+	AddList(items ...T)
+	AddSet(set Set[T])
+	Contains(item T) bool
+	ToList() []T
+	Len() int
+}
+
+type setImpl[T SetKey] struct {
 	s map[string]T
 }
 
-func (s *Set[T]) Add(item T) {
+func NewSet[T SetKey]() Set[T] {
+	return new(setImpl[T])
+}
+
+func (s *setImpl[T]) Add(item T) {
 	if s.s == nil {
 		s.s = make(map[string]T)
 	}
 	s.s[item.Key()] = item
 }
 
-func (s *Set[T]) Contains(item T) bool {
+func (s *setImpl[T]) Contains(item T) bool {
 	if s.s == nil {
 		return false
 	}
@@ -155,7 +168,7 @@ func (s *Set[T]) Contains(item T) bool {
 	return ok
 }
 
-func (s *Set[T]) ToList() []T {
+func (s *setImpl[T]) ToList() []T {
 	var list []T
 	for _, v := range s.s {
 		list = append(list, v)
@@ -163,8 +176,16 @@ func (s *Set[T]) ToList() []T {
 	return list
 }
 
-func (s *Set[T]) AddList(items ...T) {
+func (s *setImpl[T]) AddList(items ...T) {
 	for _, item := range items {
 		s.Add(item)
 	}
+}
+
+func (s *setImpl[T]) AddSet(set Set[T]) {
+	s.AddList(set.ToList()...)
+}
+
+func (s *setImpl[T]) Len() int {
+	return len(s.s)
 }
