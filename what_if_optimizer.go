@@ -23,6 +23,7 @@ type TiDBWhatIfOptimizer struct {
 }
 
 func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
+	Debugf("connecting to %v", DSN)
 	db, err := sql.Open("mysql", DSN)
 	if err != nil {
 		return nil, err
@@ -48,6 +49,7 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", ")))
 }
+
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }

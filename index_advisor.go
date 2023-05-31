@@ -48,6 +48,8 @@ type AdvisorResult struct {
 }
 
 func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, originalWorkloadInfo WorkloadInfo, param Parameter) (AdvisorResult, error) {
+	Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
+
 	compress, ok := compressAlgorithms[compressAlgo]
 	if !ok {
 		return AdvisorResult{}, fmt.Errorf("compress algorithm %s not found", compressAlgo)
@@ -69,15 +71,16 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
+	Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Len(), compress(originalWorkloadInfo).SQLs.Len())
+
 	must(indexable(&compressedWorkloadInfo))
 	must(indexable(&originalWorkloadInfo))
+	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Len())
 
-	fmt.Println("========================== indexable columns ==========================")
 	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}
-	fmt.Println("========================== advise result ==========================")
 	for _, index := range result.RecommendedIndexes {
 		fmt.Println(index.DDL())
 	}

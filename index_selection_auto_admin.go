@@ -11,18 +11,18 @@ import "math"
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	aa := &autoAdmin{
-		oriWorkloadInfo:  originalWorkloadInfo,
-		compWorkloadInfo: compressedWorkloadInfo,
-		optimizer:        optimizer,
-		maxIndexes:       parameter.MaximumIndexesToRecommend,
+		optimizer:  optimizer,
+		maxIndexes: parameter.MaximumIndexesToRecommend,
 
 		// TODO: make these 2 variables configurable.
 		maxIndexesNative: 2,
 		maxIndexWidth:    3,
 	}
-	bestIndexes := aa.calculateBestIndexes()
+	Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
+
+	bestIndexes := aa.calculateBestIndexes(compressedWorkloadInfo)
 
 	var err error
 	result := AdvisorResult{}
@@ -34,38 +34,36 @@ func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo
 }
 
 type autoAdmin struct {
-	oriWorkloadInfo  WorkloadInfo
-	compWorkloadInfo WorkloadInfo
-	optimizer        WhatIfOptimizer
+	optimizer WhatIfOptimizer
 
 	maxIndexes       int // The algorithm stops as soon as it has selected #max_indexes indexes
 	maxIndexesNative int // The number of indexes selected by a native enumeration.
 	maxIndexWidth    int // The number of columns an index can contain at maximum.
 }
 
-func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
+func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 	if aa.maxIndexes == 0 {
 		return nil
 	}
 
 	potentialIndexes := NewSet[Index]() // each indexable column as a single-column index
-	for _, col := range aa.compWorkloadInfo.IndexableColumns.ToList() {
+	for _, col := range workload.IndexableColumns.ToList() {
 		potentialIndexes.Add(NewIndex(col.SchemaName, col.TableName, TempIndexName(col), col.ColumnName))
 	}
 
-	indexes := NewSet[Index]()
+	currentBestIndexes := NewSet[Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
-		candidates := aa.selectIndexCandidates(aa.compWorkloadInfo, potentialIndexes)
-		indexes = aa.enumerateCombinations(aa.compWorkloadInfo, candidates)
+		candidates := aa.selectIndexCandidates(workload, potentialIndexes)
+		currentBestIndexes = aa.enumerateCombinations(workload, candidates)
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
-			potentialIndexes = indexes
-			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.compWorkloadInfo, indexes))
+			potentialIndexes = currentBestIndexes
+			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
 		}
 	}
 
-	return indexes
+	return currentBestIndexes
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set[Index]) Set[Index] {
@@ -110,11 +108,12 @@ func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndex
 	return candidates
 }
 
+// potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
 func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes Set[Index]) Set[Index] {
-	numberIndexesNaive := int(math.Min(float64(aa.maxIndexesNative), float64(candidateIndexes.Len())))
+	numberIndexesNaive := min(aa.maxIndexesNative, candidateIndexes.Len())
 	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 
-	numberIndexes := int(math.Min(float64(aa.maxIndexes), float64(candidateIndexes.Len())))
+	numberIndexes := min(aa.maxIndexes, candidateIndexes.Len())
 	indexes, cost := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes
 }

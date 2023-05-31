@@ -21,6 +21,7 @@ func must(err error, args ...interface{}) {
 // LoadWorkloadInfo loads workload info from the given path.
 // TODO: for simplification, assume all SQLs are under the same schema here.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
+	Debugf("loading workload info from %s", workloadInfoPath)
 	sqlFilePath := path.Join(workloadInfoPath, "sqls.sql")
 	rawSQLs, err := ParseRawSQLsFromFile(sqlFilePath)
 	must(err, workloadInfoPath)
@@ -126,14 +127,13 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, e
 	return workloadCost, nil
 }
 
+// TempIndexName returns a temp index name for the given columns.
 func TempIndexName(cols ...Column) string {
 	var names []string
 	for _, col := range cols {
 		names = append(names, col.ColumnName)
 	}
-	schemaName := cols[0].SchemaName
-	tableName := cols[0].TableName
-	return fmt.Sprintf("tmp_%v_%v_%v", schemaName, tableName, strings.Join(names, "_"))
+	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
 }
 
 type SetKey interface {
@@ -285,4 +285,11 @@ func combSetIterate[T SetKey](itemList []T, currSet Set[T], depth, numberOfItems
 	currSet.Remove(itemList[depth])
 	res = append(res, combSetIterate(itemList, currSet, depth+1, numberOfItems)...)
 	return res
+}
+
+func min[T int | float64](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
 }

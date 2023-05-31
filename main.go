@@ -83,11 +83,13 @@ type adviseCmdOpt struct {
 
 func newAdviseCmd() *cobra.Command {
 	var opt adviseCmdOpt
+	var logLevel string
 	cmd := &cobra.Command{
 		Use:   "advise",
 		Short: "advise",
 		Long:  `advise`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			updateLogLevel(logLevel)
 			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
@@ -111,6 +113,8 @@ func newAdviseCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
 	cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
 	cmd.Flags().StringVar(&opt.indexSelectionAlgo, "index-selection-algo", "auto_admin", "index selection algorithm")
+
+	cmd.Flags().StringVar(&logLevel, "log-level", "debug", "log level")
 	return cmd
 }
 
