@@ -12,7 +12,7 @@ func TestLoadWorkloadInfo(t *testing.T) {
 }
 
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
-	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g")
+	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_220")
 	must(err)
 	fmt.Println(w.SQLs.Size())
 }
