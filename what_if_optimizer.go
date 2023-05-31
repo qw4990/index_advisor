@@ -3,10 +3,26 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+type WhatIfOptimizerStats struct {
+	ExecuteCount         int
+	CreateHypoIndexCount int
+	DropHypoIndexCount   int
+	GetPlanCostCount     int
+
+	TotalDBTime time.Duration
+}
+
+func (s WhatIfOptimizerStats) Format() string {
+	return fmt.Sprintf(`ExecuteCount: %v, CreateHypoIndexCount: %v, DropHypoIndexCount: %v, GetPlanCostCount: %v, TotalDBTime: %v`,
+		s.ExecuteCount, s.CreateHypoIndexCount, s.DropHypoIndexCount, s.GetPlanCostCount, s.TotalDBTime)
+}
 
 type WhatIfOptimizer interface {
 	Execute(sql string) error
@@ -16,10 +32,14 @@ type WhatIfOptimizer interface {
 	DropHypoIndex(index Index) error
 
 	GetPlanCost(query string) (planCost float64, err error)
+
+	ResetStats()
+	Stats() WhatIfOptimizerStats
 }
 
 type TiDBWhatIfOptimizer struct {
-	db *sql.DB
+	db    *sql.DB
+	stats WhatIfOptimizerStats
 }
 
 func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
@@ -34,10 +54,24 @@ func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	return &TiDBWhatIfOptimizer{db}, nil
+	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}}, nil
+}
+
+func (o *TiDBWhatIfOptimizer) ResetStats() {
+	o.stats = WhatIfOptimizerStats{}
+}
+
+func (o *TiDBWhatIfOptimizer) Stats() WhatIfOptimizerStats {
+	return o.stats
+}
+
+func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, counter *int) {
+	o.stats.TotalDBTime += time.Since(startTime)
+	*counter = *counter + 1
 }
 
 func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
+	defer o.recordStats(time.Now(), &o.stats.ExecuteCount)
 	_, err := o.db.Exec(sql)
 	return err
 }
@@ -47,10 +81,12 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 }
 
 func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
+	defer o.recordStats(time.Now(), &o.stats.CreateHypoIndexCount)
 	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", ")))
 }
 
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
+	defer o.recordStats(time.Now(), &o.stats.DropHypoIndexCount)
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
@@ -78,6 +114,7 @@ func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error)
 }
 
 func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (planCost float64, err error) {
+	defer o.recordStats(time.Now(), &o.stats.GetPlanCostCount)
 	plan, err := o.getPlan(query)
 	if err != nil {
 		return 0, err

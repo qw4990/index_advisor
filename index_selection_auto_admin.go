@@ -22,7 +22,9 @@ func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo
 	}
 	Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
 
+	optimizer.ResetStats()
 	bestIndexes := aa.calculateBestIndexes(compressedWorkloadInfo)
+	Debugf("what-if optimizer stats: %v", optimizer.Stats().Format())
 
 	var err error
 	result := AdvisorResult{}
@@ -53,6 +55,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 
 	currentBestIndexes := NewSet[Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
+		Debugf("AutoAdmin Algo current max index width: %d", currentMaxIndexWidth)
 		candidates := aa.selectIndexCandidates(workload, potentialIndexes)
 		currentBestIndexes = aa.enumerateCombinations(workload, candidates)
 
@@ -62,7 +65,6 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
 		}
 	}
-
 	return currentBestIndexes
 }
 
