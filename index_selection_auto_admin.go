@@ -177,7 +177,7 @@ func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes Set[In
 	indexes := NewSet[Index]()
 	for _, index := range potentialIndexes.ToList() {
 		// The leading index column must be referenced by the query.
-		if query.InColumns(index.Columns[0]) {
+		if query.IndexableColumns.Contains(index.Columns[0]) {
 			indexes.Add(index)
 		}
 	}

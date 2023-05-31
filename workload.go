@@ -15,10 +15,10 @@ const (
 )
 
 type SQL struct { // DQL or DML
-	SchemaName string
-	Text       string
-	Frequency  int
-	Columns    []Column // columns in this SQL
+	SchemaName       string
+	Text             string
+	Frequency        int
+	IndexableColumns Set[Column] // Indexable columns related to this SQL
 }
 
 func (sql SQL) Type() SQLType {
@@ -37,15 +37,6 @@ func (sql SQL) Type() SQLType {
 		return SQLTypeUpdate
 	}
 	return SQLTypeOthers
-}
-
-func (sql SQL) InColumns(col Column) bool {
-	for _, c := range sql.Columns {
-		if c.Key() == col.Key() {
-			return true
-		}
-	}
-	return false
 }
 
 type TableSchema struct {
@@ -123,11 +114,12 @@ type SampleRows struct {
 }
 
 type WorkloadInfo struct {
-	SQLs         []SQL
-	TableSchemas []TableSchema
-	TableStats   []TableStats
-	Plans        []Plans
-	SampleRows   []SampleRows
+	SQLs             []SQL
+	TableSchemas     []TableSchema
+	TableStats       []TableStats
+	Plans            []Plans
+	SampleRows       []SampleRows
+	IndexableColumns Set[Column]
 }
 
 func (w WorkloadInfo) FindTableSchema(schemaName, tableName string) (TableSchema, bool) {
