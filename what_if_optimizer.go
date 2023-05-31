@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
+	"strings"
 )
 
 type WhatIfOptimizer interface {
@@ -45,7 +46,7 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 }
 
 func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
-	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, index.columnNames()))
+	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", ")))
 }
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
