@@ -77,6 +77,8 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	must(indexable(&originalWorkloadInfo))
 	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
+	checkWorkloadInfo(compressedWorkloadInfo)
+	checkWorkloadInfo(originalWorkloadInfo)
 	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err

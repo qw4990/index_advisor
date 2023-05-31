@@ -82,7 +82,12 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 
 func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateHypoIndexCount)
-	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", ")))
+	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", "))
+	err := o.Execute(createStmt)
+	if err != nil {
+		Errorf("failed to create hypo index '%v': %v", createStmt, err)
+	}
+	return err
 }
 
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {

@@ -73,7 +73,7 @@ type Column struct {
 }
 
 func NewColumn(schemaName, tableName, columnName string) Column {
-	return Column{SchemaName: schemaName, TableName: tableName, ColumnName: columnName}
+	return Column{SchemaName: strings.ToLower(schemaName), TableName: strings.ToLower(tableName), ColumnName: strings.ToLower(columnName)}
 }
 
 func NewColumns(schemaName, tableName string, columnNames ...string) []Column {
@@ -100,7 +100,7 @@ type Index struct {
 }
 
 func NewIndex(schemaName, tableName, indexName string, columns ...string) Index {
-	return Index{SchemaName: schemaName, TableName: tableName, IndexName: indexName, Columns: NewColumns(schemaName, tableName, columns...)}
+	return Index{SchemaName: strings.ToLower(schemaName), TableName: strings.ToLower(tableName), IndexName: strings.ToLower(indexName), Columns: NewColumns(schemaName, tableName, columns...)}
 }
 
 func (i Index) columnNames() []string {

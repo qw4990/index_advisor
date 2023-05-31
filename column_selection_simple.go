@@ -53,14 +53,9 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 			schemaName = v.schemaName
 		}
 		colName = x.Name.L
-		if x.Table.L != "" {
-			tableName = x.Table.L
-		} else {
-			tableName = v.findTableName(schemaName, colName)
-		}
-
+		tableName = v.findTableName(schemaName, colName)
 		if schemaName == "" || tableName == "" {
-			// TODO: can not find the corresponding schema and table name
+			return // ignore this column
 		}
 		col := NewColumn(schemaName, tableName, colName)
 		v.cols.Add(col)

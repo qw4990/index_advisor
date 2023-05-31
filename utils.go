@@ -288,3 +288,42 @@ func min[T int | float64](a, b T) T {
 	}
 	return b
 }
+
+// checkWorkloadInfo checks whether this workload info is fulfilled.
+func checkWorkloadInfo(w WorkloadInfo) {
+	for _, col := range w.IndexableColumns.ToList() {
+		if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
+			panic(fmt.Sprintf("invalid indexable column: %v", col))
+		}
+	}
+	for _, sql := range w.SQLs.ToList() {
+		if sql.SchemaName == "" || sql.Text == "" {
+			panic(fmt.Sprintf("invalid sql: %v", sql))
+		}
+		for _, col := range sql.IndexableColumns.ToList() {
+			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
+				panic(fmt.Sprintf("invalid indexable column: %v", col))
+			}
+		}
+	}
+	for _, tbl := range w.TableSchemas.ToList() {
+		if tbl.SchemaName == "" || tbl.TableName == "" {
+			panic(fmt.Sprintf("invalid table schema: %v", tbl))
+		}
+		for _, col := range tbl.Columns {
+			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
+				panic(fmt.Sprintf("invalid indexable column: %v", col))
+			}
+		}
+		for _, idx := range tbl.Indexes {
+			if idx.SchemaName == "" || idx.TableName == "" || idx.IndexName == "" {
+				panic(fmt.Sprintf("invalid index: %v", idx))
+			}
+			for _, col := range idx.Columns {
+				if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
+					panic(fmt.Sprintf("invalid indexable column: %v", col))
+				}
+			}
+		}
+	}
+}
