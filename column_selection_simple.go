@@ -87,8 +87,8 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 	return n, true
 }
 
-// FillIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
-func FillIndexableColumnsSimple(workloadInfo WorkloadInfo) error {
+// IndexableColumnsSelectionSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
+func IndexableColumnsSelectionSimple(workloadInfo WorkloadInfo) error {
 	v := &simpleIndexableColumnsVisitor{
 		cols:   NewSet[Column](),
 		tables: workloadInfo.TableSchemas,

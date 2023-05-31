@@ -17,7 +17,6 @@ type Cluster struct {
 	Frequency int
 }
 type clusterList []*Cluster
-type WorkloadInfoCompressionAlgo func(workloadInfo WorkloadInfo) WorkloadInfo
 
 // NoneWorkloadInfoCompress does nothing.
 func NoneWorkloadInfoCompress(workloadInfo WorkloadInfo) WorkloadInfo {

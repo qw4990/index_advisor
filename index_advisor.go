@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 
+// IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
 	originalWorkloadInfo WorkloadInfo, // the target workload
 	compressedWorkloadInfo WorkloadInfo, // the compressed workload
@@ -9,7 +10,11 @@ type IndexSelectionAlgo func(
 	optimizer WhatIfOptimizer, // the what-if optimizer
 ) (AdvisorResult, error)
 
-type IndexableColumnsFillAlgo func(workloadInfo WorkloadInfo) error
+// IndexableColumnsSelectionAlgo is the interface for indexable columns selection algorithms.
+type IndexableColumnsSelectionAlgo func(workloadInfo WorkloadInfo) error
+
+// WorkloadInfoCompressionAlgo is the interface for workload info compression algorithms.
+type WorkloadInfoCompressionAlgo func(workloadInfo WorkloadInfo) WorkloadInfo
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
@@ -18,8 +23,8 @@ var (
 		"clustering": ClusteringWorkloadInfoCompress,
 	}
 
-	findIndexableColsAlgorithms = map[string]IndexableColumnsFillAlgo{
-		"simple": FillIndexableColumnsSimple,
+	findIndexableColsAlgorithms = map[string]IndexableColumnsSelectionAlgo{
+		"simple": IndexableColumnsSelectionSimple,
 	}
 
 	selectIndexAlgorithms = map[string]IndexSelectionAlgo{
