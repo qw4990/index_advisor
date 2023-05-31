@@ -86,8 +86,8 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	for _, index := range result.RecommendedIndexes {
 		fmt.Println(index.DDL())
 	}
-	fmt.Println("original workload cost: ", result.OriginalWorkloadCost)
-	fmt.Println("optimized workload cost: ", result.OptimizedWorkloadCost)
+	fmt.Printf("original workload cost: %.2E\n", result.OriginalWorkloadCost)
+	fmt.Printf("optimized workload cost: %.2E\n", result.OptimizedWorkloadCost)
 
 	return result, err
 }

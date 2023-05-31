@@ -57,7 +57,9 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
 		Debugf("AutoAdmin Algo current max index width: %d", currentMaxIndexWidth)
 		candidates := aa.selectIndexCandidates(workload, potentialIndexes)
+		Debugf("AutoAdmin Algo selectIndexCandidates: %v", candidates.Size())
 		currentBestIndexes = aa.enumerateCombinations(workload, candidates)
+		Debugf("AutoAdmin Algo enumerateCombinations: %v", currentBestIndexes.Size())
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration

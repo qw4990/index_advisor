@@ -11,17 +11,17 @@ import (
 )
 
 type WhatIfOptimizerStats struct {
-	ExecuteCount         int
-	CreateHypoIndexCount int
-	DropHypoIndexCount   int
-	GetPlanCostCount     int
-
-	TotalDBTime time.Duration
+	ExecuteCount             int
+	ExecuteTime              time.Duration
+	CreateOrDropHypoIdxCount int
+	CreateOrDropHypoIdxTime  time.Duration
+	GetCostCount             int
+	GetCostTime              time.Duration
 }
 
 func (s WhatIfOptimizerStats) Format() string {
-	return fmt.Sprintf(`ExecuteCount: %v, CreateHypoIndexCount: %v, DropHypoIndexCount: %v, GetPlanCostCount: %v, TotalDBTime: %v`,
-		s.ExecuteCount, s.CreateHypoIndexCount, s.DropHypoIndexCount, s.GetPlanCostCount, s.TotalDBTime)
+	return fmt.Sprintf(`Execute(count/time): (%v/%v), CreateOrDropHypoIndex: (%v/%v), GetCost: (%v/%v)`,
+		s.ExecuteCount, s.ExecuteTime, s.CreateOrDropHypoIdxCount, s.CreateOrDropHypoIdxTime, s.GetCostCount, s.GetCostTime)
 }
 
 type WhatIfOptimizer interface {
@@ -65,13 +65,13 @@ func (o *TiDBWhatIfOptimizer) Stats() WhatIfOptimizerStats {
 	return o.stats
 }
 
-func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, counter *int) {
-	o.stats.TotalDBTime += time.Since(startTime)
+func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, dur *time.Duration, counter *int) {
+	*dur = *dur + time.Since(startTime)
 	*counter = *counter + 1
 }
 
 func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
-	defer o.recordStats(time.Now(), &o.stats.ExecuteCount)
+	defer o.recordStats(time.Now(), &o.stats.ExecuteTime, &o.stats.ExecuteCount)
 	_, err := o.db.Exec(sql)
 	return err
 }
@@ -81,7 +81,7 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 }
 
 func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
-	defer o.recordStats(time.Now(), &o.stats.CreateHypoIndexCount)
+	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", "))
 	err := o.Execute(createStmt)
 	if err != nil {
@@ -91,7 +91,7 @@ func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
 }
 
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
-	defer o.recordStats(time.Now(), &o.stats.DropHypoIndexCount)
+	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
@@ -119,7 +119,7 @@ func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error)
 }
 
 func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (planCost float64, err error) {
-	defer o.recordStats(time.Now(), &o.stats.GetPlanCostCount)
+	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
 	plan, err := o.getPlan(query)
 	if err != nil {
 		return 0, err
