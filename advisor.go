@@ -9,8 +9,8 @@ var (
 		"clustering": ClusteringWorkloadInfoCompress,
 	}
 
-	findIndexableColsAlgorithms = map[string]IndexableColumnsFindingAlgo{
-		"simple": FindIndexableColumnsSimple,
+	findIndexableColsAlgorithms = map[string]IndexableColumnsFillAlgo{
+		"simple": FillIndexableColumnsSimple,
 	}
 
 	selectIndexAlgorithms = map[string]IndexSelectionAlgo{
@@ -55,17 +55,11 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
-	indexableCols, err := indexable(originalWorkloadInfo)
-	if err != nil {
-		return AdvisorResult{}, err
-	}
+	must(indexable(compressedWorkloadInfo))
+	must(indexable(originalWorkloadInfo))
 
 	fmt.Println("========================== indexable columns ==========================")
-	for _, col := range indexableCols {
-		fmt.Println(col.String())
-	}
-
-	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, indexableCols, optimizer)
+	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}

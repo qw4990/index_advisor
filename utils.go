@@ -24,9 +24,9 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 	sqlFilePath := path.Join(workloadInfoPath, "sqls.sql")
 	rawSQLs, err := ParseRawSQLsFromFile(sqlFilePath)
 	must(err, workloadInfoPath)
-	var sqls []SQL
+	sqls := NewSet[SQL]()
 	for _, rawSQL := range rawSQLs {
-		sqls = append(sqls, SQL{
+		sqls.Add(SQL{
 			SchemaName: schemaName,
 			Text:       rawSQL,
 			Frequency:  1,
@@ -38,13 +38,13 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 	if err != nil {
 		return WorkloadInfo{}, err
 	}
-	var tableSchemas []TableSchema
+	tableSchemas := NewSet[TableSchema]()
 	for _, rawSQL := range rawSQLs {
 		tableSchema, err := ParseCreateTableStmt(schemaName, rawSQL)
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
-		tableSchemas = append(tableSchemas, tableSchema)
+		tableSchemas.Add(tableSchema)
 	}
 
 	// TODO: parse stats
@@ -113,7 +113,7 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, e
 	defer func(beginAt time.Time) {
 		fmt.Printf("workloadQueryCost took %v for %v queries\n", time.Since(beginAt), queryCnt)
 	}(time.Now())
-	for _, sql := range info.SQLs { // TODO: run them concurrently to save time
+	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
 		if sql.Type() != SQLTypeSelect {
 			continue
 		}
@@ -145,6 +145,7 @@ type Set[T SetKey] interface {
 	AddList(items ...T)
 	AddSet(set Set[T])
 	Contains(item T) bool
+	Find(k SetKey) (T, bool)
 	Remove(item T)
 	ToList() []T
 	Len() int
@@ -172,6 +173,14 @@ func (s *setImpl[T]) Contains(item T) bool {
 	}
 	_, ok := s.s[item.Key()]
 	return ok
+}
+
+func (s *setImpl[T]) Find(k SetKey) (a T, ok bool) {
+	if s.s == nil {
+		return a, false
+	}
+	v, ok := s.s[k.Key()]
+	return v, ok
 }
 
 func (s *setImpl[T]) ToList() []T {

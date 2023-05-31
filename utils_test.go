@@ -14,7 +14,7 @@ func TestLoadWorkloadInfo(t *testing.T) {
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
 	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g")
 	must(err)
-	fmt.Println(len(w.SQLs))
+	fmt.Println(w.SQLs.Len())
 }
 
 func TestCombSet(t *testing.T) {

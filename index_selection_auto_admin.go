@@ -11,12 +11,10 @@ import "math"
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter,
-	columns []Column, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	aa := &autoAdmin{
 		oriWorkloadInfo:  originalWorkloadInfo,
 		compWorkloadInfo: compressedWorkloadInfo,
-		indexableCols:    columns,
 		optimizer:        optimizer,
 		maxIndexes:       parameter.MaximumIndexesToRecommend,
 
@@ -38,7 +36,6 @@ func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo
 type autoAdmin struct {
 	oriWorkloadInfo  WorkloadInfo
 	compWorkloadInfo WorkloadInfo
-	indexableCols    []Column
 	optimizer        WhatIfOptimizer
 
 	maxIndexes       int // The algorithm stops as soon as it has selected #max_indexes indexes
@@ -52,7 +49,7 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 	}
 
 	potentialIndexes := NewSet[Index]() // each indexable column as a single-column index
-	for _, col := range aa.indexableCols {
+	for _, col := range aa.compWorkloadInfo.IndexableColumns.ToList() {
 		potentialIndexes.Add(NewIndex(col.SchemaName, col.TableName, TempIndexName(col), col.ColumnName))
 	}
 
@@ -64,22 +61,22 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
 			potentialIndexes = indexes
-			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.compWorkloadInfo, aa.indexableCols, indexes))
+			potentialIndexes.AddSet(aa.createMultiColumnIndexes(aa.compWorkloadInfo, indexes))
 		}
 	}
 
 	return indexes
 }
 
-func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexableCols []Column, indexes Set[Index]) Set[Index] {
+func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set[Index]) Set[Index] {
 	multiColumnCandidates := NewSet[Index]()
 	for _, index := range indexes.ToList() {
-		table, ok := workload.FindTableSchema(index.SchemaName, index.TableName)
-		if !ok {
+		table, found := workload.TableSchemas.Find(TableSchema{SchemaName: index.SchemaName, TableName: index.TableName})
+		if !found {
 			continue
 		}
 		tableColsSet := ListToSet[Column](table.Columns...)
-		indexableColsSet := ListToSet[Column](indexableCols...)
+		indexableColsSet := workload.IndexableColumns
 		indexColsSet := ListToSet[Column](index.Columns...)
 		for _, column := range DiffSet(AndSet(tableColsSet, indexableColsSet), indexColsSet).ToList() {
 			cols := append([]Column{}, index.Columns...)
@@ -98,12 +95,12 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexableCo
 // selectIndexCandidates selects the best indexes for each single-query.
 func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndexes Set[Index]) Set[Index] {
 	candidates := NewSet[Index]()
-	for i, query := range workload.SQLs {
+	for _, query := range workload.SQLs.ToList() {
 		if query.Type() != SQLTypeSelect {
 			continue
 		}
 		queryWorkload := WorkloadInfo{ // each query as a workload
-			SQLs:         workload.SQLs[i : i+1],
+			SQLs:         ListToSet(query),
 			TableSchemas: workload.TableSchemas,
 			TableStats:   workload.TableStats,
 		}

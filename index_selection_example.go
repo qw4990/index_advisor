@@ -6,16 +6,15 @@ import (
 )
 
 // SelectIndexExample select some indexes randomly.
-func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter,
-	columns []Column, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (AdvisorResult, error) {
 	originalCost, err := workloadQueryCost(originalWorkloadInfo, optimizer)
 	if err != nil {
 		return AdvisorResult{}, err
 	}
 
 	var indexes []Index
-	for _, column := range columns {
-		if rand.Intn(len(columns)) < parameter.MaximumIndexesToRecommend {
+	for _, column := range compressedWorkloadInfo.IndexableColumns.ToList() {
+		if rand.Intn(compressedWorkloadInfo.IndexableColumns.Len()) < parameter.MaximumIndexesToRecommend {
 			idx := Index{
 				SchemaName: column.SchemaName,
 				TableName:  column.TableName,

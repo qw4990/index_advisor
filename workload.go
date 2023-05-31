@@ -19,6 +19,7 @@ type SQL struct { // DQL or DML
 	Text             string
 	Frequency        int
 	IndexableColumns Set[Column] // Indexable columns related to this SQL
+	Plans            []Plan      // A SQL may have multiple different plans
 }
 
 func (sql SQL) Type() SQLType {
@@ -39,6 +40,10 @@ func (sql SQL) Type() SQLType {
 	return SQLTypeOthers
 }
 
+func (sql SQL) Key() string {
+	return sql.Text
+}
+
 type TableSchema struct {
 	SchemaName     string
 	TableName      string
@@ -47,10 +52,18 @@ type TableSchema struct {
 	CreateStmtText string // `create table t (...)`
 }
 
+func (t TableSchema) Key() string {
+	return fmt.Sprintf("%v.%v", t.SchemaName, t.TableName)
+}
+
 type TableStats struct {
 	SchemaName    string
 	TableName     string
 	StatsFilePath string
+}
+
+func (t TableStats) Key() string {
+	return fmt.Sprintf("%v.%v", t.SchemaName, t.TableName)
 }
 
 type Column struct {
@@ -106,7 +119,7 @@ func (i Index) Key() string {
 	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.columnNames(), ","))
 }
 
-type Plans struct {
+type Plan struct {
 }
 
 type SampleRows struct {
@@ -114,19 +127,9 @@ type SampleRows struct {
 }
 
 type WorkloadInfo struct {
-	SQLs             []SQL
-	TableSchemas     []TableSchema
-	TableStats       []TableStats
-	Plans            []Plans
-	SampleRows       []SampleRows
+	SQLs             Set[SQL]
+	TableSchemas     Set[TableSchema]
+	TableStats       Set[TableStats]
 	IndexableColumns Set[Column]
-}
-
-func (w WorkloadInfo) FindTableSchema(schemaName, tableName string) (TableSchema, bool) {
-	for _, t := range w.TableSchemas {
-		if t.SchemaName == schemaName && t.TableName == tableName {
-			return t, true
-		}
-	}
-	return TableSchema{}, false
+	SampleRows       []SampleRows
 }

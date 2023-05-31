@@ -33,12 +33,11 @@ func NaiveWorkloadInfoCompress(workloadInfo WorkloadInfo) WorkloadInfo {
 func ClusteringWorkloadInfoCompress(workloadInfo WorkloadInfo) WorkloadInfo {
 	clusters := make(clusterList, 0)
 
-	for _, sql := range workloadInfo.SQLs {
+	for _, sql := range workloadInfo.SQLs.ToList() {
 		clusters.addSQLToCluster(sql)
 	}
 
-	newSQLs := make([]SQL, 0)
-
+	newSQLs := NewSet[SQL]()
 	for _, c := range clusters {
 		maxFreq := 0
 		maxSQLIndex := -1
@@ -53,12 +52,11 @@ func ClusteringWorkloadInfoCompress(workloadInfo WorkloadInfo) WorkloadInfo {
 		if maxSQLIndex >= 0 {
 			maxSQL := c.SQLs[maxSQLIndex]
 			maxSQL.Frequency = c.Frequency
-			newSQLs = append(newSQLs, maxSQL)
+			newSQLs.Add(maxSQL)
 		}
 	}
 
 	workloadInfo.SQLs = newSQLs
-
 	return workloadInfo
 }
 

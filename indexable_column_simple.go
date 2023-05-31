@@ -8,10 +8,10 @@ import (
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
 type simpleIndexableColumnsVisitor struct {
-	cols        map[Column]struct{} // key = 'schema.table.column'
-	currentCols map[Column]struct{} // columns related to the current sql
 	schemaName  string
-	tables      []TableSchema
+	tables      Set[TableSchema]
+	cols        Set[Column] // key = 'schema.table.column'
+	currentCols Set[Column] // columns related to the current sql
 }
 
 func (v *simpleIndexableColumnsVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
@@ -62,19 +62,15 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 		if schemaName == "" || tableName == "" {
 			// TODO: can not find the corresponding schema and table name
 		}
-		col := Column{
-			SchemaName: schemaName,
-			TableName:  tableName,
-			ColumnName: colName,
-		}
-		v.cols[col] = struct{}{}
-		v.currentCols[col] = struct{}{}
+		col := NewColumn(schemaName, tableName, colName)
+		v.cols.Add(col)
+		v.currentCols.Add(col)
 	}
 }
 
 func (v *simpleIndexableColumnsVisitor) findTableName(schemaName, columnName string) string {
 	// find the corresponding table
-	for _, table := range v.tables {
+	for _, table := range v.tables.ToList() {
 		if table.SchemaName != schemaName {
 			continue
 		}
@@ -91,28 +87,22 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 	return n, true
 }
 
-// FindIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
-func FindIndexableColumnsSimple(workloadInfo WorkloadInfo) ([]Column, error) {
+// FillIndexableColumnsSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
+func FillIndexableColumnsSimple(workloadInfo WorkloadInfo) error {
 	v := &simpleIndexableColumnsVisitor{
-		cols:   make(map[Column]struct{}),
+		cols:   NewSet[Column](),
 		tables: workloadInfo.TableSchemas,
 	}
-	for i, sql := range workloadInfo.SQLs {
+	sqls := workloadInfo.SQLs.ToList()
+	for _, sql := range sqls {
 		stmt, err := ParseOneSQL(sql.Text)
 		must(err, sql.Text)
 		v.schemaName = sql.SchemaName
-		v.currentCols = make(map[Column]struct{})
+		v.currentCols = NewSet[Column]()
 		stmt.Accept(v)
-
-		workloadInfo.SQLs[i].Columns = nil
-		for col := range v.currentCols {
-			workloadInfo.SQLs[i].Columns = append(workloadInfo.SQLs[i].Columns, col)
-		}
+		sql.IndexableColumns = v.currentCols
+		workloadInfo.SQLs.Add(sql)
 	}
-
-	var cols []Column
-	for col := range v.cols {
-		cols = append(cols, col)
-	}
-	return cols, nil
+	workloadInfo.IndexableColumns = v.cols
+	return nil
 }
