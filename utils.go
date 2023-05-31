@@ -212,6 +212,20 @@ func ListToSet[T SetKey](items ...T) Set[T] {
 	return s
 }
 
+func UnionSet[T SetKey](ss ...Set[T]) Set[T] {
+	if len(ss) == 0 {
+		return NewSet[T]()
+	}
+	if len(ss) == 1 {
+		return ss[0].Clone()
+	}
+	s := NewSet[T]()
+	for _, set := range ss {
+		s.AddSet(set)
+	}
+	return s
+}
+
 func AndSet[T SetKey](ss ...Set[T]) Set[T] {
 	if len(ss) == 0 {
 		return NewSet[T]()
@@ -219,7 +233,6 @@ func AndSet[T SetKey](ss ...Set[T]) Set[T] {
 	if len(ss) == 1 {
 		return ss[0].Clone()
 	}
-
 	s := NewSet[T]()
 	for _, item := range ss[0].ToList() {
 		contained := true

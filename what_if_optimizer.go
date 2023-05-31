@@ -3,18 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
-	"strings"
-
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 )
 
 type WhatIfOptimizer interface {
 	Execute(sql string) error
 	Close() error // release the underlying database connection
 
-	CreateHypoIndex(schemaName, tableName, indexName string, columnNames []string) error
-	DropHypoIndex(schemaName, tableName, indexName string) error
+	CreateHypoIndex(index Index) error
+	DropHypoIndex(index Index) error
 
 	GetPlanCost(query string) (planCost float64, err error)
 }
@@ -46,11 +44,11 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 	return o.db.Close()
 }
 
-func (o *TiDBWhatIfOptimizer) CreateHypoIndex(schemaName, tableName, indexName string, columnNames []string) error {
-	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, indexName, schemaName, tableName, strings.Join(columnNames, ", ")))
+func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
+	return o.Execute(fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, index.columnNames()))
 }
-func (o *TiDBWhatIfOptimizer) DropHypoIndex(schemaName, tableName, indexName string) error {
-	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", indexName, schemaName, tableName))
+func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
+	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
 func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error) {

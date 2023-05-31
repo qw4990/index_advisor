@@ -121,9 +121,28 @@ func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndex
 	return indexes
 }
 
-func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index], currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
-	// TODO
-	return nil, 0
+func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index],
+	currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
+	if currentIndexes.Len() > numberIndexes {
+		return currentIndexes, currentCost
+	}
+
+	var bestIndex Index
+	bestCost := math.MaxFloat64
+	for _, index := range candidateIndexes.ToList() {
+		cost := aa.simulateAndEvaluateCost(workload, UnionSet(currentIndexes, ListToSet(index)))
+		if cost < bestCost {
+			bestIndex, bestCost = index, cost
+		}
+	}
+	if bestCost < currentCost {
+		currentIndexes.Add(bestIndex)
+		candidateIndexes.Remove(bestIndex)
+		currentCost = bestCost
+		return aa.enumerateGreedy(workload, currentIndexes, currentCost, candidateIndexes, numberIndexes)
+	}
+
+	return currentIndexes, currentCost
 }
 
 func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[Index], numberIndexesNaive int) (Set[Index], float64) {
@@ -131,7 +150,7 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 	lowestCost := math.MaxFloat64
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range CombSet(candidateIndexes, numberOfIndexes) {
-			cost := aa.simulateAndEvaluateCost(indexCombination)
+			cost := aa.simulateAndEvaluateCost(workload, indexCombination)
 			if cost < lowestCost {
 				lowestCostIndexes = indexCombination
 				lowestCost = cost
@@ -141,9 +160,16 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 	return lowestCostIndexes, lowestCost
 }
 
-func (aa *autoAdmin) simulateAndEvaluateCost(indexes Set[Index]) float64 {
-	// TODO
-	return 0
+func (aa *autoAdmin) simulateAndEvaluateCost(workload WorkloadInfo, indexes Set[Index]) float64 {
+	for _, index := range indexes.ToList() {
+		must(aa.optimizer.CreateHypoIndex(index))
+	}
+	cost, err := workloadQueryCost(workload, aa.optimizer)
+	must(err)
+	for _, index := range indexes.ToList() {
+		must(aa.optimizer.DropHypoIndex(index))
+	}
+	return cost
 }
 
 func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes Set[Index]) Set[Index] {
