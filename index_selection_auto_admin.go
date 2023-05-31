@@ -19,13 +19,20 @@ func SelectIndexAAAlgo(originalWorkloadInfo WorkloadInfo, compressedWorkloadInfo
 		indexableCols:    columns,
 		optimizer:        optimizer,
 		maxIndexes:       parameter.MaximumIndexesToRecommend,
+
+		// TODO: make these 2 variables configurable.
 		maxIndexesNative: 2,
 		maxIndexWidth:    3,
 	}
-	aa.calculateBestIndexes()
+	bestIndexes := aa.calculateBestIndexes()
 
-	// TODO
-	return AdvisorResult{}, nil
+	var err error
+	result := AdvisorResult{}
+	result.RecommendedIndexes = bestIndexes.ToList()
+	result.OriginalWorkloadCost, err = workloadQueryCost(originalWorkloadInfo, optimizer)
+	must(err)
+	result.OptimizedWorkloadCost = aa.simulateAndEvaluateCost(originalWorkloadInfo, bestIndexes)
+	return result, nil
 }
 
 type autoAdmin struct {
@@ -44,16 +51,12 @@ func (aa *autoAdmin) calculateBestIndexes() Set[Index] {
 		return nil
 	}
 
-	potentialIndexes, indexes := NewSet[Index](), NewSet[Index]()
-	for _, col := range aa.indexableCols { // each indexable column as a single-column index
-		potentialIndexes.Add(Index{
-			SchemaName: col.SchemaName,
-			TableName:  col.TableName,
-			IndexName:  TempIndexName(col),
-			Columns:    []Column{col},
-		})
+	potentialIndexes := NewSet[Index]() // each indexable column as a single-column index
+	for _, col := range aa.indexableCols {
+		potentialIndexes.Add(NewIndex(col.SchemaName, col.TableName, TempIndexName(col), col.ColumnName))
 	}
 
+	indexes := NewSet[Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
 		candidates := aa.selectIndexCandidates(aa.compWorkloadInfo, potentialIndexes)
 		indexes = aa.enumerateCombinations(aa.compWorkloadInfo, candidates)
@@ -103,8 +106,6 @@ func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndex
 			SQLs:         workload.SQLs[i : i+1],
 			TableSchemas: workload.TableSchemas,
 			TableStats:   workload.TableStats,
-			Plans:        workload.Plans[i : i+1],
-			SampleRows:   workload.SampleRows,
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
 		candidates.AddSet(aa.enumerateCombinations(queryWorkload, indexes)) // best indexes for each single-query

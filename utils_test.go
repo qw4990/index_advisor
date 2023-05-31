@@ -16,3 +16,19 @@ func TestLoadWorkloadInfoTPCH(t *testing.T) {
 	must(err)
 	fmt.Println(len(w.SQLs))
 }
+
+func TestCombSet(t *testing.T) {
+	s := NewSet[Column]()
+	for i := 0; i < 6; i++ {
+		s.Add(NewColumn("test", "test", fmt.Sprintf("col%d", i)))
+	}
+
+	for i := 1; i < 6; i++ {
+		fmt.Println("======================== ", i, " ========================")
+		result := CombSet(s, i)
+		fmt.Println("--> ", len(result))
+		for _, ss := range result {
+			fmt.Println(ss.ToList())
+		}
+	}
+}

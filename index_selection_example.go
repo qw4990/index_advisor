@@ -23,7 +23,7 @@ func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInf
 				Columns:    []Column{column},
 			}
 			indexes = append(indexes, idx)
-			optimizer.CreateHypoIndex(idx.SchemaName, idx.TableName, idx.IndexName, idx.columnNames())
+			optimizer.CreateHypoIndex(idx)
 		}
 	}
 
