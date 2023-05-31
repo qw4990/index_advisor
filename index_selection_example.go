@@ -14,7 +14,7 @@ func SelectIndexExample(originalWorkloadInfo WorkloadInfo, compressedWorkloadInf
 
 	var indexes []Index
 	for _, column := range compressedWorkloadInfo.IndexableColumns.ToList() {
-		if rand.Intn(compressedWorkloadInfo.IndexableColumns.Len()) < parameter.MaximumIndexesToRecommend {
+		if rand.Intn(compressedWorkloadInfo.IndexableColumns.Size()) < parameter.MaximumIndexesToRecommend {
 			idx := Index{
 				SchemaName: column.SchemaName,
 				TableName:  column.TableName,

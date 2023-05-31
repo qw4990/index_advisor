@@ -71,11 +71,11 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
-	Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Len(), compress(originalWorkloadInfo).SQLs.Len())
+	Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
 
 	must(indexable(&compressedWorkloadInfo))
 	must(indexable(&originalWorkloadInfo))
-	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Len())
+	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	if err != nil {

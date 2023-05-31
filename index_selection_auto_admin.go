@@ -110,17 +110,17 @@ func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndex
 
 // potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
 func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes Set[Index]) Set[Index] {
-	numberIndexesNaive := min(aa.maxIndexesNative, candidateIndexes.Len())
+	numberIndexesNaive := min(aa.maxIndexesNative, candidateIndexes.Size())
 	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 
-	numberIndexes := min(aa.maxIndexes, candidateIndexes.Len())
+	numberIndexes := min(aa.maxIndexes, candidateIndexes.Size())
 	indexes, cost := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes
 }
 
 func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index],
 	currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
-	if currentIndexes.Len() > numberIndexes {
+	if currentIndexes.Size() > numberIndexes {
 		return currentIndexes, currentCost
 	}
 

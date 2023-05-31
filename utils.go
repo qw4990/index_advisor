@@ -148,7 +148,7 @@ type Set[T SetKey] interface {
 	Find(k SetKey) (T, bool)
 	Remove(item T)
 	ToList() []T
-	Len() int
+	Size() int
 	Clone() Set[T]
 }
 
@@ -205,7 +205,7 @@ func (s *setImpl[T]) Remove(item T) {
 	delete(s.s, item.Key())
 }
 
-func (s *setImpl[T]) Len() int {
+func (s *setImpl[T]) Size() int {
 	return len(s.s)
 }
 
@@ -273,10 +273,10 @@ func CombSet[T SetKey](s Set[T], numberOfItems int) []Set[T] {
 }
 
 func combSetIterate[T SetKey](itemList []T, currSet Set[T], depth, numberOfItems int) []Set[T] {
-	if currSet.Len() == numberOfItems {
+	if currSet.Size() == numberOfItems {
 		return []Set[T]{currSet.Clone()}
 	}
-	if depth == len(itemList) || currSet.Len() > numberOfItems {
+	if depth == len(itemList) || currSet.Size() > numberOfItems {
 		return nil
 	}
 	var res []Set[T]
