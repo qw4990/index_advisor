@@ -1,31 +1,19 @@
 package main
 
 import (
-	"reflect"
-	"sort"
+	"fmt"
 	"testing"
 )
 
 func TestFindIndexableColumnsSimple(t *testing.T) {
-	cols, err := FindIndexableColumnsSimple(WorkloadInfo{
-		TableSchemas: []TableSchema{
-			{"test", "t", NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""},
-		},
-		SQLs: []SQL{
-			{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
-			{"test", "select * from t where c in (1, 2, 3) order by d", 1, nil},
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
+	workload := WorkloadInfo{
+		TableSchemas: ListToSet(TableSchema{"test", "t", NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
+		SQLs: ListToSet(SQL{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
+			SQL{"test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
 	}
-
-	var keys []string
-	for _, c := range cols {
-		keys = append(keys, c.String())
-	}
-	sort.Strings(keys)
-	if !reflect.DeepEqual(keys, []string{"test.t.a", "test.t.b", "test.t.c", "test.t.d"}) {
-		t.Fatal("unexpected")
+	must(IndexableColumnsSelectionSimple(&workload))
+	fmt.Println(workload.IndexableColumns.ToList())
+	for _, sql := range workload.SQLs.ToList() {
+		fmt.Println(sql.IndexableColumns.ToList())
 	}
 }

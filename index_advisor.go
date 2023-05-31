@@ -11,7 +11,7 @@ type IndexSelectionAlgo func(
 ) (AdvisorResult, error)
 
 // IndexableColumnsSelectionAlgo is the interface for indexable columns selection algorithms.
-type IndexableColumnsSelectionAlgo func(workloadInfo WorkloadInfo) error
+type IndexableColumnsSelectionAlgo func(workloadInfo *WorkloadInfo) error
 
 // WorkloadInfoCompressionAlgo is the interface for workload info compression algorithms.
 type WorkloadInfoCompressionAlgo func(workloadInfo WorkloadInfo) WorkloadInfo
@@ -69,8 +69,8 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
-	must(indexable(compressedWorkloadInfo))
-	must(indexable(originalWorkloadInfo))
+	must(indexable(&compressedWorkloadInfo))
+	must(indexable(&originalWorkloadInfo))
 
 	fmt.Println("========================== indexable columns ==========================")
 	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
