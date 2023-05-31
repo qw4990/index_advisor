@@ -9,7 +9,7 @@ import (
 func TestFindIndexableColumnsSimple(t *testing.T) {
 	cols, err := FindIndexableColumnsSimple(WorkloadInfo{
 		TableSchemas: []TableSchema{
-			{"test", "t", []string{"a", "b", "c", "d", "e"}, nil, ""},
+			{"test", "t", NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""},
 		},
 		SQLs: []SQL{
 			{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},

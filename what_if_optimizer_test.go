@@ -13,10 +13,10 @@ func TestWhatIfOptimizer(t *testing.T) {
 	must(o.Execute(`create table t (a int, b int)`))
 	cost1, err := o.GetPlanCost(`select * from t where a=1`)
 	must(err)
-	must(o.CreateHypoIndex("test", "t", "idx_a", []string{"a"}))
+	must(o.CreateHypoIndex(NewIndex("test", "t", "idx_a", "a")))
 	cost2, err := o.GetPlanCost(`select * from t where a=1`)
 	must(err)
-	must(o.DropHypoIndex("test", "t", "idx_a"))
+	must(o.DropHypoIndex(NewIndex("test", "t", "idx_a", "a")))
 	cost3, err := o.GetPlanCost(`select * from t where a=1`)
 	must(err)
 	fmt.Println(cost1, cost2, cost3) // cost2 > cost1 = cost3

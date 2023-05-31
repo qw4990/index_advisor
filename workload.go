@@ -68,6 +68,18 @@ type Column struct {
 	ColumnName string
 }
 
+func NewColumn(schemaName, tableName, columnName string) Column {
+	return Column{SchemaName: schemaName, TableName: tableName, ColumnName: columnName}
+}
+
+func NewColumns(schemaName, tableName string, columnNames ...string) []Column {
+	var cols []Column
+	for _, col := range columnNames {
+		cols = append(cols, NewColumn(schemaName, tableName, col))
+	}
+	return cols
+}
+
 func (c Column) Key() string {
 	return fmt.Sprintf("%v.%v.%v", c.SchemaName, c.TableName, c.ColumnName)
 }
@@ -81,6 +93,10 @@ type Index struct {
 	TableName  string
 	IndexName  string
 	Columns    []Column
+}
+
+func NewIndex(schemaName, tableName, indexName string, columns ...string) Index {
+	return Index{SchemaName: schemaName, TableName: tableName, IndexName: indexName, Columns: NewColumns(schemaName, tableName, columns...)}
 }
 
 func (i Index) columnNames() []string {
