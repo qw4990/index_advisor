@@ -118,6 +118,7 @@ func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndex
 	return indexes
 }
 
+// enumerateGreedy finds the best combination of indexes with a greedy algorithm.
 func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index],
 	currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
 	if currentIndexes.Size() > numberIndexes {
@@ -142,6 +143,7 @@ func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[I
 	return currentIndexes, currentCost
 }
 
+// enumerateNaive enumerates all possible combinations of indexes with at most numberIndexesNaive indexes and returns the best one.
 func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[Index], numberIndexesNaive int) (Set[Index], float64) {
 	lowestCostIndexes := NewSet[Index]()
 	lowestCost := math.MaxFloat64
