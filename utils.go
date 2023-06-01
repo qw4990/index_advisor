@@ -16,6 +16,27 @@ func must(err error, args ...interface{}) {
 	}
 }
 
+func NewWorkloadFromStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
+	sqls := NewSet[SQL]()
+	for _, rawSQL := range rawSQLs {
+		sqls.Add(SQL{
+			SchemaName: schemaName,
+			Text:       rawSQL,
+			Frequency:  1,
+		})
+	}
+	tableSchemas := NewSet[TableSchema]()
+	for _, createStmt := range createTableStmts {
+		tableSchema, err := ParseCreateTableStmt(schemaName, createStmt)
+		must(err)
+		tableSchemas.Add(tableSchema)
+	}
+	return WorkloadInfo{
+		SQLs:         sqls,
+		TableSchemas: tableSchemas,
+	}
+}
+
 // LoadWorkloadInfo loads workload info from the given path.
 // TODO: for simplification, assume all SQLs are under the same schema here.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {

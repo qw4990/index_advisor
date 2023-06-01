@@ -80,14 +80,16 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	checkWorkloadInfo(compressedWorkloadInfo)
 	checkWorkloadInfo(originalWorkloadInfo)
 	result, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
-	if err != nil {
-		return AdvisorResult{}, err
-	}
+	must(err)
+
+	PrintAdvisorResult(result)
+	return result, err
+}
+
+func PrintAdvisorResult(result AdvisorResult) {
 	for _, index := range result.RecommendedIndexes {
 		fmt.Println(index.DDL())
 	}
 	fmt.Printf("original workload cost: %.2E\n", result.OriginalWorkloadCost)
 	fmt.Printf("optimized workload cost: %.2E\n", result.OptimizedWorkloadCost)
-
-	return result, err
 }

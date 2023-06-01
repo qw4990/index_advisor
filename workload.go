@@ -146,3 +146,16 @@ type WorkloadInfo struct {
 	IndexableColumns Set[Column]
 	SampleRows       []SampleRows
 }
+
+// AllSchemaNames returns all schema names in this workload.
+func (w WorkloadInfo) AllSchemaNames() []string {
+	x := make(map[string]struct{})
+	result := make([]string, 0)
+	for _, t := range w.TableSchemas.ToList() {
+		if _, ok := x[t.SchemaName]; !ok {
+			result = append(result, t.SchemaName)
+			x[t.SchemaName] = struct{}{}
+		}
+	}
+	return result
+}
