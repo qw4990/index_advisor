@@ -94,8 +94,9 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set
 }
 
 // mergeCandidates merges some index candidates.
-// Rule 1: if candidate index X is a prefix of some existing index in the workload, then remove X.
-// Rule 2: if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
+// Rule 1: if candidate index X has no benefit, then remove X.
+// Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
+// Rule 3: if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
 func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index]) Set[Index] {
 	mergedCandidates := NewSet[Index]()
 	candidatesList := candidates.ToList()
@@ -103,29 +104,37 @@ func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index
 	for _, c := range candidatesList {
 		candidateCosts = append(candidateCosts, aa.simulateAndEvaluateCost(workload, ListToSet(c)))
 	}
+	originalCost := aa.simulateAndEvaluateCost(workload, NewSet[Index]())
 	for i, x := range candidatesList {
+		// rule 1
+		if originalCost.Less(candidateCosts[i]) {
+			continue
+		}
+
+		// rule 2
 		table, ok := workload.TableSchemas.Find(TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
 		if !ok {
 			panic("table not found")
 		}
 		for _, existingIndex := range table.Indexes {
 			if existingIndex.PrefixContain(x) {
-				continue // hit rule 1
+				continue
 			}
 		}
 
-		hitRule2 := false
+		// rule 3
+		hitRule3 := false
 		for j, y := range candidatesList {
 			if i == j {
 				continue
 			}
 			// X is a prefix of Y and Y's cost is less than X's
 			if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
-				hitRule2 = true
+				hitRule3 = true
 				break
 			}
 		}
-		if hitRule2 {
+		if hitRule3 {
 			continue
 		}
 		mergedCandidates.Add(x)
