@@ -174,8 +174,9 @@ func (c IndexConfCost) Less(other IndexConfCost) bool {
 	if other.TotalNumberOfIndexColumns == 0 { // not initialized
 		return true
 	}
-	if math.Abs(c.TotalWorkloadQueryCost-other.TotalWorkloadQueryCost) < 0.1 {
-		// if they have the same number of cost, then the less columns, the better.
+	cc, cOther := c.TotalWorkloadQueryCost, other.TotalWorkloadQueryCost
+	if math.Abs(cc-cOther) < 10 || math.Min(cc, cOther)/math.Max(cc, cOther) < 0.01 {
+		// if they have the same cost, then the less columns, the better.
 		return c.TotalNumberOfIndexColumns < other.TotalNumberOfIndexColumns
 	}
 	return c.TotalWorkloadQueryCost < other.TotalWorkloadQueryCost
