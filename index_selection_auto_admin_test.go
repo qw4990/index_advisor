@@ -81,7 +81,6 @@ func TestIndexSelectionAACase1(t *testing.T) {
 			},
 		},
 		{
-			// TODO: actually t(a) is better for this case
 			1, "test", []string{
 				"create table t (a int, b int, c int)",
 			}, []string{
@@ -89,7 +88,7 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 2",
 				"select * from t where b = 1",
 			}, []string{
-				"test.t(a,b)", // a should be selected since it has a higher frequency
+				"test.t(a)",
 			},
 		},
 	}

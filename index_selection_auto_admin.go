@@ -63,7 +63,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			potentialIndexes = aa.mergeCandidates(potentialIndexes)
+			potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
 		}
 	}
 	return currentBestIndexes
@@ -94,17 +94,22 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set
 }
 
 // mergeCandidates merges some index candidates based on their prefix.
-// If any index X is a prefix of another index Y, then X is removed from the set.
-func (aa *autoAdmin) mergeCandidates(candidates Set[Index]) Set[Index] {
+// If X is a prefix of Y and Y's workload cost is less than X's, then X is removed from the set.
+func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index]) Set[Index] {
 	mergedCandidates := NewSet[Index]()
 	candidatesList := candidates.ToList()
+	var candidateCosts []IndexConfCost
+	for _, c := range candidatesList {
+		candidateCosts = append(candidateCosts, aa.simulateAndEvaluateCost(workload, ListToSet(c)))
+	}
 	for i, x := range candidatesList {
 		isPrefixContained := false
 		for j, y := range candidatesList {
 			if i == j {
 				continue
 			}
-			if y.PrefixContain(x) {
+			// X is a prefix of Y and Y's cost is less than X's
+			if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
 				isPrefixContained = true
 				break
 			}
