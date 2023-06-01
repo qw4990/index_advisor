@@ -86,10 +86,10 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
-				"select * from t where a = 1",
+				"select * from t where a = 2",
 				"select * from t where b = 1",
 			}, []string{
-				"test.t(a, b)", // a should be selected since it has a higher frequency
+				"test.t(a,b)", // a should be selected since it has a higher frequency
 			},
 		},
 	}
