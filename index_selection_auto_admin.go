@@ -1,6 +1,8 @@
 package main
 
-import "math"
+import (
+	"math"
+)
 
 /*
 	This algorithm resembles the index selection algorithm published in 1997 by Chaudhuri
@@ -138,7 +140,7 @@ func (aa *autoAdmin) selectIndexCandidates(workload WorkloadInfo, potentialIndex
 
 // potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
 func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndexes Set[Index]) Set[Index] {
-	numberIndexesNaive := min(aa.maxIndexesNative, candidateIndexes.Size())
+	numberIndexesNaive := min(aa.maxIndexesNative, candidateIndexes.Size(), aa.maxIndexes)
 	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 
 	numberIndexes := min(aa.maxIndexes, candidateIndexes.Size())
@@ -149,7 +151,7 @@ func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndex
 // enumerateGreedy finds the best combination of indexes with a greedy algorithm.
 func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index],
 	currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
-	if currentIndexes.Size() > numberIndexes {
+	if currentIndexes.Size() >= numberIndexes {
 		return currentIndexes, currentCost
 	}
 

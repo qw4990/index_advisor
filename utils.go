@@ -303,11 +303,14 @@ func combSetIterate[T SetKey](itemList []T, currSet Set[T], depth, numberOfItems
 	return res
 }
 
-func min[T int | float64](a, b T) T {
-	if a < b {
-		return a
+func min[T int | float64](xs ...T) T {
+	res := xs[0]
+	for _, x := range xs {
+		if x < res {
+			res = x
+		}
 	}
-	return b
+	return res
 }
 
 // checkWorkloadInfo checks whether this workload info is fulfilled.
