@@ -93,8 +93,9 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set
 	return multiColumnCandidates
 }
 
-// mergeCandidates merges some index candidates based on their prefix.
-// If X is a prefix of Y and Y's workload cost is less than X's, then X is removed from the set.
+// mergeCandidates merges some index candidates.
+// Rule 1: if candidate index X is a prefix of some existing index in the workload, then remove X.
+// Rule 2: if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
 func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index]) Set[Index] {
 	mergedCandidates := NewSet[Index]()
 	candidatesList := candidates.ToList()
@@ -103,20 +104,31 @@ func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index
 		candidateCosts = append(candidateCosts, aa.simulateAndEvaluateCost(workload, ListToSet(c)))
 	}
 	for i, x := range candidatesList {
-		isPrefixContained := false
+		table, ok := workload.TableSchemas.Find(TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
+		if !ok {
+			panic("table not found")
+		}
+		for _, existingIndex := range table.Indexes {
+			if existingIndex.PrefixContain(x) {
+				continue // hit rule 1
+			}
+		}
+
+		hitRule2 := false
 		for j, y := range candidatesList {
 			if i == j {
 				continue
 			}
 			// X is a prefix of Y and Y's cost is less than X's
 			if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
-				isPrefixContained = true
+				hitRule2 = true
 				break
 			}
 		}
-		if !isPrefixContained {
-			mergedCandidates.Add(x)
+		if hitRule2 {
+			continue
 		}
+		mergedCandidates.Add(x)
 	}
 	return mergedCandidates
 }

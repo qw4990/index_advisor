@@ -113,6 +113,17 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"test.t(a,b)", // only ab is recommended even if we ask for 2
 			},
 		},
+		{
+			1, "test", []string{
+				"create table t (a int, b int, c int, key(a))",
+			}, []string{
+				"select * from t where a = 1",
+				"select * from t where a = 2",
+				"select * from t where b = 1",
+			}, []string{
+				"test.t(b)",
+			},
+		},
 	}
 	testIndexSelection("", cases)
 }
