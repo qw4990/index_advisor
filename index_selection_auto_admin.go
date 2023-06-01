@@ -63,7 +63,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
+			//potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
 		}
 	}
 	return currentBestIndexes

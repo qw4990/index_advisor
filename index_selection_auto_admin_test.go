@@ -28,11 +28,23 @@ func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []str
 }
 
 type indexSelectionCase struct {
-	numIndexes        int
-	schemaName        string
-	createTableStmts  []string
-	rawSQLs           []string
-	expectedIndexKeys []string
+	numIndexes       int
+	schemaName       string
+	createTableStmts []string
+	rawSQLs          []string
+	expectedIndexes  []Index
+}
+
+func workloadCostForTest(opt WhatIfOptimizer, w WorkloadInfo, idxs []Index) float64 {
+	for _, idx := range idxs {
+		must(opt.CreateHypoIndex(idx))
+	}
+	cost, err := workloadQueryCost(w, opt)
+	must(err)
+	for _, idx := range idxs {
+		must(opt.DropHypoIndex(idx))
+	}
+	return cost
 }
 
 func testIndexSelection(dsn string, cases []indexSelectionCase) {
@@ -41,34 +53,42 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		w, opt := prepareTestWorkload(dsn, c.schemaName, c.createTableStmts, c.rawSQLs)
 		res, err := SelectIndexAAAlgo(w, w, Parameter{MaximumIndexesToRecommend: c.numIndexes}, opt)
 		must(err)
-
-		var actualIndexKeys []string
-		for _, idx := range res.RecommendedIndexes {
-			actualIndexKeys = append(actualIndexKeys, idx.Key())
-		}
-
-		sort.Strings(actualIndexKeys)
-		sort.Strings(c.expectedIndexKeys)
-		if len(actualIndexKeys) != len(c.expectedIndexKeys) {
-			panic(fmt.Sprintf("unexpected %v, %v", c.expectedIndexKeys, actualIndexKeys))
-		}
-		if strings.Join(actualIndexKeys, "|") != strings.Join(c.expectedIndexKeys, "|") {
-			panic(fmt.Sprintf("unexpected %v, %v", c.expectedIndexKeys, actualIndexKeys))
-		}
-
 		PrintAdvisorResult(res)
+
+		notEqual := false
+		if len(c.expectedIndexes) != len(res.RecommendedIndexes) {
+			notEqual = true
+		} else {
+			sort.Slice(res.RecommendedIndexes, func(i, j int) bool { return res.RecommendedIndexes[i].Key() < res.RecommendedIndexes[j].Key() })
+			sort.Slice(c.expectedIndexes, func(i, j int) bool { return c.expectedIndexes[i].Key() < c.expectedIndexes[j].Key() })
+			for i := range c.expectedIndexes {
+				if c.expectedIndexes[i].Key() != res.RecommendedIndexes[i].Key() {
+					notEqual = true
+				}
+			}
+		}
+
+		if notEqual {
+			originalCost := workloadCostForTest(opt, w, nil)
+			expectedCost := workloadCostForTest(opt, w, c.expectedIndexes)
+			actualCost := workloadCostForTest(opt, w, res.RecommendedIndexes)
+			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n", originalCost, expectedCost, actualCost)
+			fmt.Printf("expected: %v\n", c.expectedIndexes)
+			fmt.Printf("actual: %v\n", res.RecommendedIndexes)
+			panic("")
+		}
 	}
 }
 
-func TestIndexSelectionAACase1(t *testing.T) {
+func TestIndexSelectionAACase(t *testing.T) {
 	cases := []indexSelectionCase{
 		{
 			1, "test", []string{
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
-			}, []string{
-				"test.t(a)",
+			}, []Index{
+				newIndex4Test("test.t(a)"),
 			},
 		},
 		{
@@ -76,8 +96,8 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
-			}, []string{
-				"test.t(a)", // only 1 index even if we ask for 2
+			}, []Index{
+				newIndex4Test("test.t(a)"), // only 1 index even if we ask for 2
 			},
 		},
 		{
@@ -87,8 +107,8 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []string{
-				"test.t(a)",
+			}, []Index{
+				newIndex4Test("test.t(a)"),
 			},
 		},
 		{
@@ -98,8 +118,8 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1 and a = 1",
-			}, []string{
-				"test.t(a,b)",
+			}, []Index{
+				newIndex4Test("test.t(a,b)"),
 			},
 		},
 		{
@@ -109,8 +129,8 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1 and a = 1",
-			}, []string{
-				"test.t(a,b)", // only ab is recommended even if we ask for 2
+			}, []Index{
+				newIndex4Test("test.t(a,b)"), // only ab is recommended even if we ask for 2
 			},
 		},
 		{
@@ -120,8 +140,8 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []string{
-				"test.t(b)",
+			}, []Index{
+				newIndex4Test("test.t(b)"),
 			},
 		},
 		{
@@ -131,25 +151,33 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []string{
-				"test.t(a)",
-				"test.t(b)",
+			}, []Index{
+				newIndex4Test("test.t(a)"),
+				newIndex4Test("test.t(b)"),
 			},
 		},
 		{
-			10, "test", []string{
+			2, "test", []string{
 				"create table t (a int, b int, c int, d int , e int)",
 			}, []string{
-				"select * from t where a = 1",
-				"select * from t where a = 1 and b=1",
-				"select * from t where a = 1 and b=1 and c=1",
-				"select * from t where b = 1",
+				"select * from t where a = 1 and c=1",
 				"select * from t where b = 1 and e=1",
-			}, []string{
-				"test.t(a)",
-				"test.t(b)",
+			}, []Index{
+				newIndex4Test("test.t(a,c)"),
+				newIndex4Test("test.t(b,e)"),
 			},
 		},
 	}
 	testIndexSelection("", cases)
+}
+
+func newIndex4Test(key string) Index {
+	// test.t(b)
+	tmp := strings.Split(key, ".")
+	schemaName := tmp[0]
+	tmp = strings.Split(tmp[1], "(")
+	tableName := tmp[0]
+	cols := tmp[1][:len(tmp[1])-1]
+	colNames := strings.Split(cols, ",")
+	return NewIndex(schemaName, tableName, fmt.Sprintf("%v_%v_%v", schemaName, tableName, strings.Join(colNames, "_")), colNames...)
 }
