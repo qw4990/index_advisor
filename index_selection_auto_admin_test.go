@@ -28,6 +28,7 @@ func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []str
 }
 
 type indexSelectionCase struct {
+	numIndexes        int
 	schemaName        string
 	createTableStmts  []string
 	rawSQLs           []string
@@ -38,7 +39,7 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 	for i, c := range cases {
 		fmt.Printf("======================= case %v =======================\n", i)
 		w, opt := prepareTestWorkload(dsn, c.schemaName, c.createTableStmts, c.rawSQLs)
-		res, err := SelectIndexAAAlgo(w, w, Parameter{MaximumIndexesToRecommend: 1}, opt)
+		res, err := SelectIndexAAAlgo(w, w, Parameter{MaximumIndexesToRecommend: c.numIndexes}, opt)
 		must(err)
 
 		var actualIndexKeys []string
@@ -62,12 +63,21 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 func TestIndexSelectionAACase1(t *testing.T) {
 	cases := []indexSelectionCase{
 		{
-			"test", []string{
+			1, "test", []string{
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
 			}, []string{
 				"test.t(a)",
+			},
+		},
+		{
+			2, "test", []string{
+				"create table t (a int, b int, c int)",
+			}, []string{
+				"select * from t where a = 1",
+			}, []string{
+				"test.t(a)", // only 1 index even if we ask for 2
 			},
 		},
 	}

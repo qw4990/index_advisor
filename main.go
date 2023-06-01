@@ -69,9 +69,9 @@ func newLoadWorkloadCmd() *cobra.Command {
 }
 
 type adviseCmdOpt struct {
-	numIndexes             int
-	storageBudgetInBytes   int
-	considerTiFlashReplica bool
+	numIndexes int
+	//storageBudgetInBytes   int
+	//considerTiFlashReplica bool
 
 	dsn                  string
 	schemaName           string
@@ -96,16 +96,16 @@ func newAdviseCmd() *cobra.Command {
 			}
 			_, err = IndexAdvise(opt.workloadCompressAlgo, opt.indexableColsAlgo, opt.indexSelectionAlgo, opt.dsn, info, Parameter{
 				MaximumIndexesToRecommend: opt.numIndexes,
-				StorageBudgetInBytes:      opt.storageBudgetInBytes,
-				ConsiderTiFlashReplica:    opt.considerTiFlashReplica,
+				//StorageBudgetInBytes:      opt.storageBudgetInBytes,
+				//ConsiderTiFlashReplica:    opt.considerTiFlashReplica,
 			})
 			return err
 		},
 	}
 
 	cmd.Flags().IntVar(&opt.numIndexes, "num-indexes", 10, "number of indexes to recommend, 0 means no limit")
-	cmd.Flags().IntVar(&opt.storageBudgetInBytes, "storage-budget", 0, "storage budget in bytes, 0 means no budget")
-	cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
+	//cmd.Flags().IntVar(&opt.storageBudgetInBytes, "storage-budget", 0, "storage budget in bytes, 0 means no budget")
+	//cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
