@@ -124,6 +124,32 @@ func TestIndexSelectionAACase1(t *testing.T) {
 				"test.t(b)",
 			},
 		},
+		{
+			10, "test", []string{
+				"create table t (a int, b int, c int)",
+			}, []string{
+				"select * from t where a = 1",
+				"select * from t where a = 2",
+				"select * from t where b = 1",
+			}, []string{
+				"test.t(a)",
+				"test.t(b)",
+			},
+		},
+		{
+			10, "test", []string{
+				"create table t (a int, b int, c int, d int , e int)",
+			}, []string{
+				"select * from t where a = 1",
+				"select * from t where a = 1 and b=1",
+				"select * from t where a = 1 and b=1 and c=1",
+				"select * from t where b = 1",
+				"select * from t where b = 1 and e=1",
+			}, []string{
+				"test.t(a)",
+				"test.t(b)",
+			},
+		},
 	}
 	testIndexSelection("", cases)
 }
