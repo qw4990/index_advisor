@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
@@ -87,7 +90,11 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 }
 
 func PrintAdvisorResult(result AdvisorResult) {
-	for _, index := range result.RecommendedIndexes {
+	indexes := result.RecommendedIndexes
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].Key() < indexes[j].Key()
+	})
+	for _, index := range indexes {
 		fmt.Println(index.DDL())
 	}
 	fmt.Printf("original workload cost: %.2E\n", result.OriginalWorkloadCost)
