@@ -119,6 +119,19 @@ func (i Index) Key() string {
 	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.columnNames(), ","))
 }
 
+// PrefixContain returns whether j is a prefix of i.
+func (i Index) PrefixContain(j Index) bool {
+	if i.SchemaName != j.SchemaName || i.TableName != j.TableName || len(i.Columns) < len(j.Columns) {
+		return false
+	}
+	for k := range j.Columns {
+		if i.Columns[k].ColumnName != j.Columns[k].ColumnName {
+			return false
+		}
+	}
+	return true
+}
+
 type Plan struct {
 }
 
