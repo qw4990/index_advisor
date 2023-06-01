@@ -1,9 +1,5 @@
 package main
 
-import (
-	"math"
-)
-
 /*
 	This algorithm resembles the index selection algorithm published in 1997 by Chaudhuri
 	and Narasayya. Details can be found in the original paper:
@@ -33,7 +29,7 @@ func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo
 	result.RecommendedIndexes = bestIndexes.ToList()
 	result.OriginalWorkloadCost, err = workloadQueryCost(originalWorkloadInfo, optimizer)
 	must(err)
-	result.OptimizedWorkloadCost = aa.simulateAndEvaluateCost(originalWorkloadInfo, bestIndexes)
+	result.OptimizedWorkloadCost = aa.simulateAndEvaluateCost(originalWorkloadInfo, bestIndexes).TotalWorkloadQueryCost
 	return result, nil
 }
 
@@ -150,20 +146,20 @@ func (aa *autoAdmin) enumerateCombinations(workload WorkloadInfo, candidateIndex
 
 // enumerateGreedy finds the best combination of indexes with a greedy algorithm.
 func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[Index],
-	currentCost float64, candidateIndexes Set[Index], numberIndexes int) (Set[Index], float64) {
+	currentCost IndexConfCost, candidateIndexes Set[Index], numberIndexes int) (Set[Index], IndexConfCost) {
 	if currentIndexes.Size() >= numberIndexes {
 		return currentIndexes, currentCost
 	}
 
 	var bestIndex Index
-	bestCost := math.MaxFloat64
+	var bestCost IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
 		cost := aa.simulateAndEvaluateCost(workload, UnionSet(currentIndexes, ListToSet(index)))
-		if cost < bestCost {
+		if cost.Less(bestCost) {
 			bestIndex, bestCost = index, cost
 		}
 	}
-	if bestCost < currentCost {
+	if bestCost.Less(currentCost) {
 		currentIndexes.Add(bestIndex)
 		candidateIndexes.Remove(bestIndex)
 		currentCost = bestCost
@@ -174,13 +170,13 @@ func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[I
 }
 
 // enumerateNaive enumerates all possible combinations of indexes with at most numberIndexesNaive indexes and returns the best one.
-func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[Index], numberIndexesNaive int) (Set[Index], float64) {
+func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[Index], numberIndexesNaive int) (Set[Index], IndexConfCost) {
 	lowestCostIndexes := NewSet[Index]()
-	lowestCost := math.MaxFloat64
+	var lowestCost IndexConfCost
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range CombSet(candidateIndexes, numberOfIndexes) {
 			cost := aa.simulateAndEvaluateCost(workload, indexCombination)
-			if cost < lowestCost {
+			if cost.Less(lowestCost) {
 				lowestCostIndexes = indexCombination
 				lowestCost = cost
 			}
@@ -189,7 +185,7 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 	return lowestCostIndexes, lowestCost
 }
 
-func (aa *autoAdmin) simulateAndEvaluateCost(workload WorkloadInfo, indexes Set[Index]) float64 {
+func (aa *autoAdmin) simulateAndEvaluateCost(workload WorkloadInfo, indexes Set[Index]) IndexConfCost {
 	for _, index := range indexes.ToList() {
 		must(aa.optimizer.CreateHypoIndex(index))
 	}
@@ -198,7 +194,11 @@ func (aa *autoAdmin) simulateAndEvaluateCost(workload WorkloadInfo, indexes Set[
 	for _, index := range indexes.ToList() {
 		must(aa.optimizer.DropHypoIndex(index))
 	}
-	return cost
+	var totCols int
+	for _, index := range indexes.ToList() {
+		totCols += len(index.Columns)
+	}
+	return IndexConfCost{cost, totCols}
 }
 
 func (aa *autoAdmin) potentialIndexesForQuery(query SQL, potentialIndexes Set[Index]) Set[Index] {

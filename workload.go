@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -158,4 +159,24 @@ func (w WorkloadInfo) AllSchemaNames() []string {
 		}
 	}
 	return result
+}
+
+// IndexConfCost is the cost of a index configuration.
+type IndexConfCost struct {
+	TotalWorkloadQueryCost    float64
+	TotalNumberOfIndexColumns int
+}
+
+func (c IndexConfCost) Less(other IndexConfCost) bool {
+	if c.TotalNumberOfIndexColumns == 0 { // not initialized
+		return false
+	}
+	if other.TotalNumberOfIndexColumns == 0 { // not initialized
+		return true
+	}
+	if math.Abs(c.TotalWorkloadQueryCost-other.TotalWorkloadQueryCost) < 0.1 {
+		// if they have the same number of cost, then the less columns, the better.
+		return c.TotalNumberOfIndexColumns < other.TotalNumberOfIndexColumns
+	}
+	return c.TotalWorkloadQueryCost < other.TotalWorkloadQueryCost
 }
