@@ -6,6 +6,7 @@ import (
 	"github.com/pingcap/parser/ast"
 	"os"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -166,6 +167,7 @@ type Set[T SetKey] interface {
 	ToList() []T
 	Size() int
 	Clone() Set[T]
+	String() string
 }
 
 type setImpl[T SetKey] struct {
@@ -229,6 +231,15 @@ func (s *setImpl[T]) Clone() Set[T] {
 	clone := NewSet[T]()
 	clone.AddSet(s)
 	return clone
+}
+
+func (s *setImpl[T]) String() string {
+	var items []string
+	for _, item := range s.s {
+		items = append(items, item.Key())
+	}
+	sort.Strings(items)
+	return fmt.Sprintf("{%v}", strings.Join(items, ", "))
 }
 
 func ListToSet[T SetKey](items ...T) Set[T] {
