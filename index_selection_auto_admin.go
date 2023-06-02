@@ -63,10 +63,10 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			//potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
+			potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
 		}
 	}
-	return currentBestIndexes
+	return aa.filterIndexes(currentBestIndexes)
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set[Index]) Set[Index] {
@@ -93,10 +93,34 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set
 	return multiColumnCandidates
 }
 
+// filterIndexes filters some obviously unreasonable indexes.
+// Rule 1: if index X is a prefix of index Y, then remove X.
+// Rule 2(TBD): remove unnecessary suffix columns, e.g. X(a, b, c) to X(a, b) if no query can gain benefit from the suffix column c.
+func (aa *autoAdmin) filterIndexes(indexes Set[Index]) Set[Index] {
+	indexList := indexes.ToList()
+	filteredIndexes := NewSet[Index]()
+	for i, x := range indexList {
+		filtered := false
+		for j, y := range indexList {
+			if i == j {
+				continue
+			}
+			if y.PrefixContain(x) {
+				filtered = true
+				continue
+			}
+		}
+		if !filtered {
+			filteredIndexes.Add(x)
+		}
+	}
+	return filteredIndexes
+}
+
 // mergeCandidates merges some index candidates.
 // Rule 1: if candidate index X has no benefit, then remove X.
 // Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
-// Rule 3: if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
+// Rule 3(TBD): if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
 func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index]) Set[Index] {
 	mergedCandidates := NewSet[Index]()
 	candidatesList := candidates.ToList()
@@ -122,21 +146,21 @@ func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index
 			}
 		}
 
-		// rule 3
-		hitRule3 := false
-		for j, y := range candidatesList {
-			if i == j {
-				continue
-			}
-			// X is a prefix of Y and Y's cost is less than X's
-			if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
-				hitRule3 = true
-				break
-			}
-		}
-		if hitRule3 {
-			continue
-		}
+		//// rule 3
+		//hitRule3 := false
+		//for j, y := range candidatesList {
+		//	if i == j {
+		//		continue
+		//	}
+		//	// X is a prefix of Y and Y's cost is less than X's
+		//	if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
+		//		hitRule3 = true
+		//		break
+		//	}
+		//}
+		//if hitRule3 {
+		//	continue
+		//}
 		mergedCandidates.Add(x)
 	}
 	return mergedCandidates
