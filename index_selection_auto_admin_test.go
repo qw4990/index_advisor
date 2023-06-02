@@ -160,8 +160,8 @@ func TestIndexSelectionAACase(t *testing.T) {
 			2, "test", []string{
 				"create table t (a int, b int, c int, d int , e int)",
 			}, []string{
-				"select * from t where a = 1 and c=1",
-				"select * from t where b = 1 and e=1",
+				"select * from t where a = 1 and c = 1",
+				"select * from t where b = 1 and e = 1",
 			}, []Index{
 				newIndex4Test("test.t(a,c)"),
 				newIndex4Test("test.t(b,e)"),
