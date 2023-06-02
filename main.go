@@ -69,7 +69,7 @@ func newLoadWorkloadCmd() *cobra.Command {
 }
 
 type adviseCmdOpt struct {
-	numIndexes int
+	maxNumIndexes int
 	//storageBudgetInBytes   int
 	//considerTiFlashReplica bool
 
@@ -95,7 +95,7 @@ func newAdviseCmd() *cobra.Command {
 				return err
 			}
 			_, err = IndexAdvise(opt.workloadCompressAlgo, opt.indexableColsAlgo, opt.indexSelectionAlgo, opt.dsn, info, Parameter{
-				MaximumIndexesToRecommend: opt.numIndexes,
+				MaximumIndexesToRecommend: opt.maxNumIndexes,
 				//StorageBudgetInBytes:      opt.storageBudgetInBytes,
 				//ConsiderTiFlashReplica:    opt.considerTiFlashReplica,
 			})
@@ -103,7 +103,7 @@ func newAdviseCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opt.numIndexes, "num-indexes", 10, "number of indexes to recommend, 0 means no limit")
+	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 10, "max number of indexes to recommend, 0 means no limit")
 	//cmd.Flags().IntVar(&opt.storageBudgetInBytes, "storage-budget", 0, "storage budget in bytes, 0 means no budget")
 	//cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
