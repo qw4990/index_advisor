@@ -128,6 +128,22 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	return p.ParseOneStmt(sqlText, "", "")
 }
 
+func evaluateIndexConfCost(info WorkloadInfo, optimizer WhatIfOptimizer, indexes Set[Index]) IndexConfCost {
+	for _, index := range indexes.ToList() {
+		must(optimizer.CreateHypoIndex(index))
+	}
+	cost, err := workloadQueryCost(info, optimizer)
+	must(err)
+	for _, index := range indexes.ToList() {
+		must(optimizer.DropHypoIndex(index))
+	}
+	var totCols int
+	for _, index := range indexes.ToList() {
+		totCols += len(index.Columns)
+	}
+	return IndexConfCost{cost, totCols}
+}
+
 func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, error) {
 	var workloadCost float64
 	var queryCnt int

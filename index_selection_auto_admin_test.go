@@ -80,6 +80,19 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 	}
 }
 
+func TestSimulateAndCost(t *testing.T) {
+	w, opt := prepareTestWorkload("", "test",
+		[]string{"create table t (a int, b int, c int, d int , e int)"},
+		[]string{
+			"select * from t where a = 1 and c = 1",
+			"select * from t where b = 1 and e = 1",
+		})
+
+	c2 := evaluateIndexConfCost(w, opt, ListToSet(NewIndex("test", "t", "ac", "a", "c")))
+	c1 := evaluateIndexConfCost(w, opt, ListToSet(NewIndex("test", "t", "a", "a")))
+	fmt.Println(c1, c2)
+}
+
 func TestIndexSelectionAACase(t *testing.T) {
 	cases := []indexSelectionCase{
 		{
