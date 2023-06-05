@@ -15,6 +15,7 @@ func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []str
 	}
 	opt, err := NewTiDBWhatIfOptimizer("root:@tcp(127.0.0.1:4000)/")
 	must(err)
+	opt.SetDebug(true)
 
 	for _, schemaName := range w.AllSchemaNames() {
 		must(opt.Execute("drop database if exists " + schemaName))
@@ -81,16 +82,27 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 }
 
 func TestSimulateAndCost(t *testing.T) {
-	w, opt := prepareTestWorkload("", "test",
+	_, opt := prepareTestWorkload("", "test",
 		[]string{"create table t (a int, b int, c int, d int , e int)"},
 		[]string{
 			"select * from t where a = 1 and c = 1",
 			"select * from t where b = 1 and e = 1",
 		})
 
-	c2 := evaluateIndexConfCost(w, opt, ListToSet(NewIndex("test", "t", "ac", "a", "c")))
-	c1 := evaluateIndexConfCost(w, opt, ListToSet(NewIndex("test", "t", "a", "a")))
-	fmt.Println(c1, c2)
+	opt.CreateHypoIndex(NewIndex("test", "t", "a", "a"))
+	plan1, _ := opt.GetPlan("select * from t where a = 1 and c < 1")
+	opt.DropHypoIndex(NewIndex("test", "t", "a", "a"))
+
+	for _, p := range plan1 {
+		fmt.Println(">> ", p)
+	}
+
+	opt.CreateHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
+	plan2, _ := opt.GetPlan("select * from t where a = 1 and c < 1")
+	opt.DropHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
+	for _, p := range plan2 {
+		fmt.Println(">> ", p)
+	}
 }
 
 func TestIndexSelectionAACase(t *testing.T) {

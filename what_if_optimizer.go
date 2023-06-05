@@ -31,15 +31,19 @@ type WhatIfOptimizer interface {
 	CreateHypoIndex(index Index) error
 	DropHypoIndex(index Index) error
 
+	GetPlan(query string) (plan [][]string, err error)
 	GetPlanCost(query string) (planCost float64, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
+
+	SetDebug(flag bool) // print each query if set to true
 }
 
 type TiDBWhatIfOptimizer struct {
-	db    *sql.DB
-	stats WhatIfOptimizerStats
+	db        *sql.DB
+	stats     WhatIfOptimizerStats
+	debugFlag bool
 }
 
 func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
@@ -54,7 +58,7 @@ func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}}, nil
+	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}, false}, nil
 }
 
 func (o *TiDBWhatIfOptimizer) ResetStats() {
@@ -72,6 +76,9 @@ func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, dur *time.Duratio
 
 func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 	defer o.recordStats(time.Now(), &o.stats.ExecuteTime, &o.stats.ExecuteCount)
+	if o.debugFlag {
+		fmt.Println(sql)
+	}
 	_, err := o.db.Exec(sql)
 	return err
 }
@@ -95,7 +102,7 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error) {
+func (o *TiDBWhatIfOptimizer) GetPlan(query string) (plan [][]string, err error) {
 	//	mysql> explain format='verbose' select * from t;
 	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
 	//	| id                    | estRows  | estCost    | task      | access object | operator info                  |
@@ -103,7 +110,7 @@ func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error)
 	//	| TableReader_5         | 10000.00 | 177906.67  | root      |               | data:TableFullScan_4           |
 	//	| └─TableFullScan_4     | 10000.00 | 2035000.00 | cop[tikv] | table:t       | keep order:false, stats:pseudo |
 	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
-	result, err := o.db.Query("explain format = 'verbose' " + query)
+	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +127,20 @@ func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error)
 
 func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (planCost float64, err error) {
 	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
-	plan, err := o.getPlan(query)
+	plan, err := o.GetPlan(query)
 	if err != nil {
 		return 0, err
 	}
 	return strconv.ParseFloat(plan[0][2], 64)
+}
+
+func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {
+	o.debugFlag = flag
+}
+
+func (o *TiDBWhatIfOptimizer) query(query string) (*sql.Rows, error) {
+	if o.debugFlag {
+		fmt.Println(query)
+	}
+	return o.db.Query(query)
 }
