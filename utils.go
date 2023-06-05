@@ -46,8 +46,9 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 	rawSQLs, err := ParseRawSQLsFromFile(sqlFilePath)
 	must(err, workloadInfoPath)
 	sqls := NewSet[SQL]()
-	for _, rawSQL := range rawSQLs {
+	for i, rawSQL := range rawSQLs {
 		sqls.Add(SQL{
+			Alias:      fmt.Sprintf("q%v", i+1),
 			SchemaName: schemaName,
 			Text:       rawSQL,
 			Frequency:  1,

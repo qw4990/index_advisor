@@ -16,6 +16,7 @@ const (
 )
 
 type SQL struct { // DQL or DML
+	Alias            string
 	SchemaName       string
 	Text             string
 	Frequency        int
