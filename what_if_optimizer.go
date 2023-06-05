@@ -31,8 +31,7 @@ type WhatIfOptimizer interface {
 	CreateHypoIndex(index Index) error
 	DropHypoIndex(index Index) error
 
-	GetPlan(query string) (plan [][]string, err error)
-	GetPlanCost(query string) (planCost float64, err error)
+	GetPlanCost(query string) (plan Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -102,7 +101,7 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) GetPlan(query string) (plan [][]string, err error) {
+func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error) {
 	//	mysql> explain format='verbose' select * from t;
 	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
 	//	| id                    | estRows  | estCost    | task      | access object | operator info                  |
@@ -125,13 +124,14 @@ func (o *TiDBWhatIfOptimizer) GetPlan(query string) (plan [][]string, err error)
 	return
 }
 
-func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (planCost float64, err error) {
+func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (plan Plan, err error) {
 	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
-	plan, err := o.GetPlan(query)
+	p, err := o.getPlan(query)
 	if err != nil {
-		return 0, err
+		return Plan{}, err
 	}
-	return strconv.ParseFloat(plan[0][2], 64)
+	v, err := strconv.ParseFloat(p[0][2], 64)
+	return Plan{p, v}, err
 }
 
 func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {

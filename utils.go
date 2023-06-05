@@ -133,8 +133,7 @@ func evaluateIndexConfCost(info WorkloadInfo, optimizer WhatIfOptimizer, indexes
 	for _, index := range indexes.ToList() {
 		must(optimizer.CreateHypoIndex(index))
 	}
-	cost, _, err := workloadQueryCost(info, optimizer)
-	must(err)
+	cost := workloadQueryCost(info, optimizer)
 	for _, index := range indexes.ToList() {
 		must(optimizer.DropHypoIndex(index))
 	}
@@ -145,20 +144,18 @@ func evaluateIndexConfCost(info WorkloadInfo, optimizer WhatIfOptimizer, indexes
 	return IndexConfCost{cost, totCols}
 }
 
-func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) (float64, map[string]float64, error) {
+func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) float64 {
 	var workloadCost float64
-	queryCost := make(map[string]float64)
 	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
 		if sql.Type() != SQLTypeSelect {
 			continue
 		}
 		must(optimizer.Execute(`use ` + sql.SchemaName))
-		cost, err := optimizer.GetPlanCost(sql.Text)
+		cost, _, err := optimizer.GetPlanCost(sql.Text)
 		must(err, sql.Text)
-		queryCost[sql.Text] = cost
 		workloadCost += cost * float64(sql.Frequency)
 	}
-	return workloadCost, queryCost, nil
+	return workloadCost
 }
 
 // TempIndexName returns a temp index name for the given columns.

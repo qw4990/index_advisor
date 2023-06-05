@@ -9,7 +9,7 @@ package main
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (AdvisorResult, error) {
+func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (Set[Index], error) {
 	aa := &autoAdmin{
 		optimizer:  optimizer,
 		maxIndexes: parameter.MaximumIndexesToRecommend,
@@ -23,22 +23,7 @@ func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo
 	optimizer.ResetStats()
 	bestIndexes := aa.calculateBestIndexes(compressedWorkloadInfo)
 	Debugf("what-if optimizer stats: %v", optimizer.Stats().Format())
-
-	var err error
-	result := AdvisorResult{}
-	result.RecommendedIndexes = bestIndexes.ToList()
-	result.OriginalWorkloadCost, result.OriginalQueryCosts, err = workloadQueryCost(originalWorkloadInfo, optimizer)
-	must(err)
-
-	for _, index := range bestIndexes.ToList() {
-		must(optimizer.CreateHypoIndex(index))
-	}
-	result.OptimizedWorkloadCost, result.OptimizedQueryCosts, err = workloadQueryCost(originalWorkloadInfo, optimizer)
-	must(err)
-	for _, index := range bestIndexes.ToList() {
-		must(optimizer.DropHypoIndex(index))
-	}
-	return result, nil
+	return bestIndexes, nil
 }
 
 type autoAdmin struct {

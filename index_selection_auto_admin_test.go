@@ -40,8 +40,7 @@ func workloadCostForTest(opt WhatIfOptimizer, w WorkloadInfo, idxs []Index) floa
 	for _, idx := range idxs {
 		must(opt.CreateHypoIndex(idx))
 	}
-	cost, _, err := workloadQueryCost(w, opt)
-	must(err)
+	cost := workloadQueryCost(w, opt)
 	for _, idx := range idxs {
 		must(opt.DropHypoIndex(idx))
 	}
@@ -54,16 +53,16 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		w, opt := prepareTestWorkload(dsn, c.schemaName, c.createTableStmts, c.rawSQLs)
 		res, err := SelectIndexAAAlgo(w, w, Parameter{MaximumIndexesToRecommend: c.numIndexes}, opt)
 		must(err)
-		PrintAdvisorResult(res)
+		indexList := res.ToList()
 
 		notEqual := false
-		if len(c.expectedIndexes) != len(res.RecommendedIndexes) {
+		if len(c.expectedIndexes) != len(indexList) {
 			notEqual = true
 		} else {
-			sort.Slice(res.RecommendedIndexes, func(i, j int) bool { return res.RecommendedIndexes[i].Key() < res.RecommendedIndexes[j].Key() })
+			sort.Slice(indexList, func(i, j int) bool { return indexList[i].Key() < indexList[j].Key() })
 			sort.Slice(c.expectedIndexes, func(i, j int) bool { return c.expectedIndexes[i].Key() < c.expectedIndexes[j].Key() })
 			for i := range c.expectedIndexes {
-				if c.expectedIndexes[i].Key() != res.RecommendedIndexes[i].Key() {
+				if c.expectedIndexes[i].Key() != indexList[i].Key() {
 					notEqual = true
 				}
 			}
@@ -72,10 +71,10 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		if notEqual {
 			originalCost := workloadCostForTest(opt, w, nil)
 			expectedCost := workloadCostForTest(opt, w, c.expectedIndexes)
-			actualCost := workloadCostForTest(opt, w, res.RecommendedIndexes)
+			actualCost := workloadCostForTest(opt, w, indexList)
 			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n", originalCost, expectedCost, actualCost)
 			fmt.Printf("expected: %v\n", c.expectedIndexes)
-			fmt.Printf("actual: %v\n", res.RecommendedIndexes)
+			fmt.Printf("actual: %v\n", indexList)
 			panic("")
 		}
 	}
@@ -90,17 +89,17 @@ func TestSimulateAndCost(t *testing.T) {
 		})
 
 	opt.CreateHypoIndex(NewIndex("test", "t", "a", "a"))
-	plan1, _ := opt.GetPlan("select * from t where a = 1 and c < 1")
+	plan1, _ := opt.GetPlanCost("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(NewIndex("test", "t", "a", "a"))
 
-	for _, p := range plan1 {
+	for _, p := range plan1.Plan {
 		fmt.Println(">> ", p)
 	}
 
 	opt.CreateHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
-	plan2, _ := opt.GetPlan("select * from t where a = 1 and c < 1")
+	plan2, _ := opt.GetPlanCost("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
-	for _, p := range plan2 {
+	for _, p := range plan2.Plan {
 		fmt.Println(">> ", p)
 	}
 }

@@ -135,6 +135,8 @@ func (i Index) PrefixContain(j Index) bool {
 }
 
 type Plan struct {
+	Plan [][]string
+	Cost float64 // total cost of this plan
 }
 
 type SampleRows struct {
