@@ -27,9 +27,17 @@ func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo
 	var err error
 	result := AdvisorResult{}
 	result.RecommendedIndexes = bestIndexes.ToList()
-	result.OriginalWorkloadCost, err = workloadQueryCost(originalWorkloadInfo, optimizer)
+	result.OriginalWorkloadCost, result.OriginalQueryCosts, err = workloadQueryCost(originalWorkloadInfo, optimizer)
 	must(err)
-	result.OptimizedWorkloadCost = evaluateIndexConfCost(originalWorkloadInfo, aa.optimizer, bestIndexes).TotalWorkloadQueryCost
+
+	for _, index := range bestIndexes.ToList() {
+		must(optimizer.CreateHypoIndex(index))
+	}
+	result.OptimizedWorkloadCost, result.OptimizedQueryCosts, err = workloadQueryCost(originalWorkloadInfo, optimizer)
+	must(err)
+	for _, index := range bestIndexes.ToList() {
+		must(optimizer.DropHypoIndex(index))
+	}
 	return result, nil
 }
 

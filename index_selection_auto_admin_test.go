@@ -40,7 +40,7 @@ func workloadCostForTest(opt WhatIfOptimizer, w WorkloadInfo, idxs []Index) floa
 	for _, idx := range idxs {
 		must(opt.CreateHypoIndex(idx))
 	}
-	cost, err := workloadQueryCost(w, opt)
+	cost, _, err := workloadQueryCost(w, opt)
 	must(err)
 	for _, idx := range idxs {
 		must(opt.DropHypoIndex(idx))

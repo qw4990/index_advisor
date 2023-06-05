@@ -46,8 +46,10 @@ type Parameter struct {
 
 type AdvisorResult struct {
 	RecommendedIndexes    []Index
-	OriginalWorkloadCost  float64 // the total workload cost without these recommended indexes
+	OriginalWorkloadCost  float64 // the total workload cost without these recommended
+	OriginalQueryCosts    map[string]float64
 	OptimizedWorkloadCost float64 // the total workload cost with these recommended indexes
+	OptimizedQueryCosts   map[string]float64
 }
 
 func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, originalWorkloadInfo WorkloadInfo, param Parameter) (AdvisorResult, error) {
@@ -99,4 +101,19 @@ func PrintAdvisorResult(result AdvisorResult) {
 	}
 	fmt.Printf("original workload cost: %.2E\n", result.OriginalWorkloadCost)
 	fmt.Printf("optimized workload cost: %.2E\n", result.OptimizedWorkloadCost)
+
+	type queryCost struct {
+		text string
+		rate float64 // optimized / original
+	}
+	var qc []queryCost
+	for text, cost := range result.OriginalQueryCosts {
+		qc = append(qc, queryCost{text, (cost - result.OptimizedQueryCosts[text]) / cost})
+	}
+	sort.Slice(qc, func(i, j int) bool {
+		return qc[i].rate < qc[j].rate
+	})
+	for i := 0; i < len(qc) && i < 5; i++ {
+		fmt.Printf("query cost: %.2E, %s\n", qc[i].rate, qc[i].text)
+	}
 }
