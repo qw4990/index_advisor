@@ -136,6 +136,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		return planDiffs[i].OptPlan.Cost/planDiffs[i].OriPlan.Cost < planDiffs[j].OptPlan.Cost/planDiffs[j].OriPlan.Cost
 	})
 
+	var oriTotCost, optTotCost float64
 	for i, diff := range planDiffs {
 		content := ""
 		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
@@ -152,7 +153,10 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
 		}
 		saveContentTo(ppath, content)
+		oriTotCost += diff.OriPlan.Cost
+		optTotCost += diff.OptPlan.Cost
 	}
+	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
 }
 
 func saveContentTo(fpath, content string) {
