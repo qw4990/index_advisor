@@ -155,6 +155,10 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		saveContentTo(ppath, content)
 		oriTotCost += diff.OriPlan.Cost
 		optTotCost += diff.OptPlan.Cost
+
+		if diff.SQL.Alias != "" {
+			fmt.Printf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.Cost/diff.OriPlan.Cost)
+		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
 }
