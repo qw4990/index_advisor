@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"sort"
+	"strings"
 )
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
@@ -44,7 +47,7 @@ type Parameter struct {
 	//ConsiderRemoveExistingIndexes bool // whether to consider removing existing indexes
 }
 
-func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, originalWorkloadInfo WorkloadInfo, param Parameter) error {
+func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo WorkloadInfo, param Parameter) error {
 	Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
 
 	compress, ok := compressAlgorithms[compressAlgo]
@@ -79,20 +82,23 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn string, origina
 	recommendedIndexes, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	must(err)
 
-	PrintAdvisorResult(recommendedIndexes, originalWorkloadInfo, optimizer)
+	SaveResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)
 	return nil
 }
 
-func PrintAdvisorResult(indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
+func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	indexList := indexes.ToList()
 	sort.Slice(indexList, func(i, j int) bool {
 		return indexList[i].Key() < indexList[j].Key()
 	})
+	ddlContent := ""
 	for _, index := range indexList {
-		fmt.Println(index.DDL() + ";")
+		ddlContent += index.DDL() + ";\n"
 	}
+	fmt.Println(ddlContent)
+	saveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
 
 	sqls := workload.SQLs.ToList()
 	var oriPlans, optPlans []Plan
@@ -130,24 +136,33 @@ func PrintAdvisorResult(indexes Set[Index], workload WorkloadInfo, optimizer Wha
 		return planDiffs[i].OptPlan.Cost/planDiffs[i].OriPlan.Cost < planDiffs[j].OptPlan.Cost/planDiffs[j].OriPlan.Cost
 	})
 
-	for _, diff := range planDiffs {
-		fmt.Println("-------------------------------------------------")
+	for i, diff := range planDiffs {
+		content := ""
+		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
+		content += fmt.Sprintf("SQL: %s\n", diff.SQL.Text)
+		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.Cost/diff.OriPlan.Cost)
+		content += "\n\n------------------ original plan ------------------\n"
+		content += FormatPlan(diff.OriPlan)
+		content += "\n\n------------------ optimized plan -----------------\n"
+		content += FormatPlan(diff.OptPlan)
+		var ppath string
 		if diff.SQL.Alias != "" {
-			fmt.Printf("SQL: %s\n", diff.SQL.Alias)
+			ppath = path.Join(savePath, fmt.Sprintf("%s.txt", diff.SQL.Alias))
 		} else {
-			fmt.Printf("SQL: %s\n", diff.SQL.Text)
+			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
 		}
-		ratio := diff.OptPlan.Cost / diff.OriPlan.Cost
-		fmt.Printf("Cost Ratio: %.2f\n", diff.OptPlan.Cost/diff.OriPlan.Cost)
-		if ratio < 0.8 {
-			PrintPlan(diff.OriPlan)
-			PrintPlan(diff.OptPlan)
-		}
+		saveContentTo(ppath, content)
 	}
 }
 
-func PrintPlan(p Plan) {
+func saveContentTo(fpath, content string) {
+	must(os.WriteFile(fpath, []byte(content), 0644))
+}
+
+func FormatPlan(p Plan) string {
+	var lines []string
 	for _, line := range p.Plan {
-		fmt.Println(line)
+		lines = append(lines, strings.Join(line, "\t"))
 	}
+	return strings.Join(lines, "\n")
 }
