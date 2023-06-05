@@ -108,12 +108,12 @@ func PrintAdvisorResult(result AdvisorResult) {
 	}
 	var qc []queryCost
 	for text, cost := range result.OriginalQueryCosts {
-		qc = append(qc, queryCost{text, (cost - result.OptimizedQueryCosts[text]) / cost})
+		qc = append(qc, queryCost{text, result.OptimizedQueryCosts[text] / cost})
 	}
 	sort.Slice(qc, func(i, j int) bool {
 		return qc[i].rate < qc[j].rate
 	})
 	for i := 0; i < len(qc) && i < 5; i++ {
-		fmt.Printf("query cost: %.2E, %s\n", qc[i].rate, qc[i].text)
+		fmt.Printf("query cost: %.3f%%, %s\n", qc[i].rate*100, qc[i].text)
 	}
 }
