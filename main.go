@@ -50,6 +50,7 @@ func newRunWorkloadCmd() *cobra.Command {
 			})
 
 			savePath := path.Join(opt.workloadPath, "result")
+			summaryContent := ""
 			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {
 					continue
@@ -74,9 +75,12 @@ func newRunWorkloadCmd() *cobra.Command {
 				for _, p := range plans {
 					content += fmt.Sprintf("%v\n", FormatPlan(p))
 				}
-				saveContentTo(fmt.Sprintf("%v/%v_%v.txt", savePath, opt.prefix, sql.Alias), content)
+				saveContentTo(fmt.Sprintf("%v/%v%v.txt", savePath, opt.prefix, sql.Alias), content)
+
+				summaryContent += fmt.Sprintf("%v %v\n", sql.Alias, avgTime)
 				fmt.Println(sql.Alias, avgTime)
 			}
+			saveContentTo(fmt.Sprintf("%v/%vsummary.txt", savePath, opt.prefix), summaryContent)
 			return nil
 		},
 	}
