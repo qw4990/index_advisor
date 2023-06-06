@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -136,7 +137,12 @@ func (i Index) PrefixContain(j Index) bool {
 
 type Plan struct {
 	Plan [][]string
-	Cost float64 // total cost of this plan
+}
+
+func (p Plan) PlanCost() float64 {
+	v, err := strconv.ParseFloat(p.Plan[0][2], 64)
+	must(err)
+	return v
 }
 
 type SampleRows struct {

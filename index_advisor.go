@@ -103,7 +103,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 	sqls := workload.SQLs.ToList()
 	var oriPlans, optPlans []Plan
 	for _, sql := range sqls {
-		p, err := optimizer.GetPlanCost(false, sql.Text)
+		p, err := optimizer.ExplainQuery(sql.Text)
 		must(err)
 		oriPlans = append(oriPlans, p)
 	}
@@ -111,7 +111,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		must(optimizer.CreateHypoIndex(idx))
 	}
 	for _, sql := range sqls {
-		p, err := optimizer.GetPlanCost(false, sql.Text)
+		p, err := optimizer.ExplainQuery(sql.Text)
 		must(err)
 		optPlans = append(optPlans, p)
 	}
@@ -133,7 +133,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		})
 	}
 	sort.Slice(planDiffs, func(i, j int) bool {
-		return planDiffs[i].OptPlan.Cost/planDiffs[i].OriPlan.Cost < planDiffs[j].OptPlan.Cost/planDiffs[j].OriPlan.Cost
+		return planDiffs[i].OptPlan.PlanCost()/planDiffs[i].OriPlan.PlanCost() < planDiffs[j].OptPlan.PlanCost()/planDiffs[j].OriPlan.PlanCost()
 	})
 
 	var oriTotCost, optTotCost float64
@@ -141,7 +141,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		content := ""
 		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
 		content += fmt.Sprintf("SQL: %s\n", diff.SQL.Text)
-		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.Cost/diff.OriPlan.Cost)
+		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
 		content += FormatPlan(diff.OriPlan)
 		content += "\n\n------------------ optimized plan -----------------\n"
@@ -153,11 +153,11 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
 		}
 		saveContentTo(ppath, content)
-		oriTotCost += diff.OriPlan.Cost
-		optTotCost += diff.OptPlan.Cost
+		oriTotCost += diff.OriPlan.PlanCost()
+		optTotCost += diff.OptPlan.PlanCost()
 
 		if diff.SQL.Alias != "" {
-			fmt.Printf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.Cost/diff.OriPlan.Cost)
+			fmt.Printf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
