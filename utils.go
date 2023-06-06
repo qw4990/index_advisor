@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
@@ -17,6 +18,39 @@ func must(err error, args ...interface{}) {
 	}
 }
 
+func fileExists(filename string) (exist, isDir bool) {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false, false
+	}
+	return true, info.IsDir()
+}
+
+// ParseRawSQLsFromDir parses raw SQLs from the given directory.
+// Each *.sql in this directory is parsed as a single SQL.
+func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
+	des, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, entry := range des {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		fpath := path.Join(dirPath, entry.Name())
+		content, err := os.ReadFile(fpath)
+		if err != nil {
+			return nil, nil, err
+		}
+		sql := strings.TrimSpace(string(content))
+		sqls = append(sqls, sql)
+		fileNames = append(fileNames, entry.Name())
+	}
+	return
+}
+
+// ParseRawSQLsFromFile parses raw SQLs from the given file.
+// It ignore all comments, and assume all SQLs are separated by ';'.
 func ParseRawSQLsFromFile(fpath string) ([]string, error) {
 	data, err := os.ReadFile(fpath)
 	if err != nil {
