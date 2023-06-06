@@ -140,7 +140,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 	for i, diff := range planDiffs {
 		content := ""
 		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
-		content += fmt.Sprintf("SQL: %s\n", diff.SQL.Text)
+		content += fmt.Sprintf("SQL: \n%s\n\n", diff.SQL.Text)
 		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
 		content += FormatPlan(diff.OriPlan)

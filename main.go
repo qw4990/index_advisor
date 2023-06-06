@@ -48,20 +48,32 @@ func newRunWorkloadCmd() *cobra.Command {
 				return sqls[i].Alias < sqls[j].Alias
 			})
 
+			savePath := path.Join(opt.workloadPath, "result")
 			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {
 					continue
 				}
 				var execTimes []time.Duration
+				var plans []Plan
 				for k := 0; k < 5; k++ {
 					p, err := db.ExplainAnalyzeQuery(sql.Text)
 					must(err)
+					plans = append(plans, p)
 					execTimes = append(execTimes, p.ExecTime())
 				}
 				sort.Slice(execTimes, func(i, j int) bool {
 					return execTimes[i] < execTimes[j]
 				})
 				avgTime := (execTimes[1] + execTimes[2] + execTimes[3]) / 3
+
+				content := fmt.Sprintf("Alias: %s\n", sql.Alias)
+				content += fmt.Sprintf("AvgTime: %v\n", avgTime)
+				content += fmt.Sprintf("ExecTimes: %v\n", execTimes)
+				content += fmt.Sprintf("SQL:\n %s\n\n", sql.Text)
+				for _, p := range plans {
+					content += fmt.Sprintf("%v\n", FormatPlan(p))
+				}
+				saveContentTo(fmt.Sprintf("%v/exec_%v.txt", savePath, sql.Alias), content)
 				fmt.Println(sql.Alias, avgTime)
 			}
 			return nil
