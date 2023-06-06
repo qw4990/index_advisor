@@ -49,9 +49,9 @@ func newRunWorkloadCmd() *cobra.Command {
 				}
 				var execTimes []time.Duration
 				for k := 0; k < 5; k++ {
-					_, t, err := db.ExplainAnalyzeQuery(sql.Text)
+					p, err := db.ExplainAnalyzeQuery(sql.Text)
 					must(err)
-					execTimes = append(execTimes, t)
+					execTimes = append(execTimes, p.ExecTime())
 				}
 				sort.Slice(execTimes, func(i, j int) bool {
 					return execTimes[i] < execTimes[j]

@@ -31,7 +31,7 @@ type WhatIfOptimizer interface {
 	DropHypoIndex(index Index) error
 
 	ExplainQuery(query string) (plan Plan, err error)
-	ExplainAnalyzeQuery(query string) (plan Plan, execTime time.Duration, err error)
+	ExplainAnalyzeQuery(query string) (plan Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -119,8 +119,7 @@ func (o *TiDBWhatIfOptimizer) ExplainQuery(query string) (plan Plan, err error) 
 	return Plan{p}, nil
 }
 
-func (o *TiDBWhatIfOptimizer) ExplainAnalyzeQuery(query string) (plan Plan, execTime time.Duration, err error) {
-	begin := time.Now()
+func (o *TiDBWhatIfOptimizer) ExplainAnalyzeQuery(query string) (plan Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
 	must(err)
 	defer result.Close()
@@ -133,7 +132,7 @@ func (o *TiDBWhatIfOptimizer) ExplainAnalyzeQuery(query string) (plan Plan, exec
 		}
 		p = append(p, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
 	}
-	return Plan{p}, time.Since(begin), nil
+	return Plan{p}, nil
 }
 
 func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {
