@@ -5,6 +5,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
@@ -32,10 +34,31 @@ func newRunWorkloadCmd() *cobra.Command {
 		Short: "run workload",
 		Long:  `run workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// create a connection
+			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			if err != nil {
+				return err
+			}
+
 			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
 			must(err)
 			must(db.Execute(`use ` + opt.schemaName))
+
+			for _, sql := range info.SQLs.ToList() {
+				if sql.Type() != SQLTypeSelect {
+					continue
+				}
+				var execTimes []time.Duration
+				for k := 0; k < 5; k++ {
+					_, t, err := db.ExplainAnalyzeQuery(sql.Text)
+					must(err)
+					execTimes = append(execTimes, t)
+				}
+				sort.Slice(execTimes, func(i, j int) bool {
+					return execTimes[i] < execTimes[j]
+				})
+				avgTime := (execTimes[1] + execTimes[2] + execTimes[3]) / 3
+				fmt.Println(sql.Alias, avgTime)
+			}
 			return nil
 		},
 	}
