@@ -36,17 +36,6 @@ type indexSelectionCase struct {
 	expectedIndexes  []Index
 }
 
-func workloadCostForTest(opt WhatIfOptimizer, w WorkloadInfo, idxs []Index) float64 {
-	for _, idx := range idxs {
-		must(opt.CreateHypoIndex(idx))
-	}
-	cost := workloadQueryCost(w, opt)
-	for _, idx := range idxs {
-		must(opt.DropHypoIndex(idx))
-	}
-	return cost
-}
-
 func testIndexSelection(dsn string, cases []indexSelectionCase) {
 	for i, c := range cases {
 		fmt.Printf("======================= case %v =======================\n", i)
@@ -69,9 +58,9 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		}
 
 		if notEqual {
-			originalCost := workloadCostForTest(opt, w, nil)
-			expectedCost := workloadCostForTest(opt, w, c.expectedIndexes)
-			actualCost := workloadCostForTest(opt, w, indexList)
+			originalCost := EvaluateIndexConfCost(w, opt, nil)
+			expectedCost := EvaluateIndexConfCost(w, opt, ListToSet(c.expectedIndexes...))
+			actualCost := EvaluateIndexConfCost(w, opt, ListToSet(indexList...))
 			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n", originalCost, expectedCost, actualCost)
 			fmt.Printf("expected: %v\n", c.expectedIndexes)
 			fmt.Printf("actual: %v\n", indexList)

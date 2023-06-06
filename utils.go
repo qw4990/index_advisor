@@ -18,6 +18,13 @@ func must(err error, args ...interface{}) {
 	}
 }
 
+func isTrue(floag bool, args ...interface{}) {
+	if !floag {
+		fmt.Println("panic args: ", args)
+		panic("not true")
+	}
+}
+
 // FileExists tests whether this file exists and is or not a directory.
 func FileExists(filename string) (exist, isDir bool) {
 	info, err := os.Stat(filename)
@@ -135,6 +142,9 @@ func (s *setImpl[T]) Find(k SetKey) (a T, ok bool) {
 }
 
 func (s *setImpl[T]) ToList() []T {
+	if s == nil {
+		return nil
+	}
 	var list []T
 	for _, v := range s.s {
 		list = append(list, v)

@@ -17,6 +17,12 @@ func TestLoadWorkloadInfoTPCH(t *testing.T) {
 	fmt.Println(w.SQLs.Size())
 }
 
+func TestLoadWorkloadJOB(t *testing.T) {
+	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
+	must(err)
+	fmt.Println(w.SQLs.Size())
+}
+
 func TestCombSet(t *testing.T) {
 	s := NewSet[Column]()
 	for i := 0; i < 6; i++ {
