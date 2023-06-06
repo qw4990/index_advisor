@@ -24,6 +24,7 @@ type runWorkloadCmdOpt struct {
 	dsn          string
 	schemaName   string
 	workloadPath string
+	prefix       string
 }
 
 func newRunWorkloadCmd() *cobra.Command {
@@ -73,7 +74,7 @@ func newRunWorkloadCmd() *cobra.Command {
 				for _, p := range plans {
 					content += fmt.Sprintf("%v\n", FormatPlan(p))
 				}
-				saveContentTo(fmt.Sprintf("%v/exec_%v.txt", savePath, sql.Alias), content)
+				saveContentTo(fmt.Sprintf("%v/%v_%v.txt", savePath, opt.prefix, sql.Alias), content)
 				fmt.Println(sql.Alias, avgTime)
 			}
 			return nil
@@ -83,6 +84,7 @@ func newRunWorkloadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
+	cmd.Flags().StringVar(&opt.prefix, "prefix", "exec", "prefix")
 	return cmd
 }
 
