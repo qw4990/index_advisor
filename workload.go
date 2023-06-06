@@ -140,6 +140,12 @@ type Plan struct {
 	Plan [][]string
 }
 
+// IsExecuted returns whether this plan is executed.
+func (p Plan) IsExecuted() bool {
+	// | id | estRows  | estCost | actRows | task | access object | execution info | operator info | memory | disk |
+	return len(p.Plan[0]) == 10
+}
+
 func (p Plan) PlanCost() float64 {
 	v, err := strconv.ParseFloat(p.Plan[0][2], 64)
 	must(err)
@@ -147,7 +153,11 @@ func (p Plan) PlanCost() float64 {
 }
 
 func (p Plan) ExecTime() time.Duration {
-	//| TableReader_5 | 10000.00 | 177906.67 | 0 | root | | time:3.15ms, loops:1, ... | data:TableFullScan_4 | 174 Bytes | N/A |
+	if !p.IsExecuted() {
+		return 0
+	}
+
+	//| TableReader_5 | 10000.00 | 177906.67 | 0 | root | - | time:3.15ms, loops:1, ... | data:TableFullScan_4 | 174 Bytes | N/A |
 	execInfo := p.Plan[0][6]
 	b := strings.Index(execInfo, "time:")
 	e := strings.Index(execInfo, ",")

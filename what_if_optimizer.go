@@ -30,8 +30,8 @@ type WhatIfOptimizer interface {
 	CreateHypoIndex(index Index) error
 	DropHypoIndex(index Index) error
 
-	ExplainQuery(query string) (plan Plan, err error)
-	ExplainAnalyzeQuery(query string) (plan Plan, err error)
+	Explain(query string) (plan Plan, err error)
+	ExplainAnalyze(query string) (plan Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -101,7 +101,7 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) ExplainQuery(query string) (plan Plan, err error) {
+func (o *TiDBWhatIfOptimizer) Explain(query string) (plan Plan, err error) {
 	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
 		return Plan{}, err
@@ -119,7 +119,7 @@ func (o *TiDBWhatIfOptimizer) ExplainQuery(query string) (plan Plan, err error) 
 	return Plan{p}, nil
 }
 
-func (o *TiDBWhatIfOptimizer) ExplainAnalyzeQuery(query string) (plan Plan, err error) {
+func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
 	must(err)
 	defer result.Close()

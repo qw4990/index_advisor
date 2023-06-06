@@ -152,7 +152,7 @@ func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) float64 {
 			continue
 		}
 		must(optimizer.Execute(`use ` + sql.SchemaName))
-		p, err := optimizer.ExplainQuery(sql.Text)
+		p, err := optimizer.Explain(sql.Text)
 		must(err, sql.Text)
 		workloadCost += p.PlanCost() * float64(sql.Frequency)
 	}

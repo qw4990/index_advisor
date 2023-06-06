@@ -58,7 +58,7 @@ func newRunWorkloadCmd() *cobra.Command {
 				var execTimes []time.Duration
 				var plans []Plan
 				for k := 0; k < 5; k++ {
-					p, err := db.ExplainAnalyzeQuery(sql.Text)
+					p, err := db.ExplainAnalyze(sql.Text)
 					must(err)
 					plans = append(plans, p)
 					execTimes = append(execTimes, p.ExecTime())

@@ -89,7 +89,7 @@ func TestSimulateAndCost(t *testing.T) {
 		})
 
 	opt.CreateHypoIndex(NewIndex("test", "t", "a", "a"))
-	plan1, _ := opt.ExplainQuery("select * from t where a = 1 and c < 1")
+	plan1, _ := opt.Explain("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(NewIndex("test", "t", "a", "a"))
 
 	for _, p := range plan1.Plan {
@@ -97,7 +97,7 @@ func TestSimulateAndCost(t *testing.T) {
 	}
 
 	opt.CreateHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
-	plan2, _ := opt.ExplainQuery("select * from t where a = 1 and c < 1")
+	plan2, _ := opt.Explain("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
 	for _, p := range plan2.Plan {
 		fmt.Println(">> ", p)
