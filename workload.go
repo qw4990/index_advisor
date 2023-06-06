@@ -70,10 +70,22 @@ func (t TableStats) Key() string {
 	return fmt.Sprintf("%v.%v", t.SchemaName, t.TableName)
 }
 
+type ColumnType int
+
+const (
+	ColumnTypeUnknown ColumnType = iota
+	ColumnTypeInt
+	ColumnTypeFloat
+	ColumnTypeString
+	ColumnTypeTime
+	ColumnTypeOthers
+)
+
 type Column struct {
 	SchemaName string
 	TableName  string
 	ColumnName string
+	ColumnType ColumnType
 }
 
 func NewColumn(schemaName, tableName, columnName string) Column {
