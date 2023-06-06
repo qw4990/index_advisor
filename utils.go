@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/pingcap/parser"
-	"github.com/pingcap/parser/ast"
 	"os"
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/ast"
 )
 
 func must(err error, args ...interface{}) {
