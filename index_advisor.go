@@ -8,8 +8,7 @@ import (
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
-	originalWorkloadInfo WorkloadInfo, // the target workload
-	compressedWorkloadInfo WorkloadInfo, // the compressed workload
+	workloadInfo WorkloadInfo, // the target workload
 	parameter Parameter, // the input parameters
 	optimizer WhatIfOptimizer, // the what-if optimizer
 ) (Set[Index], error)
@@ -69,15 +68,15 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
-	Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
+	if compressAlgo != "none" {
+		Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
+	}
 
 	must(indexable(&compressedWorkloadInfo))
-	must(indexable(&originalWorkloadInfo))
 	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	checkWorkloadInfo(compressedWorkloadInfo)
-	checkWorkloadInfo(originalWorkloadInfo)
-	recommendedIndexes, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
+	recommendedIndexes, err := selection(compressedWorkloadInfo, param, optimizer)
 	must(err)
 
 	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)

@@ -9,7 +9,7 @@ package main
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (Set[Index], error) {
+func SelectIndexAAAlgo(workload WorkloadInfo, parameter Parameter, optimizer WhatIfOptimizer) (Set[Index], error) {
 	aa := &autoAdmin{
 		optimizer:  optimizer,
 		maxIndexes: parameter.MaximumIndexesToRecommend,
@@ -21,7 +21,7 @@ func SelectIndexAAAlgo(originalWorkloadInfo, compressedWorkloadInfo WorkloadInfo
 	Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
 
 	optimizer.ResetStats()
-	bestIndexes := aa.calculateBestIndexes(compressedWorkloadInfo)
+	bestIndexes := aa.calculateBestIndexes(workload)
 	Debugf("what-if optimizer stats: %v", optimizer.Stats().Format())
 	return bestIndexes, nil
 }

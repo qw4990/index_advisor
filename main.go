@@ -147,12 +147,14 @@ type adviseCmdOpt struct {
 	//storageBudgetInBytes   int
 	//considerTiFlashReplica bool
 
-	dsn                  string
-	schemaName           string
-	workloadPath         string
-	workloadCompressAlgo string
-	indexableColsAlgo    string
-	indexSelectionAlgo   string
+	dsn          string
+	schemaName   string
+	workloadPath string
+
+	// TODO: let below variables configurable later on.
+	//workloadCompressAlgo string
+	//indexableColsAlgo    string
+	//indexSelectionAlgo   string
 }
 
 func newAdviseCmd() *cobra.Command {
@@ -169,11 +171,8 @@ func newAdviseCmd() *cobra.Command {
 				return err
 			}
 			savePath := path.Join(opt.workloadPath, "result")
-			return IndexAdvise(opt.workloadCompressAlgo, opt.indexableColsAlgo, opt.indexSelectionAlgo, opt.dsn, savePath, info, Parameter{
-				MaximumIndexesToRecommend: opt.maxNumIndexes,
-				//StorageBudgetInBytes:      opt.storageBudgetInBytes,
-				//ConsiderTiFlashReplica:    opt.considerTiFlashReplica,
-			})
+			return IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
+				Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
 		},
 	}
 
@@ -184,9 +183,9 @@ func newAdviseCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
-	cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
-	cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
-	cmd.Flags().StringVar(&opt.indexSelectionAlgo, "index-selection-algo", "auto_admin", "index selection algorithm")
+	//cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
+	//cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
+	//cmd.Flags().StringVar(&opt.indexSelectionAlgo, "index-selection-algo", "auto_admin", "index selection algorithm")
 
 	cmd.Flags().StringVar(&logLevel, "log-level", "debug", "log level")
 	return cmd
