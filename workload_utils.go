@@ -141,6 +141,15 @@ func TempIndexName(cols ...Column) string {
 	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
 }
 
+// FormatPlan formats the given plan.
+func FormatPlan(p Plan) string {
+	var lines []string
+	for _, line := range p.Plan {
+		lines = append(lines, strings.Join(line, "\t"))
+	}
+	return strings.Join(lines, "\n")
+}
+
 // checkWorkloadInfo checks whether this workload info is fulfilled.
 func checkWorkloadInfo(w WorkloadInfo) {
 	for _, col := range w.IndexableColumns.ToList() {

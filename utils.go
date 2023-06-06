@@ -25,6 +25,10 @@ func isTrue(floag bool, args ...interface{}) {
 	}
 }
 
+func saveContentTo(fpath, content string) {
+	must(os.WriteFile(fpath, []byte(content), 0644))
+}
+
 // FileExists tests whether this file exists and is or not a directory.
 func FileExists(filename string) (exist, isDir bool) {
 	info, err := os.Stat(filename)

@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"sort"
-	"strings"
 )
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
@@ -46,6 +44,7 @@ type Parameter struct {
 	//ConsiderRemoveExistingIndexes bool // whether to consider removing existing indexes
 }
 
+// IndexAdvise is the entry point of index advisor.
 func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo WorkloadInfo, param Parameter) error {
 	Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
 
@@ -81,11 +80,12 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 	recommendedIndexes, err := selection(originalWorkloadInfo, compressedWorkloadInfo, param, optimizer)
 	must(err)
 
-	SaveResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)
+	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)
 	return nil
 }
 
-func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
+// PrintAndSaveAdviseResult prints and saves the index advisor result.
+func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	indexList := indexes.ToList()
@@ -160,16 +160,4 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
-}
-
-func saveContentTo(fpath, content string) {
-	must(os.WriteFile(fpath, []byte(content), 0644))
-}
-
-func FormatPlan(p Plan) string {
-	var lines []string
-	for _, line := range p.Plan {
-		lines = append(lines, strings.Join(line, "\t"))
-	}
-	return strings.Join(lines, "\n")
 }
