@@ -32,8 +32,8 @@ func newRunWorkloadCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "run-workload",
-		Short: "run workload",
-		Long:  `run workload`,
+		Short: "run all queries in the specified workload",
+		Long:  `run all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
@@ -102,8 +102,8 @@ func newLoadWorkloadCmd() *cobra.Command {
 	var opt loadWorkloadCmdOpt
 	cmd := &cobra.Command{
 		Use:   "load-workload",
-		Short: "load workload into your cluster",
-		Long:  `load workload into your cluster`,
+		Short: "load tables and related statistics of the specified workload into your cluster",
+		Long:  `load tables and related statistics of the specified workload into your cluster`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// create a connection
 			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
@@ -160,8 +160,8 @@ func newAdviseCmd() *cobra.Command {
 	var logLevel string
 	cmd := &cobra.Command{
 		Use:   "advise",
-		Short: "advise",
-		Long:  `advise`,
+		Short: "advise some indexes for the specified workload",
+		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			updateLogLevel(logLevel)
 			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
