@@ -61,7 +61,8 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 			originalCost := EvaluateIndexConfCost(w, opt, nil)
 			expectedCost := EvaluateIndexConfCost(w, opt, ListToSet(c.expectedIndexes...))
 			actualCost := EvaluateIndexConfCost(w, opt, ListToSet(indexList...))
-			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n", originalCost, expectedCost, actualCost)
+			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n",
+				originalCost.TotalWorkloadQueryCost, expectedCost.TotalWorkloadQueryCost, actualCost.TotalWorkloadQueryCost)
 			fmt.Printf("expected: %v\n", c.expectedIndexes)
 			fmt.Printf("actual: %v\n", indexList)
 			panic("")

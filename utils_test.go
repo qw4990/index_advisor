@@ -8,19 +8,20 @@ import (
 func TestLoadWorkloadInfo(t *testing.T) {
 	w, err := LoadWorkloadInfo("test", "./workload/test")
 	must(err)
-	fmt.Println(w)
+	isTrue(w.SQLs.Size() == 8)
 }
 
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
-	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_220")
+	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
 	must(err)
+	isTrue(w.SQLs.Size() == 21)
 	fmt.Println(w.SQLs.Size())
 }
 
 func TestLoadWorkloadJOB(t *testing.T) {
 	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
 	must(err)
-	fmt.Println(w.SQLs.Size())
+	isTrue(w.SQLs.Size() == 113)
 }
 
 func TestCombSet(t *testing.T) {

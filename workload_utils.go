@@ -35,7 +35,7 @@ func createWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
 	Debugf("loading workload info from %s", workloadInfoPath)
 	sqls := NewSet[SQL]()
-	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); !exist || isDir {
+	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
 		rawSQLs, names, err := ParseRawSQLsFromDir(path.Join(workloadInfoPath, "queries"))
 		if err != nil {
 			return WorkloadInfo{}, err
@@ -48,7 +48,7 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 				Frequency:  1,
 			})
 		}
-	} else if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries.sql")); !exist || isDir {
+	} else if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries.sql")); exist || !isDir {
 		rawSQLs, err := ParseRawSQLsFromFile(path.Join(workloadInfoPath, "queries.sql"))
 		if err != nil {
 			return WorkloadInfo{}, err
