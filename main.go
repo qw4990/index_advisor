@@ -43,7 +43,12 @@ func newRunWorkloadCmd() *cobra.Command {
 			must(err)
 			must(db.Execute(`use ` + opt.schemaName))
 
-			for _, sql := range info.SQLs.ToList() {
+			sqls := info.SQLs.ToList()
+			sort.Slice(sqls, func(i, j int) bool {
+				return sqls[i].Alias < sqls[j].Alias
+			})
+
+			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {
 					continue
 				}
@@ -173,6 +178,7 @@ func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(newAdviseCmd())
 	rootCmd.AddCommand(newLoadWorkloadCmd())
+	rootCmd.AddCommand(newRunWorkloadCmd())
 }
 
 func main() {
