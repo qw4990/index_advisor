@@ -18,7 +18,8 @@ func must(err error, args ...interface{}) {
 	}
 }
 
-func fileExists(filename string) (exist, isDir bool) {
+// FileExists tests whether this file exists and is or not a directory.
+func FileExists(filename string) (exist, isDir bool) {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false, false
@@ -79,67 +80,10 @@ func ParseRawSQLsFromFile(fpath string) ([]string, error) {
 	return sqls, nil
 }
 
-func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
-	stmt, err := ParseOneSQL(createTableStmt)
-	must(err, createTableStmt)
-	createTable := stmt.(*ast.CreateTableStmt)
-	t := TableSchema{
-		SchemaName:     schemaName,
-		TableName:      createTable.Table.Name.L,
-		CreateStmtText: createTableStmt,
-	}
-	for _, colDef := range createTable.Cols {
-		t.Columns = append(t.Columns, Column{
-			SchemaName: schemaName,
-			TableName:  createTable.Table.Name.L,
-			ColumnName: colDef.Name.Name.L,
-		})
-	}
-	// TODO: parse indexes
-	return t, nil
-}
-
+// ParseOneSQL parses the given SQL text and returns the AST.
 func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	p := parser.New()
 	return p.ParseOneStmt(sqlText, "", "")
-}
-
-func evaluateIndexConfCost(info WorkloadInfo, optimizer WhatIfOptimizer, indexes Set[Index]) IndexConfCost {
-	for _, index := range indexes.ToList() {
-		must(optimizer.CreateHypoIndex(index))
-	}
-	cost := workloadQueryCost(info, optimizer)
-	for _, index := range indexes.ToList() {
-		must(optimizer.DropHypoIndex(index))
-	}
-	var totCols int
-	for _, index := range indexes.ToList() {
-		totCols += len(index.Columns)
-	}
-	return IndexConfCost{cost, totCols}
-}
-
-func workloadQueryCost(info WorkloadInfo, optimizer WhatIfOptimizer) float64 {
-	var workloadCost float64
-	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
-		if sql.Type() != SQLTypeSelect {
-			continue
-		}
-		must(optimizer.Execute(`use ` + sql.SchemaName))
-		p, err := optimizer.Explain(sql.Text)
-		must(err, sql.Text)
-		workloadCost += p.PlanCost() * float64(sql.Frequency)
-	}
-	return workloadCost
-}
-
-// TempIndexName returns a temp index name for the given columns.
-func TempIndexName(cols ...Column) string {
-	var names []string
-	for _, col := range cols {
-		names = append(names, col.ColumnName)
-	}
-	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
 }
 
 type SetKey interface {
@@ -311,43 +255,4 @@ func min[T int | float64](xs ...T) T {
 		}
 	}
 	return res
-}
-
-// checkWorkloadInfo checks whether this workload info is fulfilled.
-func checkWorkloadInfo(w WorkloadInfo) {
-	for _, col := range w.IndexableColumns.ToList() {
-		if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-			panic(fmt.Sprintf("invalid indexable column: %v", col))
-		}
-	}
-	for _, sql := range w.SQLs.ToList() {
-		if sql.SchemaName == "" || sql.Text == "" {
-			panic(fmt.Sprintf("invalid sql: %v", sql))
-		}
-		for _, col := range sql.IndexableColumns.ToList() {
-			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-				panic(fmt.Sprintf("invalid indexable column: %v", col))
-			}
-		}
-	}
-	for _, tbl := range w.TableSchemas.ToList() {
-		if tbl.SchemaName == "" || tbl.TableName == "" {
-			panic(fmt.Sprintf("invalid table schema: %v", tbl))
-		}
-		for _, col := range tbl.Columns {
-			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-				panic(fmt.Sprintf("invalid indexable column: %v", col))
-			}
-		}
-		for _, idx := range tbl.Indexes {
-			if idx.SchemaName == "" || idx.TableName == "" || idx.IndexName == "" {
-				panic(fmt.Sprintf("invalid index: %v", idx))
-			}
-			for _, col := range idx.Columns {
-				if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-					panic(fmt.Sprintf("invalid indexable column: %v", col))
-				}
-			}
-		}
-	}
 }

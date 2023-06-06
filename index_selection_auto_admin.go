@@ -119,9 +119,9 @@ func (aa *autoAdmin) mergeCandidates(workload WorkloadInfo, candidates Set[Index
 	candidatesList := candidates.ToList()
 	var candidateCosts []IndexConfCost
 	for _, c := range candidatesList {
-		candidateCosts = append(candidateCosts, evaluateIndexConfCost(workload, aa.optimizer, ListToSet(c)))
+		candidateCosts = append(candidateCosts, EvaluateIndexConfCost(workload, aa.optimizer, ListToSet(c)))
 	}
-	originalCost := evaluateIndexConfCost(workload, aa.optimizer, NewSet[Index]())
+	originalCost := EvaluateIndexConfCost(workload, aa.optimizer, NewSet[Index]())
 	for i, x := range candidatesList {
 		// rule 1
 		if originalCost.Less(candidateCosts[i]) {
@@ -197,7 +197,7 @@ func (aa *autoAdmin) enumerateGreedy(workload WorkloadInfo, currentIndexes Set[I
 	var bestIndex Index
 	var bestCost IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
-		cost := evaluateIndexConfCost(workload, aa.optimizer, UnionSet(currentIndexes, ListToSet(index)))
+		cost := EvaluateIndexConfCost(workload, aa.optimizer, UnionSet(currentIndexes, ListToSet(index)))
 		if cost.Less(bestCost) {
 			bestIndex, bestCost = index, cost
 		}
@@ -218,7 +218,7 @@ func (aa *autoAdmin) enumerateNaive(workload WorkloadInfo, candidateIndexes Set[
 	var lowestCost IndexConfCost
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range CombSet(candidateIndexes, numberOfIndexes) {
-			cost := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
+			cost := EvaluateIndexConfCost(workload, aa.optimizer, indexCombination)
 			if cost.Less(lowestCost) {
 				lowestCostIndexes = indexCombination
 				lowestCost = cost

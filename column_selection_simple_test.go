@@ -8,8 +8,8 @@ import (
 func TestFindIndexableColumnsSimple(t *testing.T) {
 	workload := WorkloadInfo{
 		TableSchemas: ListToSet(TableSchema{"test", "t", NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
-		SQLs: ListToSet(SQL{"test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
-			SQL{"test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
+		SQLs: ListToSet(SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
+			SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
@@ -23,7 +23,7 @@ func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
 		TableSchemas: ListToSet(
 			TableSchema{"tpch", "nation", NewColumns("tpch", "nation", "N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT"), nil, ""}),
 		SQLs: ListToSet(
-			SQL{"tpch", `select
+			SQL{"", "tpch", `select
 	supp_nation,
 	cust_nation,
 	l_year,
