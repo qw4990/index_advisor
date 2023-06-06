@@ -31,7 +31,7 @@ type WhatIfOptimizer interface {
 	CreateHypoIndex(index Index) error
 	DropHypoIndex(index Index) error
 
-	GetPlanCost(query string) (plan Plan, err error)
+	GetPlanCost(analyze bool, query string) (plan Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -101,20 +101,14 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error) {
-	//	mysql> explain format='verbose' select * from t;
-	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
-	//	| id                    | estRows  | estCost    | task      | access object | operator info                  |
-	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
-	//	| TableReader_5         | 10000.00 | 177906.67  | root      |               | data:TableFullScan_4           |
-	//	| └─TableFullScan_4     | 10000.00 | 2035000.00 | cop[tikv] | table:t       | keep order:false, stats:pseudo |
-	//	+-----------------------+----------+------------+-----------+---------------+--------------------------------+
+func (o *TiDBWhatIfOptimizer) explainQuery(query string) (plan [][]string, err error) {
 	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
 		return nil, err
 	}
 	defer result.Close()
 	for result.Next() {
+		// | id | estRows | estCost | task | access object | operator info |
 		var id, estRows, estCost, task, obj, opInfo string
 		if err = result.Scan(&id, &estRows, &estCost, &task, &obj, &opInfo); err != nil {
 			return
@@ -124,12 +118,32 @@ func (o *TiDBWhatIfOptimizer) getPlan(query string) (plan [][]string, err error)
 	return
 }
 
-func (o *TiDBWhatIfOptimizer) GetPlanCost(query string) (plan Plan, err error) {
-	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
-	p, err := o.getPlan(query)
+func (o *TiDBWhatIfOptimizer) explainAnalyzeQuery(query string) (plan [][]string, err error) {
+	result, err := o.query("explain analyze format = 'verbose' " + query)
 	if err != nil {
-		return Plan{}, err
+		return nil, err
 	}
+	defer result.Close()
+	for result.Next() {
+		// | id | estRows  | estCost | actRows | task | access object | execution info | operator info | memory | disk |
+		var id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk string
+		if err = result.Scan(&id, &estRows, &estCost, &actRows, &task, &obj, &execInfo, &opInfo, &mem, &disk); err != nil {
+			return
+		}
+		plan = append(plan, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
+	}
+	return
+}
+
+func (o *TiDBWhatIfOptimizer) GetPlanCost(analyze bool, query string) (plan Plan, err error) {
+	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
+	var p [][]string
+	if analyze {
+		p, err = o.explainAnalyzeQuery(query)
+	} else {
+		p, err = o.explainQuery(query)
+	}
+	must(err)
 	v, err := strconv.ParseFloat(p[0][2], 64)
 	return Plan{p, v}, err
 }

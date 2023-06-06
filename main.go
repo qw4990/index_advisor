@@ -18,6 +18,34 @@ var (
 	}
 )
 
+type runWorkloadCmdOpt struct {
+	dsn          string
+	schemaName   string
+	workloadPath string
+}
+
+func newRunWorkloadCmd() *cobra.Command {
+	var opt runWorkloadCmdOpt
+
+	cmd := &cobra.Command{
+		Use:   "run-workload",
+		Short: "run workload",
+		Long:  `run workload`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// create a connection
+			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
+			must(err)
+			must(db.Execute(`use ` + opt.schemaName))
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
+	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
+	return cmd
+}
+
 type loadWorkloadCmdOpt struct {
 	dsn          string
 	schemaName   string

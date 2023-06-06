@@ -103,7 +103,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 	sqls := workload.SQLs.ToList()
 	var oriPlans, optPlans []Plan
 	for _, sql := range sqls {
-		p, err := optimizer.GetPlanCost(sql.Text)
+		p, err := optimizer.GetPlanCost(false, sql.Text)
 		must(err)
 		oriPlans = append(oriPlans, p)
 	}
@@ -111,7 +111,7 @@ func SaveResult(savePath string, indexes Set[Index], workload WorkloadInfo, opti
 		must(optimizer.CreateHypoIndex(idx))
 	}
 	for _, sql := range sqls {
-		p, err := optimizer.GetPlanCost(sql.Text)
+		p, err := optimizer.GetPlanCost(false, sql.Text)
 		must(err)
 		optPlans = append(optPlans, p)
 	}
