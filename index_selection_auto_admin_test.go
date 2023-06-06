@@ -8,7 +8,7 @@ import (
 )
 
 func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (WorkloadInfo, WhatIfOptimizer) {
-	w := NewWorkloadFromStmt(schemaName, createTableStmts, rawSQLs)
+	w := createWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
 	must(IndexableColumnsSelectionSimple(&w))
 	if dsn == "" {
 		dsn = "root:@tcp(127.0.0.1:4000)/"
