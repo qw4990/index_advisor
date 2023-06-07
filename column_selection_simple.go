@@ -55,11 +55,11 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 			schemaName = v.currentSQL.SchemaName
 		}
 		colName = x.Name.L
-		foundCols := v.findColumnByName(schemaName, colName)
-		if len(foundCols) == 0 || schemaName == "" {
+		possibleColumns := v.matchPossibleColumns(schemaName, colName)
+		if len(possibleColumns) == 0 || schemaName == "" {
 			return // ignore this column
 		}
-		for _, c := range foundCols {
+		for _, c := range possibleColumns {
 			if !v.checkColumnIndexableByType(c) {
 				continue
 			}
@@ -86,10 +86,10 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c Column) boo
 	return false
 }
 
-func (v *simpleIndexableColumnsVisitor) findColumnByName(schemaName, columnName string) (cols []Column) {
-	// find the corresponding table
+func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []Column) {
+	relatedTableNames := CollectTableNamesFromSQL(v.currentSQL.Text)
 	for _, table := range v.tables.ToList() {
-		if table.SchemaName != schemaName {
+		if table.SchemaName != schemaName || !relatedTableNames.Contains(LowerString(table.TableName)) {
 			continue
 		}
 		for _, col := range table.Columns {

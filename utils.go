@@ -111,6 +111,30 @@ func filterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
 	return filtered
 }
 
+type tableNameCollector struct {
+	tableNames Set[LowerString]
+}
+
+func (c *tableNameCollector) Enter(n ast.Node) (out ast.Node, skipChildren bool) {
+	switch x := n.(type) {
+	case *ast.TableName:
+		c.tableNames.Add(LowerString(x.Name.String()))
+	}
+	return n, false
+}
+
+func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
+	return n, true
+}
+
+func CollectTableNamesFromSQL(sqlText string) Set[LowerString] {
+	node, err := ParseOneSQL(sqlText)
+	must(err)
+	c := &tableNameCollector{tableNames: NewSet[LowerString]()}
+	node.Accept(c)
+	return c.tableNames
+}
+
 func min[T int | float64](xs ...T) T {
 	res := xs[0]
 	for _, x := range xs {
