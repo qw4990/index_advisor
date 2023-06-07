@@ -59,6 +59,7 @@ func newExecWorkloadCmd() *cobra.Command {
 			savePath := path.Join(opt.workloadPath, "exec-workload-result")
 			os.MkdirAll(savePath, 0777)
 			summaryContent := ""
+			var totExecTime time.Duration
 			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {
 					continue
@@ -75,6 +76,7 @@ func newExecWorkloadCmd() *cobra.Command {
 					return execTimes[i] < execTimes[j]
 				})
 				avgTime := (execTimes[1] + execTimes[2] + execTimes[3]) / 3
+				totExecTime += avgTime
 
 				content := fmt.Sprintf("Alias: %s\n", sql.Alias)
 				content += fmt.Sprintf("AvgTime: %v\n", avgTime)
@@ -88,6 +90,8 @@ func newExecWorkloadCmd() *cobra.Command {
 				summaryContent += fmt.Sprintf("%v %v\n", sql.Alias, avgTime)
 				fmt.Println(sql.Alias, avgTime)
 			}
+			fmt.Println("TotalExecutionTime:", totExecTime)
+			summaryContent += fmt.Sprintf("TotalExecutionTime: %v\n", totExecTime)
 			saveContentTo(fmt.Sprintf("%v/%vsummary.txt", savePath, opt.prefix), summaryContent)
 			return nil
 		},
