@@ -18,6 +18,17 @@ func TestFindIndexableColumnsSimple(t *testing.T) {
 	}
 }
 
+func TestFindIndexableColumnsSimple2(t *testing.T) {
+	workload := WorkloadInfo{
+		TableSchemas: ListToSet(
+			TableSchema{"test", "t1", NewColumns("test", "t1", "a"), nil, ""},
+			TableSchema{"test", "t2", NewColumns("test", "t2", "a"), nil, ""}),
+		SQLs: ListToSet(SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
+	}
+	must(IndexableColumnsSelectionSimple(&workload))
+	fmt.Println(workload.IndexableColumns.ToList())
+}
+
 func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
 	workload := WorkloadInfo{
 		TableSchemas: ListToSet(
