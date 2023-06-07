@@ -15,7 +15,7 @@ func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []str
 	}
 	opt, err := NewTiDBWhatIfOptimizer("root:@tcp(127.0.0.1:4000)/")
 	must(err)
-	opt.SetDebug(true)
+	//opt.SetDebug(true)
 
 	for _, schemaName := range w.AllSchemaNames() {
 		must(opt.Execute("drop database if exists " + schemaName))
@@ -58,7 +58,7 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		}
 
 		if notEqual {
-			originalCost := EvaluateIndexConfCost(w, opt, nil)
+			originalCost := EvaluateIndexConfCost(w, opt, NewSet[Index]())
 			expectedCost := EvaluateIndexConfCost(w, opt, ListToSet(c.expectedIndexes...))
 			actualCost := EvaluateIndexConfCost(w, opt, ListToSet(indexList...))
 			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n",
@@ -170,17 +170,17 @@ func TestIndexSelectionAACase(t *testing.T) {
 				newIndex4Test("test.t(b)"),
 			},
 		},
-		{
-			2, "test", []string{
-				"create table t (a int, b int, c int, d int , e int)",
-			}, []string{
-				"select * from t where a = 1 and c = 1",
-				"select * from t where b = 1 and e = 1",
-			}, []Index{
-				newIndex4Test("test.t(a,c)"),
-				newIndex4Test("test.t(b,e)"),
-			},
-		},
+		//{ // https://github.com/pingcap/tidb/issues/44376
+		//	2, "test", []string{
+		//		"create table t (a int, b int, c int, d int , e int)",
+		//	}, []string{
+		//		"select * from t where a = 1 and c < 1",
+		//		"select * from t where b = 1 and e < 1",
+		//	}, []Index{
+		//		newIndex4Test("test.t(a,c)"),
+		//		newIndex4Test("test.t(b,e)"),
+		//	},
+		//},
 	}
 	testIndexSelection("", cases)
 }
