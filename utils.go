@@ -144,3 +144,13 @@ func min[T int | float64](xs ...T) T {
 	}
 	return res
 }
+
+func max[T int | float64](xs ...T) T {
+	res := xs[0]
+	for _, x := range xs {
+		if x > res {
+			res = x
+		}
+	}
+	return res
+}

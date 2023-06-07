@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pingcap/parser/ast"
 )
@@ -144,9 +145,18 @@ func TempIndexName(cols ...Column) string {
 
 // FormatPlan formats the given plan.
 func FormatPlan(p Plan) string {
-	var lines []string
-	for _, line := range p.Plan {
-		lines = append(lines, strings.Join(line, "\t"))
+	blank := strings.Repeat(" ", 4)
+	nRows, nCols := len(p.Plan), len(p.Plan[0])
+	lines := make([]string, nRows)
+	for c := 0; c < nCols; c++ {
+		maxLen := 0
+		for r := 0; r < nRows; r++ {
+			lines[r] += p.Plan[r][c] + blank
+			maxLen = max(maxLen, utf8.RuneCountInString(lines[r]))
+		}
+		for r := 0; r < nRows; r++ {
+			lines[r] += strings.Repeat(" ", maxLen-utf8.RuneCountInString(lines[r]))
+		}
 	}
 	return strings.Join(lines, "\n")
 }
