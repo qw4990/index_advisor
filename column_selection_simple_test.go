@@ -31,6 +31,16 @@ func TestFindIndexableColumnsSimple2(t *testing.T) {
 	fmt.Println(workload.IndexableColumns.ToList())
 }
 
+func TestFindIndexableColumnsSimpleJOB(t *testing.T) {
+	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
+	must(err)
+	w.SQLs = filterBySQLAlias(w.SQLs, []string{"1a"})
+	must(IndexableColumnsSelectionSimple(&w))
+	for _, c := range w.IndexableColumns.ToList() {
+		fmt.Println(c)
+	}
+}
+
 func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
 	workload := WorkloadInfo{
 		TableSchemas: ListToSet(
