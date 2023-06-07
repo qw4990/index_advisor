@@ -59,7 +59,21 @@ func (aa *autoAdmin) calculateBestIndexes(workload WorkloadInfo) Set[Index] {
 			potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
 		}
 	}
-	return aa.filterIndexes(currentBestIndexes)
+
+	limit := 0
+	currentBestIndexes = aa.filterIndexes(currentBestIndexes)
+	for currentBestIndexes.Size() < aa.maxIndexes {
+		potentialIndexes = DiffSet(potentialIndexes, currentBestIndexes)
+		currentCost := EvaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
+		currentBestIndexes, _ = aa.enumerateGreedy(workload, currentBestIndexes, currentCost, potentialIndexes, aa.maxIndexes)
+		currentBestIndexes = aa.filterIndexes(currentBestIndexes)
+		limit++
+		if limit > 5 {
+			break
+		}
+	}
+
+	return currentBestIndexes
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(workload WorkloadInfo, indexes Set[Index]) Set[Index] {

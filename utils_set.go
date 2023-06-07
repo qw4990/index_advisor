@@ -147,6 +147,8 @@ func AndSet[T SetKey](ss ...Set[T]) Set[T] {
 	return s
 }
 
+// DiffSet returns a set of items that are in s1 but not in s2.
+// DiffSet({1, 2, 3, 4}, {2, 3}) = {1, 4}
 func DiffSet[T SetKey](s1, s2 Set[T]) Set[T] {
 	s := NewSet[T]()
 	for _, item := range s1.ToList() {
