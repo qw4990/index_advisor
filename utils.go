@@ -96,6 +96,21 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	return p.ParseOneStmt(sqlText, "", "")
 }
 
+func filterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
+	aliasMap := make(map[string]struct{})
+	for _, a := range alias {
+		aliasMap[strings.TrimSpace(a)] = struct{}{}
+	}
+
+	filtered := NewSet[SQL]()
+	for _, sql := range sqls.ToList() {
+		if _, ok := aliasMap[sql.Alias]; ok {
+			filtered.Add(sql)
+		}
+	}
+	return filtered
+}
+
 func min[T int | float64](xs ...T) T {
 	res := xs[0]
 	for _, x := range xs {

@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -144,17 +145,11 @@ func newLoadWorkloadCmd() *cobra.Command {
 
 type adviseCmdOpt struct {
 	maxNumIndexes int
-	//storageBudgetInBytes   int
-	//considerTiFlashReplica bool
 
 	dsn          string
 	schemaName   string
 	workloadPath string
-
-	// TODO: let below variables configurable later on.
-	//workloadCompressAlgo string
-	//indexableColsAlgo    string
-	//indexSelectionAlgo   string
+	queries      string
 }
 
 func newAdviseCmd() *cobra.Command {
@@ -170,6 +165,12 @@ func newAdviseCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			if opt.queries != "" {
+				qs := strings.Split(opt.queries, ",")
+				info.SQLs = filterBySQLAlias(info.SQLs, qs)
+			}
+
 			savePath := path.Join(opt.workloadPath, "result")
 			return IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
 				Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
@@ -177,15 +178,11 @@ func newAdviseCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 10, "max number of indexes to recommend, 0 means no limit")
-	//cmd.Flags().IntVar(&opt.storageBudgetInBytes, "storage-budget", 0, "storage budget in bytes, 0 means no budget")
-	//cmd.Flags().BoolVar(&opt.considerTiFlashReplica, "consider-tiflash-replica", false, "whether to consider tiflash replica")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
-	//cmd.Flags().StringVar(&opt.workloadCompressAlgo, "workload-compress-algo", "none", "workload compression algorithm")
-	//cmd.Flags().StringVar(&opt.indexableColsAlgo, "indexable-column-algo", "simple", "indexable column finding algorithm")
-	//cmd.Flags().StringVar(&opt.indexSelectionAlgo, "index-selection-algo", "auto_admin", "index selection algorithm")
+	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
 
 	cmd.Flags().StringVar(&logLevel, "log-level", "debug", "log level")
 	return cmd
