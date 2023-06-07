@@ -1,18 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"strings"
 )
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
 type simpleIndexableColumnsVisitor struct {
-	schemaName  string
 	tables      Set[TableSchema]
 	cols        Set[Column] // key = 'schema.table.column'
+	currentSQL  SQL
 	currentCols Set[Column] // columns related to the current sql
 }
 
@@ -52,18 +52,22 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 		if x.Schema.L != "" {
 			schemaName = x.Schema.L
 		} else {
-			schemaName = v.schemaName
+			schemaName = v.currentSQL.SchemaName
 		}
 		colName = x.Name.L
-		c, ok := v.findColumnByName(schemaName, colName)
-		fmt.Println("--->>> ", schemaName, colName, ok, c, v.checkColumnIndexableByType(c))
-		if !ok || schemaName == "" || !v.checkColumnIndexableByType(c) {
+		foundCols := v.findColumnByName(schemaName, colName)
+		if len(foundCols) == 0 || schemaName == "" {
 			return // ignore this column
 		}
-		tableName = c.TableName
-		col := NewColumn(schemaName, tableName, colName)
-		v.cols.Add(col)
-		v.currentCols.Add(col)
+		for _, c := range foundCols {
+			if !v.checkColumnIndexableByType(c) {
+				continue
+			}
+			tableName = c.TableName
+			col := NewColumn(schemaName, tableName, colName)
+			v.cols.Add(col)
+			v.currentCols.Add(col)
+		}
 	}
 }
 
@@ -82,19 +86,23 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c Column) boo
 	return false
 }
 
-func (v *simpleIndexableColumnsVisitor) findColumnByName(schemaName, columnName string) (Column, bool) {
+func (v *simpleIndexableColumnsVisitor) findColumnByName(schemaName, columnName string) (cols []Column) {
 	// find the corresponding table
 	for _, table := range v.tables.ToList() {
 		if table.SchemaName != schemaName {
 			continue
 		}
 		for _, col := range table.Columns {
+			// it's hard to check which column belongs to which table, for simplification, just check whether this table name is in the query text.
+			if !strings.Contains(strings.ToLower(v.currentSQL.Text), strings.ToLower(col.TableName)) {
+				continue
+			}
 			if col.ColumnName == columnName {
-				return col, true
+				cols = append(cols, col)
 			}
 		}
 	}
-	return Column{}, false
+	return
 }
 
 func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
@@ -111,7 +119,7 @@ func IndexableColumnsSelectionSimple(workloadInfo *WorkloadInfo) error {
 	for _, sql := range sqls {
 		stmt, err := ParseOneSQL(sql.Text)
 		must(err, sql.Text)
-		v.schemaName = sql.SchemaName
+		v.currentSQL = sql
 		v.currentCols = NewSet[Column]()
 		stmt.Accept(v)
 		sql.IndexableColumns = v.currentCols
