@@ -57,6 +57,7 @@ func newExecWorkloadCmd() *cobra.Command {
 			})
 
 			savePath := path.Join(opt.workloadPath, "exec-workload-result")
+			os.MkdirAll(savePath, 0777)
 			summaryContent := ""
 			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {

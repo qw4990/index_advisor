@@ -85,7 +85,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
-	os.MkdirAll(savePath, 0666)
+	os.MkdirAll(savePath, 0777)
 	indexList := indexes.ToList()
 	sort.Slice(indexList, func(i, j int) bool {
 		return indexList[i].Key() < indexList[j].Key()
@@ -138,7 +138,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		content := ""
 		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
 		content += fmt.Sprintf("SQL: \n%s\n\n", diff.SQL.Text)
-		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
+		content += fmt.Sprintf("Original Cost: %.2E\n", diff.OriPlan.PlanCost())
+		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
+		content += fmt.Sprintf("Cost Ratio: %.2f%%\n", (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
 		content += "\n\n------------------ original plan ------------------\n"
 		content += FormatPlan(diff.OriPlan)
 		content += "\n\n------------------ optimized plan -----------------\n"
@@ -154,8 +156,8 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		optTotCost += diff.OptPlan.PlanCost()
 
 		if diff.SQL.Alias != "" {
-			fmt.Printf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
+			fmt.Printf("Cost Ratio for %v: %.2f%%\n", diff.SQL.Alias, (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
 		}
 	}
-	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
+	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f%%\n", optTotCost, oriTotCost, (optTotCost/oriTotCost)*100)
 }
