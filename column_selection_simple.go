@@ -1,11 +1,12 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"strings"
 )
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.

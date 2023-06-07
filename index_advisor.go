@@ -38,9 +38,6 @@ var (
 
 type Parameter struct {
 	MaximumIndexesToRecommend int
-	//StorageBudgetInBytes          int
-	//ConsiderTiFlashReplica        bool // whether to consider recommending TiFlash replica
-	//ConsiderRemoveExistingIndexes bool // whether to consider removing existing indexes
 }
 
 // IndexAdvise is the entry point of index advisor.
