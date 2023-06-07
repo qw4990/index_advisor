@@ -134,6 +134,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 	})
 
 	var oriTotCost, optTotCost float64
+	var summaryContent string
 	for i, diff := range planDiffs {
 		content := ""
 		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
@@ -156,8 +157,11 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		optTotCost += diff.OptPlan.PlanCost()
 
 		if diff.SQL.Alias != "" {
-			fmt.Printf("Cost Ratio for %v: %.2f%%\n", diff.SQL.Alias, (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
+			summary := fmt.Sprintf("Cost Ratio for %v: %.2f%%\n", diff.SQL.Alias, (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
+			fmt.Printf(summary)
+			summaryContent += summary
 		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f%%\n", optTotCost, oriTotCost, (optTotCost/oriTotCost)*100)
+	saveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
 }
