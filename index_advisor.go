@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"sort"
 )
@@ -84,6 +85,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
+	os.MkdirAll(savePath, 0666)
 	indexList := indexes.ToList()
 	sort.Slice(indexList, func(i, j int) bool {
 		return indexList[i].Key() < indexList[j].Key()

@@ -26,6 +26,7 @@ type runWorkloadCmdOpt struct {
 	schemaName   string
 	workloadPath string
 	prefix       string
+	queries      string
 }
 
 func newRunWorkloadCmd() *cobra.Command {
@@ -39,6 +40,11 @@ func newRunWorkloadCmd() *cobra.Command {
 			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
+			}
+
+			if opt.queries != "" {
+				qs := strings.Split(opt.queries, ",")
+				info.SQLs = filterBySQLAlias(info.SQLs, qs)
 			}
 
 			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
@@ -90,6 +96,7 @@ func newRunWorkloadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.prefix, "prefix", "exec", "prefix")
+	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
 	return cmd
 }
 
