@@ -19,11 +19,13 @@ func TestFindIndexableColumnsSimple(t *testing.T) {
 }
 
 func TestFindIndexableColumnsSimple2(t *testing.T) {
+	t1, err := ParseCreateTableStmt("test", "create table t1 (a int)")
+	must(err)
+	t2, err := ParseCreateTableStmt("test", "create table t2 (a int)")
+	must(err)
 	workload := WorkloadInfo{
-		TableSchemas: ListToSet(
-			TableSchema{"test", "t1", NewColumns("test", "t1", "a"), nil, ""},
-			TableSchema{"test", "t2", NewColumns("test", "t2", "a"), nil, ""}),
-		SQLs: ListToSet(SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
+		TableSchemas: ListToSet(t1, t2),
+		SQLs:         ListToSet(SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())

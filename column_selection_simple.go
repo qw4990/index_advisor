@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
@@ -55,6 +56,7 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 		}
 		colName = x.Name.L
 		c, ok := v.findColumnByName(schemaName, colName)
+		fmt.Println("--->>> ", schemaName, colName, ok, c, v.checkColumnIndexableByType(c))
 		if !ok || schemaName == "" || !v.checkColumnIndexableByType(c) {
 			return // ignore this column
 		}
