@@ -141,7 +141,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		content += fmt.Sprintf("SQL: \n%s\n\n", diff.SQL.Text)
 		content += fmt.Sprintf("Original Cost: %.2E\n", diff.OriPlan.PlanCost())
 		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
-		content += fmt.Sprintf("Cost Ratio: %.2f%%\n", (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
+		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
 		content += FormatPlan(diff.OriPlan)
 		content += "\n\n------------------ optimized plan -----------------\n"
@@ -157,11 +157,11 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		optTotCost += diff.OptPlan.PlanCost()
 
 		if diff.SQL.Alias != "" {
-			summary := fmt.Sprintf("Cost Ratio for %v: %.2f%%\n", diff.SQL.Alias, (diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())*100)
+			summary := fmt.Sprintf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 			fmt.Printf(summary)
 			summaryContent += summary
 		}
 	}
-	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f%%\n", optTotCost, oriTotCost, (optTotCost/oriTotCost)*100)
+	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
 	saveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
 }
