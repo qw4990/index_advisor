@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
@@ -53,17 +54,33 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 			schemaName = v.schemaName
 		}
 		colName = x.Name.L
-		tableName = v.findTableName(schemaName, colName)
-		if schemaName == "" || tableName == "" {
+		c, ok := v.findColumnByName(schemaName, colName)
+		if !ok || schemaName == "" || !v.checkColumnIndexableByType(c) {
 			return // ignore this column
 		}
+		tableName = c.TableName
 		col := NewColumn(schemaName, tableName, colName)
 		v.cols.Add(col)
 		v.currentCols.Add(col)
 	}
 }
 
-func (v *simpleIndexableColumnsVisitor) findTableName(schemaName, columnName string) string {
+func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c Column) bool {
+	if c.ColumnType == nil {
+		return false
+	}
+	switch c.ColumnType.Tp {
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeYear,
+		mysql.TypeFloat, mysql.TypeDouble, mysql.TypeNewDecimal,
+		mysql.TypeDuration, mysql.TypeDate, mysql.TypeDatetime, mysql.TypeTimestamp:
+		return true
+	case mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
+		return c.ColumnType.Flen <= 512
+	}
+	return false
+}
+
+func (v *simpleIndexableColumnsVisitor) findColumnByName(schemaName, columnName string) (Column, bool) {
 	// find the corresponding table
 	for _, table := range v.tables.ToList() {
 		if table.SchemaName != schemaName {
@@ -71,11 +88,11 @@ func (v *simpleIndexableColumnsVisitor) findTableName(schemaName, columnName str
 		}
 		for _, col := range table.Columns {
 			if col.ColumnName == columnName {
-				return table.TableName
+				return col, true
 			}
 		}
 	}
-	return ""
+	return Column{}, false
 }
 
 func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
