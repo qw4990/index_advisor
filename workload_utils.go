@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/types"
 	"path"
 	"strings"
 
@@ -102,26 +101,11 @@ func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, erro
 			SchemaName: schemaName,
 			TableName:  createTable.Table.Name.L,
 			ColumnName: colDef.Name.Name.L,
-			ColumnType: ParseColumnType(colDef.Tp),
+			ColumnType: colDef.Tp.Clone(),
 		})
 	}
 	// TODO: parse indexes
 	return t, nil
-}
-
-func ParseColumnType(ft *types.FieldType) ColumnType {
-	switch ft.EvalType() {
-	case types.ETInt:
-		return ColumnTypeInt
-	case types.ETReal, types.ETDecimal:
-		return ColumnTypeFloat
-	case types.ETString:
-		return ColumnTypeString
-	case types.ETDatetime, types.ETTimestamp, types.ETDuration:
-		return ColumnTypeTime
-	default:
-		return ColumnTypeOthers
-	}
 }
 
 // EvaluateIndexConfCost evaluates the workload cost under the given indexes.
@@ -189,7 +173,7 @@ func checkWorkloadInfo(w WorkloadInfo) {
 			panic(fmt.Sprintf("invalid table schema: %v", tbl))
 		}
 		for _, col := range tbl.Columns {
-			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" || col.ColumnType == ColumnTypeUnknown {
+			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" || col.ColumnType == nil {
 				panic(fmt.Sprintf("invalid indexable column: %v", col))
 			}
 		}

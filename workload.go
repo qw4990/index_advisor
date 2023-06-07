@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pingcap/parser/types"
 )
 
 type SQLType int
@@ -70,22 +72,11 @@ func (t TableStats) Key() string {
 	return fmt.Sprintf("%v.%v", t.SchemaName, t.TableName)
 }
 
-type ColumnType int
-
-const (
-	ColumnTypeUnknown ColumnType = iota
-	ColumnTypeInt
-	ColumnTypeFloat
-	ColumnTypeString
-	ColumnTypeTime
-	ColumnTypeOthers
-)
-
 type Column struct {
 	SchemaName string
 	TableName  string
 	ColumnName string
-	ColumnType ColumnType
+	ColumnType *types.FieldType
 }
 
 func NewColumn(schemaName, tableName, columnName string) Column {
