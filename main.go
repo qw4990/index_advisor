@@ -21,7 +21,7 @@ var (
 	}
 )
 
-type runWorkloadCmdOpt struct {
+type execWorkloadCmdOpt struct {
 	dsn          string
 	schemaName   string
 	workloadPath string
@@ -29,13 +29,13 @@ type runWorkloadCmdOpt struct {
 	queries      string
 }
 
-func newRunWorkloadCmd() *cobra.Command {
-	var opt runWorkloadCmdOpt
+func newExecWorkloadCmd() *cobra.Command {
+	var opt execWorkloadCmdOpt
 
 	cmd := &cobra.Command{
-		Use:   "run-workload",
-		Short: "run all queries in the specified workload",
-		Long:  `run all queries in the specified workload and collect their plans and execution times`,
+		Use:   "exec-workload",
+		Short: "exec all queries in the specified workload",
+		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
@@ -56,7 +56,7 @@ func newRunWorkloadCmd() *cobra.Command {
 				return sqls[i].Alias < sqls[j].Alias
 			})
 
-			savePath := path.Join(opt.workloadPath, "result")
+			savePath := path.Join(opt.workloadPath, "exec-workload-result")
 			summaryContent := ""
 			for _, sql := range sqls {
 				if sql.Type() != SQLTypeSelect {
@@ -178,7 +178,7 @@ func newAdviseCmd() *cobra.Command {
 				info.SQLs = filterBySQLAlias(info.SQLs, qs)
 			}
 
-			savePath := path.Join(opt.workloadPath, "result")
+			savePath := path.Join(opt.workloadPath, "advise-result")
 			return IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
 				Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
 		},
@@ -199,7 +199,7 @@ func init() {
 	cobra.OnInitialize()
 	rootCmd.AddCommand(newAdviseCmd())
 	rootCmd.AddCommand(newLoadWorkloadCmd())
-	rootCmd.AddCommand(newRunWorkloadCmd())
+	rootCmd.AddCommand(newExecWorkloadCmd())
 }
 
 func main() {
