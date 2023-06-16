@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ var (
 	logLevel = 0
 )
 
-func updateLogLevel(level string) {
+func SetLogLevel(level string) {
 	if level == "" {
 		return // use default
 	}

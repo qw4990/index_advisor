@@ -1,6 +1,7 @@
-package main
+package advisor
 
 import (
+	"github.com/qw4990/index_advisor/utils"
 	"strings"
 
 	"github.com/pingcap/parser/ast"
@@ -11,10 +12,10 @@ import (
 
 // simpleIndexableColumnsVisitor finds all columns that appear in any range-filter, order-by, or group-by clause.
 type simpleIndexableColumnsVisitor struct {
-	tables      Set[TableSchema]
-	cols        Set[Column] // key = 'schema.table.column'
-	currentSQL  SQL
-	currentCols Set[Column] // columns related to the current sql
+	tables      utils.Set[utils.TableSchema]
+	cols        utils.Set[utils.Column] // key = 'schema.table.column'
+	currentSQL  utils.SQL
+	currentCols utils.Set[utils.Column] // columns related to the current utils.SQL
 }
 
 func (v *simpleIndexableColumnsVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
@@ -65,14 +66,14 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 				continue
 			}
 			tableName = c.TableName
-			col := NewColumn(schemaName, tableName, colName)
+			col := utils.NewColumn(schemaName, tableName, colName)
 			v.cols.Add(col)
 			v.currentCols.Add(col)
 		}
 	}
 }
 
-func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c Column) bool {
+func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c utils.Column) bool {
 	if c.ColumnType == nil {
 		return false
 	}
@@ -87,10 +88,10 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c Column) boo
 	return false
 }
 
-func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []Column) {
-	relatedTableNames := CollectTableNamesFromSQL(v.currentSQL.Text)
+func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []utils.Column) {
+	relatedTableNames := utils.CollectTableNamesFromSQL(v.currentSQL.Text)
 	for _, table := range v.tables.ToList() {
-		if table.SchemaName != schemaName || !relatedTableNames.Contains(LowerString(table.TableName)) {
+		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.LowerString(table.TableName)) {
 			continue
 		}
 		for _, col := range table.Columns {
@@ -111,17 +112,17 @@ func (v *simpleIndexableColumnsVisitor) Leave(n ast.Node) (node ast.Node, ok boo
 }
 
 // IndexableColumnsSelectionSimple finds all columns that appear in any range-filter, order-by, or group-by clause.
-func IndexableColumnsSelectionSimple(workloadInfo *WorkloadInfo) error {
+func IndexableColumnsSelectionSimple(workloadInfo *utils.WorkloadInfo) error {
 	v := &simpleIndexableColumnsVisitor{
-		cols:   NewSet[Column](),
+		cols:   utils.NewSet[utils.Column](),
 		tables: workloadInfo.TableSchemas,
 	}
 	sqls := workloadInfo.SQLs.ToList()
 	for _, sql := range sqls {
-		stmt, err := ParseOneSQL(sql.Text)
-		must(err, sql.Text)
+		stmt, err := utils.ParseOneSQL(sql.Text)
+		utils.Must(err, sql.Text)
 		v.currentSQL = sql
-		v.currentCols = NewSet[Column]()
+		v.currentCols = utils.NewSet[utils.Column]()
 		stmt.Accept(v)
 		sql.IndexableColumns = v.currentCols
 		workloadInfo.SQLs.Add(sql)

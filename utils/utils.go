@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-func must(err error, args ...interface{}) {
+func Must(err error, args ...interface{}) {
 	if err != nil {
 		fmt.Println("panic args: ", args)
 		panic(err)
@@ -24,8 +24,8 @@ func isTrue(floag bool, args ...interface{}) {
 	}
 }
 
-func saveContentTo(fpath, content string) {
-	must(os.WriteFile(fpath, []byte(content), 0644))
+func SaveContentTo(fpath, content string) {
+	Must(os.WriteFile(fpath, []byte(content), 0644))
 }
 
 // FileExists tests whether this file exists and is or not a directory.
@@ -96,21 +96,6 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	return p.ParseOneStmt(sqlText, "", "")
 }
 
-func filterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
-	aliasMap := make(map[string]struct{})
-	for _, a := range alias {
-		aliasMap[strings.TrimSpace(a)] = struct{}{}
-	}
-
-	filtered := NewSet[SQL]()
-	for _, sql := range sqls.ToList() {
-		if _, ok := aliasMap[sql.Alias]; ok {
-			filtered.Add(sql)
-		}
-	}
-	return filtered
-}
-
 type tableNameCollector struct {
 	tableNames Set[LowerString]
 }
@@ -129,13 +114,13 @@ func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
 
 func CollectTableNamesFromSQL(sqlText string) Set[LowerString] {
 	node, err := ParseOneSQL(sqlText)
-	must(err)
+	Must(err)
 	c := &tableNameCollector{tableNames: NewSet[LowerString]()}
 	node.Accept(c)
 	return c.tableNames
 }
 
-func min[T int | float64](xs ...T) T {
+func Min[T int | float64](xs ...T) T {
 	res := xs[0]
 	for _, x := range xs {
 		if x < res {
@@ -145,7 +130,7 @@ func min[T int | float64](xs ...T) T {
 	return res
 }
 
-func max[T int | float64](xs ...T) T {
+func Max[T int | float64](xs ...T) T {
 	res := xs[0]
 	for _, x := range xs {
 		if x > res {

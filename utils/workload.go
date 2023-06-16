@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -110,7 +110,7 @@ func NewIndex(schemaName, tableName, indexName string, columns ...string) Index 
 	return Index{SchemaName: strings.ToLower(schemaName), TableName: strings.ToLower(tableName), IndexName: strings.ToLower(indexName), Columns: NewColumns(schemaName, tableName, columns...)}
 }
 
-func (i Index) columnNames() []string {
+func (i Index) ColumnNames() []string {
 	var names []string
 	for _, col := range i.Columns {
 		names = append(names, col.ColumnName)
@@ -119,11 +119,11 @@ func (i Index) columnNames() []string {
 }
 
 func (i Index) DDL() string {
-	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.columnNames(), ", "))
+	return fmt.Sprintf("CREATE INDEX %v ON %v.%v (%v)", i.IndexName, i.SchemaName, i.TableName, strings.Join(i.ColumnNames(), ", "))
 }
 
 func (i Index) Key() string {
-	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.columnNames(), ","))
+	return fmt.Sprintf("%v.%v(%v)", i.SchemaName, i.TableName, strings.Join(i.ColumnNames(), ","))
 }
 
 // PrefixContain returns whether j is a prefix of i.
@@ -151,7 +151,7 @@ func (p Plan) IsExecuted() bool {
 
 func (p Plan) PlanCost() float64 {
 	v, err := strconv.ParseFloat(p.Plan[0][2], 64)
-	must(err)
+	Must(err)
 	return v
 }
 
@@ -166,7 +166,7 @@ func (p Plan) ExecTime() time.Duration {
 	e := strings.Index(execInfo, ",")
 	tStr := execInfo[b+len("time:") : e]
 	d, err := time.ParseDuration(tStr)
-	must(err)
+	Must(err)
 	return d
 }
 

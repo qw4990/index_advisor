@@ -1,29 +1,31 @@
-package main
+package advisor
 
 import (
 	"fmt"
+	"github.com/qw4990/index_advisor/optimizer"
+	"github.com/qw4990/index_advisor/utils"
 	"sort"
 	"strings"
 	"testing"
 )
 
-func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (WorkloadInfo, WhatIfOptimizer) {
-	w := createWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
-	must(IndexableColumnsSelectionSimple(&w))
+func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (utils.WorkloadInfo, optimizer.WhatIfOptimizer) {
+	w := utils.CreateWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
+	utils.Must(IndexableColumnsSelectionSimple(&w))
 	if dsn == "" {
 		dsn = "root:@tcp(127.0.0.1:4000)/"
 	}
-	opt, err := NewTiDBWhatIfOptimizer("root:@tcp(127.0.0.1:4000)/")
-	must(err)
+	opt, err := optimizer.NewTiDBWhatIfOptimizer("root:@tcp(127.0.0.1:4000)/")
+	utils.Must(err)
 	//opt.SetDebug(true)
 
 	for _, schemaName := range w.AllSchemaNames() {
-		must(opt.Execute("drop database if exists " + schemaName))
-		must(opt.Execute("create database " + schemaName))
+		utils.Must(opt.Execute("drop database if exists " + schemaName))
+		utils.Must(opt.Execute("create database " + schemaName))
 	}
 	for _, t := range w.TableSchemas.ToList() {
-		must(opt.Execute("use " + t.SchemaName))
-		must(opt.Execute(t.CreateStmtText))
+		utils.Must(opt.Execute("use " + t.SchemaName))
+		utils.Must(opt.Execute(t.CreateStmtText))
 	}
 	return w, opt
 }
@@ -33,7 +35,7 @@ type indexSelectionCase struct {
 	schemaName       string
 	createTableStmts []string
 	rawSQLs          []string
-	expectedIndexes  []Index
+	expectedIndexes  []utils.Index
 }
 
 func testIndexSelection(dsn string, cases []indexSelectionCase) {
@@ -41,7 +43,7 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		fmt.Printf("======================= case %v =======================\n", i)
 		w, opt := prepareTestWorkload(dsn, c.schemaName, c.createTableStmts, c.rawSQLs)
 		res, err := SelectIndexAAAlgo(w, Parameter{MaximumIndexesToRecommend: c.numIndexes}, opt)
-		must(err)
+		utils.Must(err)
 		indexList := res.ToList()
 
 		notEqual := false
@@ -58,9 +60,9 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		}
 
 		if notEqual {
-			originalCost := EvaluateIndexConfCost(w, opt, NewSet[Index]())
-			expectedCost := EvaluateIndexConfCost(w, opt, ListToSet(c.expectedIndexes...))
-			actualCost := EvaluateIndexConfCost(w, opt, ListToSet(indexList...))
+			originalCost := utils.EvaluateIndexConfCost(w, opt, utils.NewSet[utils.Index]())
+			expectedCost := utils.EvaluateIndexConfCost(w, opt, utils.ListToSet(c.expectedIndexes...))
+			actualCost := utils.EvaluateIndexConfCost(w, opt, utils.ListToSet(indexList...))
 			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n",
 				originalCost.TotalWorkloadQueryCost, expectedCost.TotalWorkloadQueryCost, actualCost.TotalWorkloadQueryCost)
 			fmt.Printf("expected: %v\n", c.expectedIndexes)
@@ -78,17 +80,17 @@ func TestSimulateAndCost(t *testing.T) {
 			"select * from t where b = 1 and e = 1",
 		})
 
-	opt.CreateHypoIndex(NewIndex("test", "t", "a", "a"))
+	opt.CreateHypoIndex(utils.NewIndex("test", "t", "a", "a"))
 	plan1, _ := opt.Explain("select * from t where a = 1 and c < 1")
-	opt.DropHypoIndex(NewIndex("test", "t", "a", "a"))
+	opt.DropHypoIndex(utils.NewIndex("test", "t", "a", "a"))
 
 	for _, p := range plan1.Plan {
 		fmt.Println(">> ", p)
 	}
 
-	opt.CreateHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
+	opt.CreateHypoIndex(utils.NewIndex("test", "t", "ac", "a", "c"))
 	plan2, _ := opt.Explain("select * from t where a = 1 and c < 1")
-	opt.DropHypoIndex(NewIndex("test", "t", "ac", "a", "c"))
+	opt.DropHypoIndex(utils.NewIndex("test", "t", "ac", "a", "c"))
 	for _, p := range plan2.Plan {
 		fmt.Println(">> ", p)
 	}
@@ -101,7 +103,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a)"),
 			},
 		},
@@ -110,7 +112,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"create table t (a int, b int, c int)",
 			}, []string{
 				"select * from t where a = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a)"), // only 1 index even if we ask for 2
 			},
 		},
@@ -121,7 +123,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a)"),
 			},
 		},
@@ -132,7 +134,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1 and a = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a,b)"),
 			},
 		},
@@ -143,7 +145,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1 and a = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a,b)"), // only ab is recommended even if we ask for 2
 			},
 		},
@@ -154,7 +156,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(b)"),
 			},
 		},
@@ -165,7 +167,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 				"select * from t where a = 1",
 				"select * from t where a = 2",
 				"select * from t where b = 1",
-			}, []Index{
+			}, []utils.Index{
 				newIndex4Test("test.t(a)"),
 				newIndex4Test("test.t(b)"),
 			},
@@ -185,7 +187,7 @@ func TestIndexSelectionAACase(t *testing.T) {
 	testIndexSelection("", cases)
 }
 
-func newIndex4Test(key string) Index {
+func newIndex4Test(key string) utils.Index {
 	// test.t(b)
 	tmp := strings.Split(key, ".")
 	schemaName := tmp[0]
@@ -193,5 +195,5 @@ func newIndex4Test(key string) Index {
 	tableName := tmp[0]
 	cols := tmp[1][:len(tmp[1])-1]
 	colNames := strings.Split(cols, ",")
-	return NewIndex(schemaName, tableName, fmt.Sprintf("%v_%v_%v", schemaName, tableName, strings.Join(colNames, "_")), colNames...)
+	return utils.NewIndex(schemaName, tableName, fmt.Sprintf("%v_%v_%v", schemaName, tableName, strings.Join(colNames, "_")), colNames...)
 }

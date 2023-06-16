@@ -1,4 +1,4 @@
-package main
+package optimizer
 
 import (
 	"database/sql"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/qw4990/index_advisor/utils"
 )
 
 type WhatIfOptimizerStats struct {
@@ -27,11 +28,11 @@ type WhatIfOptimizer interface {
 	Execute(sql string) error
 	Close() error // release the underlying database connection
 
-	CreateHypoIndex(index Index) error
-	DropHypoIndex(index Index) error
+	CreateHypoIndex(index utils.Index) error
+	DropHypoIndex(index utils.Index) error
 
-	Explain(query string) (plan Plan, err error)
-	ExplainAnalyze(query string) (plan Plan, err error)
+	Explain(query string) (plan utils.Plan, err error)
+	ExplainAnalyze(query string) (plan utils.Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -46,7 +47,7 @@ type TiDBWhatIfOptimizer struct {
 }
 
 func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
-	Debugf("connecting to %v", DSN)
+	utils.Debugf("connecting to %v", DSN)
 	db, err := sql.Open("mysql", DSN)
 	if err != nil {
 		return nil, err
@@ -86,25 +87,25 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 	return o.db.Close()
 }
 
-func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index Index) error {
+func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index utils.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
-	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.columnNames(), ", "))
+	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.ColumnNames(), ", "))
 	err := o.Execute(createStmt)
 	if err != nil {
-		Errorf("failed to create hypo index '%v': %v", createStmt, err)
+		utils.Errorf("failed to create hypo index '%v': %v", createStmt, err)
 	}
 	return err
 }
 
-func (o *TiDBWhatIfOptimizer) DropHypoIndex(index Index) error {
+func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) Explain(query string) (plan Plan, err error) {
+func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
 	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
-		return Plan{}, err
+		return utils.Plan{}, err
 	}
 	defer result.Close()
 	var p [][]string
@@ -116,12 +117,12 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan Plan, err error) {
 		}
 		p = append(p, []string{id, estRows, estCost, task, obj, opInfo})
 	}
-	return Plan{p}, nil
+	return utils.Plan{p}, nil
 }
 
-func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan Plan, err error) {
+func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
-	must(err)
+	utils.Must(err)
 	defer result.Close()
 	var p [][]string
 	for result.Next() {
@@ -132,7 +133,7 @@ func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan Plan, err error
 		}
 		p = append(p, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
 	}
-	return Plan{p}, nil
+	return utils.Plan{p}, nil
 }
 
 func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {

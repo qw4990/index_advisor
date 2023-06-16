@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/qw4990/index_advisor/advisor"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/qw4990/index_advisor/optimizer"
+	"github.com/qw4990/index_advisor/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -37,19 +40,19 @@ func newExecWorkloadCmd() *cobra.Command {
 		Short: "exec all queries in the specified workload",
 		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = filterBySQLAlias(info.SQLs, qs)
+				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
 			}
 
-			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
-			must(err)
-			must(db.Execute(`use ` + opt.schemaName))
+			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
+			utils.Must(err)
+			utils.Must(db.Execute(`use ` + opt.schemaName))
 
 			sqls := info.SQLs.ToList()
 			sort.Slice(sqls, func(i, j int) bool {
@@ -61,14 +64,14 @@ func newExecWorkloadCmd() *cobra.Command {
 			summaryContent := ""
 			var totExecTime time.Duration
 			for _, sql := range sqls {
-				if sql.Type() != SQLTypeSelect {
+				if sql.Type() != utils.SQLTypeSelect {
 					continue
 				}
 				var execTimes []time.Duration
-				var plans []Plan
+				var plans []utils.Plan
 				for k := 0; k < 5; k++ {
 					p, err := db.ExplainAnalyze(sql.Text)
-					must(err)
+					utils.Must(err)
 					plans = append(plans, p)
 					execTimes = append(execTimes, p.ExecTime())
 				}
@@ -83,16 +86,16 @@ func newExecWorkloadCmd() *cobra.Command {
 				content += fmt.Sprintf("ExecTimes: %v\n", execTimes)
 				content += fmt.Sprintf("SQL:\n %s\n\n", sql.Text)
 				for _, p := range plans {
-					content += fmt.Sprintf("%v\n", FormatPlan(p))
+					content += fmt.Sprintf("%v\n", utils.FormatPlan(p))
 				}
-				saveContentTo(fmt.Sprintf("%v/%v.txt", savePath, sql.Alias), content)
+				utils.SaveContentTo(fmt.Sprintf("%v/%v.txt", savePath, sql.Alias), content)
 
 				summaryContent += fmt.Sprintf("%v %v\n", sql.Alias, avgTime)
 				fmt.Println(sql.Alias, avgTime)
 			}
 			fmt.Println("TotalExecutionTime:", totExecTime)
 			summaryContent += fmt.Sprintf("TotalExecutionTime: %v\n", totExecTime)
-			saveContentTo(fmt.Sprintf("%v/summary.txt", savePath), summaryContent)
+			utils.SaveContentTo(fmt.Sprintf("%v/summary.txt", savePath), summaryContent)
 			return nil
 		},
 	}
@@ -119,31 +122,31 @@ func newLoadWorkloadCmd() *cobra.Command {
 		Long:  `load tables and related statistics of the specified workload into your cluster`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// create a connection
-			db, err := NewTiDBWhatIfOptimizer(opt.dsn)
-			must(err)
+			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
+			utils.Must(err)
 
 			// create the corresponding database
-			must(db.Execute(`create database if not exists ` + opt.schemaName))
-			must(db.Execute(`use ` + opt.schemaName))
+			utils.Must(db.Execute(`create database if not exists ` + opt.schemaName))
+			utils.Must(db.Execute(`use ` + opt.schemaName))
 
 			// create tables
 			schemaSQLPath := path.Join(opt.workloadPath, "schema.sql")
-			schemaSQLs, err := ParseRawSQLsFromFile(schemaSQLPath)
-			must(err)
+			schemaSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
+			utils.Must(err)
 			for _, stmt := range schemaSQLs {
-				must(db.Execute(stmt))
+				utils.Must(db.Execute(stmt))
 			}
 
 			// load statistics
 			statsFiles, err := os.ReadDir(path.Join(opt.workloadPath, "stats"))
-			must(err)
+			utils.Must(err)
 			for _, statsFile := range statsFiles {
 				statsPath := path.Join(opt.workloadPath, "stats", statsFile.Name())
 				absStatsPath, err := filepath.Abs(statsPath)
-				must(err, statsPath)
+				utils.Must(err, statsPath)
 				mysql.RegisterLocalFile(absStatsPath)
 				loadStatsSQL := fmt.Sprintf("load stats '%s'", absStatsPath)
-				must(db.Execute(loadStatsSQL))
+				utils.Must(db.Execute(loadStatsSQL))
 			}
 			return nil
 		},
@@ -172,20 +175,20 @@ func newAdviseCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			updateLogLevel(logLevel)
-			info, err := LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			utils.SetLogLevel(logLevel)
+			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = filterBySQLAlias(info.SQLs, qs)
+				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
 			}
 
 			savePath := path.Join(opt.workloadPath, "advise-result")
-			return IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
-				Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
+			return advisor.IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
+				advisor.Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
 		},
 	}
 

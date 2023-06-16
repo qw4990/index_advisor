@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -9,9 +9,24 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
+func FilterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
+	aliasMap := make(map[string]struct{})
+	for _, a := range alias {
+		aliasMap[strings.TrimSpace(a)] = struct{}{}
+	}
+
+	filtered := NewSet[SQL]()
+	for _, sql := range sqls.ToList() {
+		if _, ok := aliasMap[sql.Alias]; ok {
+			filtered.Add(sql)
+		}
+	}
+	return filtered
+}
+
 // createWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
 // This function is mainly for testing.
-func createWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
+func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
 	sqls := NewSet[SQL]()
 	for _, rawSQL := range rawSQLs {
 		sqls.Add(SQL{
@@ -23,7 +38,7 @@ func createWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 	tableSchemas := NewSet[TableSchema]()
 	for _, createStmt := range createTableStmts {
 		tableSchema, err := ParseCreateTableStmt(schemaName, createStmt)
-		must(err)
+		Must(err)
 		tableSchemas.Add(tableSchema)
 	}
 	return WorkloadInfo{
@@ -90,7 +105,7 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 // ParseCreateTableStmt parses a create table statement and returns a TableSchema.
 func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
 	stmt, err := ParseOneSQL(createTableStmt)
-	must(err, createTableStmt)
+	Must(err, createTableStmt)
 	createTable := stmt.(*ast.CreateTableStmt)
 	t := TableSchema{
 		SchemaName:     schemaName,
@@ -107,31 +122,6 @@ func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, erro
 	}
 	// TODO: parse indexes
 	return t, nil
-}
-
-// EvaluateIndexConfCost evaluates the workload cost under the given indexes.
-func EvaluateIndexConfCost(info WorkloadInfo, optimizer WhatIfOptimizer, indexes Set[Index]) IndexConfCost {
-	for _, index := range indexes.ToList() {
-		must(optimizer.CreateHypoIndex(index))
-	}
-	var workloadCost float64
-	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
-		if sql.Type() != SQLTypeSelect {
-			continue
-		}
-		must(optimizer.Execute(`use ` + sql.SchemaName))
-		p, err := optimizer.Explain(sql.Text)
-		must(err, sql.Text)
-		workloadCost += p.PlanCost() * float64(sql.Frequency)
-	}
-	for _, index := range indexes.ToList() {
-		must(optimizer.DropHypoIndex(index))
-	}
-	var totCols int
-	for _, index := range indexes.ToList() {
-		totCols += len(index.Columns)
-	}
-	return IndexConfCost{workloadCost, totCols}
 }
 
 // TempIndexName returns a temp index name for the given columns.
@@ -152,7 +142,7 @@ func FormatPlan(p Plan) string {
 		maxLen := 0
 		for r := 0; r < nRows; r++ {
 			lines[r] += p.Plan[r][c] + blank
-			maxLen = max(maxLen, utf8.RuneCountInString(lines[r]))
+			maxLen = Max(maxLen, utf8.RuneCountInString(lines[r]))
 		}
 		for r := 0; r < nRows; r++ {
 			lines[r] += strings.Repeat(" ", maxLen-utf8.RuneCountInString(lines[r]))
@@ -161,8 +151,7 @@ func FormatPlan(p Plan) string {
 	return strings.Join(lines, "\n")
 }
 
-// checkWorkloadInfo checks whether this workload info is fulfilled.
-func checkWorkloadInfo(w WorkloadInfo) {
+func CheckWorkloadInfo(w WorkloadInfo) {
 	for _, col := range w.IndexableColumns.ToList() {
 		if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
 			panic(fmt.Sprintf("invalid indexable column: %v", col))

@@ -1,7 +1,9 @@
-package main
+package advisor
 
 import (
 	"fmt"
+	"github.com/qw4990/index_advisor/optimizer"
+	"github.com/qw4990/index_advisor/utils"
 	"os"
 	"path"
 	"sort"
@@ -9,16 +11,16 @@ import (
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
-	workloadInfo WorkloadInfo, // the target workload
+	workloadInfo utils.WorkloadInfo, // the target workload
 	parameter Parameter, // the input parameters
-	optimizer WhatIfOptimizer, // the what-if optimizer
-) (Set[Index], error)
+	optimizer optimizer.WhatIfOptimizer, // the what-if optimizer
+) (utils.Set[utils.Index], error)
 
 // IndexableColumnsSelectionAlgo is the interface for indexable columns selection algorithms.
-type IndexableColumnsSelectionAlgo func(workloadInfo *WorkloadInfo) error
+type IndexableColumnsSelectionAlgo func(workloadInfo *utils.WorkloadInfo) error
 
 // WorkloadInfoCompressionAlgo is the interface for workload info compression algorithms.
-type WorkloadInfoCompressionAlgo func(workloadInfo WorkloadInfo) WorkloadInfo
+type WorkloadInfoCompressionAlgo func(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
@@ -42,8 +44,8 @@ type Parameter struct {
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo WorkloadInfo, param Parameter) error {
-	Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
+func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo utils.WorkloadInfo, param Parameter) error {
+	utils.Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
 
 	compress, ok := compressAlgorithms[compressAlgo]
 	if !ok {
@@ -60,29 +62,29 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 		return fmt.Errorf("selection algorithm %s not found", selectionAlgo)
 	}
 
-	optimizer, err := NewTiDBWhatIfOptimizer(dsn)
+	optimizer, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	if err != nil {
 		return err
 	}
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
 	if compressAlgo != "none" {
-		Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
+		utils.Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
 	}
 
-	must(indexable(&compressedWorkloadInfo))
-	Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
+	utils.Must(indexable(&compressedWorkloadInfo))
+	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
-	checkWorkloadInfo(compressedWorkloadInfo)
+	utils.CheckWorkloadInfo(compressedWorkloadInfo)
 	recommendedIndexes, err := selection(compressedWorkloadInfo, param, optimizer)
-	must(err)
+	utils.Must(err)
 
 	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)
 	return nil
 }
 
 // PrintAndSaveAdviseResult prints and saves the index advisor result.
-func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload WorkloadInfo, optimizer WhatIfOptimizer) {
+func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	os.MkdirAll(savePath, 0777)
@@ -95,31 +97,31 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		ddlContent += index.DDL() + ";\n"
 	}
 	fmt.Println(ddlContent)
-	saveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
+	utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
 
 	sqls := workload.SQLs.ToList()
-	var oriPlans, optPlans []Plan
+	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
-		must(err)
+		utils.Must(err)
 		oriPlans = append(oriPlans, p)
 	}
 	for _, idx := range indexList {
-		must(optimizer.CreateHypoIndex(idx))
+		utils.Must(optimizer.CreateHypoIndex(idx))
 	}
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
-		must(err)
+		utils.Must(err)
 		optPlans = append(optPlans, p)
 	}
 	for _, idx := range indexList {
-		must(optimizer.DropHypoIndex(idx))
+		utils.Must(optimizer.DropHypoIndex(idx))
 	}
 
 	type PlanDiff struct {
-		SQL     SQL
-		OriPlan Plan
-		OptPlan Plan
+		SQL     utils.SQL
+		OriPlan utils.Plan
+		OptPlan utils.Plan
 	}
 	var planDiffs []PlanDiff
 	for i := range sqls {
@@ -143,16 +145,16 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
 		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
-		content += FormatPlan(diff.OriPlan)
+		content += utils.FormatPlan(diff.OriPlan)
 		content += "\n\n------------------ optimized plan -----------------\n"
-		content += FormatPlan(diff.OptPlan)
+		content += utils.FormatPlan(diff.OptPlan)
 		var ppath string
 		if diff.SQL.Alias != "" {
 			ppath = path.Join(savePath, fmt.Sprintf("%s.txt", diff.SQL.Alias))
 		} else {
 			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
 		}
-		saveContentTo(ppath, content)
+		utils.SaveContentTo(ppath, content)
 		oriTotCost += diff.OriPlan.PlanCost()
 		optTotCost += diff.OptPlan.PlanCost()
 
@@ -163,5 +165,5 @@ func PrintAndSaveAdviseResult(savePath string, indexes Set[Index], workload Work
 		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
-	saveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
+	utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
 }

@@ -1,17 +1,18 @@
-package main
+package advisor
 
 import (
 	"fmt"
+	"github.com/qw4990/index_advisor/utils"
 	"testing"
 )
 
 func TestFindIndexableColumnsSimple(t *testing.T) {
-	workload := WorkloadInfo{
-		TableSchemas: ListToSet(TableSchema{"test", "t", NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
-		SQLs: ListToSet(SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
-			SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
+	workload := utils.WorkloadInfo{
+		TableSchemas: utils.ListToSet(utils.TableSchema{"test", "t", utils.NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
+		SQLs: utils.ListToSet(utils.SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
+			utils.SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
 	}
-	must(IndexableColumnsSelectionSimple(&workload))
+	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.SQLs.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
@@ -19,34 +20,34 @@ func TestFindIndexableColumnsSimple(t *testing.T) {
 }
 
 func TestFindIndexableColumnsSimple2(t *testing.T) {
-	t1, err := ParseCreateTableStmt("test", "create table t1 (a int)")
-	must(err)
-	t2, err := ParseCreateTableStmt("test", "create table t2 (a int)")
-	must(err)
-	workload := WorkloadInfo{
-		TableSchemas: ListToSet(t1, t2),
-		SQLs:         ListToSet(SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
+	t1, err := utils.ParseCreateTableStmt("test", "create table t1 (a int)")
+	utils.Must(err)
+	t2, err := utils.ParseCreateTableStmt("test", "create table t2 (a int)")
+	utils.Must(err)
+	workload := utils.WorkloadInfo{
+		TableSchemas: utils.ListToSet(t1, t2),
+		SQLs:         utils.ListToSet(utils.SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
 	}
-	must(IndexableColumnsSelectionSimple(&workload))
+	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 }
 
 func TestFindIndexableColumnsSimpleJOB(t *testing.T) {
-	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
-	must(err)
-	w.SQLs = filterBySQLAlias(w.SQLs, []string{"1a"})
-	must(IndexableColumnsSelectionSimple(&w))
+	w, err := utils.LoadWorkloadInfo("imdbload", "./workload/job")
+	utils.Must(err)
+	w.SQLs = utils.FilterBySQLAlias(w.SQLs, []string{"1a"})
+	utils.Must(IndexableColumnsSelectionSimple(&w))
 	for _, c := range w.IndexableColumns.ToList() {
 		fmt.Println(c)
 	}
 }
 
 func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
-	workload := WorkloadInfo{
-		TableSchemas: ListToSet(
-			TableSchema{"tpch", "nation", NewColumns("tpch", "nation", "N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT"), nil, ""}),
-		SQLs: ListToSet(
-			SQL{"", "tpch", `select
+	workload := utils.WorkloadInfo{
+		TableSchemas: utils.ListToSet(
+			utils.TableSchema{"tpch", "nation", utils.NewColumns("tpch", "nation", "N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT"), nil, ""}),
+		SQLs: utils.ListToSet(
+			utils.SQL{"", "tpch", `select
 	supp_nation,
 	cust_nation,
 	l_year,
@@ -85,7 +86,7 @@ order by
 	supp_nation,
 	cust_nation,
 	l_year`, 1, nil, nil})}
-	must(IndexableColumnsSelectionSimple(&workload))
+	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.SQLs.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
