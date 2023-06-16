@@ -1,149 +1,42 @@
 package optimizer
 
 import (
-	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/qw4990/index_advisor/utils"
 	"github.com/qw4990/index_advisor/workload"
 )
 
+// WhatIfOptimizerStats records the statistics of a what-if optimizer.
 type WhatIfOptimizerStats struct {
-	ExecuteCount             int
-	ExecuteTime              time.Duration
-	CreateOrDropHypoIdxCount int
-	CreateOrDropHypoIdxTime  time.Duration
-	GetCostCount             int
-	GetCostTime              time.Duration
+	ExecuteCount             int           // number of executed SQL statements
+	ExecuteTime              time.Duration // total execution time
+	CreateOrDropHypoIdxCount int           // number of executed CreateHypoIndex/DropHypoIndex
+	CreateOrDropHypoIdxTime  time.Duration // total execution time of CreateHypoIndex/DropHypoIndex
+	GetCostCount             int           // number of executed GetCost
+	GetCostTime              time.Duration // total execution time of GetCost
 }
 
+// Format formats the statistics.
 func (s WhatIfOptimizerStats) Format() string {
 	return fmt.Sprintf(`Execute(count/time): (%v/%v), CreateOrDropHypoIndex: (%v/%v), GetCost: (%v/%v)`,
 		s.ExecuteCount, s.ExecuteTime, s.CreateOrDropHypoIdxCount, s.CreateOrDropHypoIdxTime, s.GetCostCount, s.GetCostTime)
 }
 
+// WhatIfOptimizer is the interface of a what-if optimizer.
 type WhatIfOptimizer interface {
-	Execute(sql string) error
-	Close() error // release the underlying database connection
+	Execute(sql string) error // execute the specified SQL statement
+	Close() error             // release the underlying database connection
 
-	CreateHypoIndex(index workload.Index) error
-	DropHypoIndex(index workload.Index) error
+	CreateHypoIndex(index workload.Index) error // create a hypothetical index
+	DropHypoIndex(index workload.Index) error   // drop a hypothetical index
 
-	Explain(query string) (plan workload.Plan, err error)
-	ExplainAnalyze(query string) (plan workload.Plan, err error)
+	Explain(query string) (plan workload.Plan, err error)        // return the execution plan of the specified query
+	ExplainAnalyze(query string) (plan workload.Plan, err error) // return the execution plan of the specified query with analyze
 
-	ResetStats()
-	Stats() WhatIfOptimizerStats
+	ResetStats()                 // reset the statistics
+	Stats() WhatIfOptimizerStats // return the statistics
 
 	SetDebug(flag bool) // print each query if set to true
-}
-
-type TiDBWhatIfOptimizer struct {
-	db        *sql.DB
-	stats     WhatIfOptimizerStats
-	debugFlag bool
-}
-
-func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
-	utils.Debugf("connecting to %v", DSN)
-	db, err := sql.Open("mysql", DSN)
-	if err != nil {
-		return nil, err
-	}
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-
-	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}, false}, nil
-}
-
-func (o *TiDBWhatIfOptimizer) ResetStats() {
-	o.stats = WhatIfOptimizerStats{}
-}
-
-func (o *TiDBWhatIfOptimizer) Stats() WhatIfOptimizerStats {
-	return o.stats
-}
-
-func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, dur *time.Duration, counter *int) {
-	*dur = *dur + time.Since(startTime)
-	*counter = *counter + 1
-}
-
-func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
-	defer o.recordStats(time.Now(), &o.stats.ExecuteTime, &o.stats.ExecuteCount)
-	if o.debugFlag {
-		fmt.Println(sql)
-	}
-	_, err := o.db.Exec(sql)
-	return err
-}
-
-func (o *TiDBWhatIfOptimizer) Close() error {
-	return o.db.Close()
-}
-
-func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index workload.Index) error {
-	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
-	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.ColumnNames(), ", "))
-	err := o.Execute(createStmt)
-	if err != nil {
-		utils.Errorf("failed to create hypo index '%v': %v", createStmt, err)
-	}
-	return err
-}
-
-func (o *TiDBWhatIfOptimizer) DropHypoIndex(index workload.Index) error {
-	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
-	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
-}
-
-func (o *TiDBWhatIfOptimizer) Explain(query string) (plan workload.Plan, err error) {
-	result, err := o.query("explain format = 'verbose' " + query)
-	if err != nil {
-		return workload.Plan{}, err
-	}
-	defer result.Close()
-	var p [][]string
-	for result.Next() {
-		// | id | estRows | estCost | task | access object | operator info |
-		var id, estRows, estCost, task, obj, opInfo string
-		if err = result.Scan(&id, &estRows, &estCost, &task, &obj, &opInfo); err != nil {
-			return
-		}
-		p = append(p, []string{id, estRows, estCost, task, obj, opInfo})
-	}
-	return workload.Plan{p}, nil
-}
-
-func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan workload.Plan, err error) {
-	result, err := o.query("explain analyze format = 'verbose' " + query)
-	utils.Must(err)
-	defer result.Close()
-	var p [][]string
-	for result.Next() {
-		// | id | estRows  | estCost | actRows | task | access object | execution info | operator info | memory | disk |
-		var id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk string
-		if err = result.Scan(&id, &estRows, &estCost, &actRows, &task, &obj, &execInfo, &opInfo, &mem, &disk); err != nil {
-			return
-		}
-		p = append(p, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
-	}
-	return workload.Plan{p}, nil
-}
-
-func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {
-	o.debugFlag = flag
-}
-
-func (o *TiDBWhatIfOptimizer) query(query string) (*sql.Rows, error) {
-	if o.debugFlag {
-		fmt.Println(query)
-	}
-	return o.db.Query(query)
 }
