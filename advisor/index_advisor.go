@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 	"os"
 	"path"
 	"sort"
@@ -11,16 +12,16 @@ import (
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
-	workloadInfo utils.WorkloadInfo, // the target workload
+	workloadInfo wk.WorkloadInfo, // the target workload
 	parameter Parameter, // the input parameters
 	optimizer optimizer.WhatIfOptimizer, // the what-if optimizer
-) (utils.Set[utils.Index], error)
+) (utils.Set[wk.Index], error)
 
 // IndexableColumnsSelectionAlgo is the interface for indexable columns selection algorithms.
-type IndexableColumnsSelectionAlgo func(workloadInfo *utils.WorkloadInfo) error
+type IndexableColumnsSelectionAlgo func(workloadInfo *wk.WorkloadInfo) error
 
 // WorkloadInfoCompressionAlgo is the interface for workload info compression algorithms.
-type WorkloadInfoCompressionAlgo func(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo
+type WorkloadInfoCompressionAlgo func(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
@@ -44,7 +45,7 @@ type Parameter struct {
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo utils.WorkloadInfo, param Parameter) error {
+func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) error {
 	utils.Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
 
 	compress, ok := compressAlgorithms[compressAlgo]
@@ -75,7 +76,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 	utils.Must(indexable(&compressedWorkloadInfo))
 	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
-	utils.CheckWorkloadInfo(compressedWorkloadInfo)
+	wk.CheckWorkloadInfo(compressedWorkloadInfo)
 	recommendedIndexes, err := selection(compressedWorkloadInfo, param, optimizer)
 	utils.Must(err)
 
@@ -84,7 +85,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 }
 
 // PrintAndSaveAdviseResult prints and saves the index advisor result.
-func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
+func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], workload wk.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	os.MkdirAll(savePath, 0777)
@@ -100,7 +101,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], w
 	utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
 
 	sqls := workload.SQLs.ToList()
-	var oriPlans, optPlans []utils.Plan
+	var oriPlans, optPlans []wk.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
 		utils.Must(err)
@@ -119,9 +120,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], w
 	}
 
 	type PlanDiff struct {
-		SQL     utils.SQL
-		OriPlan utils.Plan
-		OptPlan utils.Plan
+		SQL     wk.SQL
+		OriPlan wk.Plan
+		OptPlan wk.Plan
 	}
 	var planDiffs []PlanDiff
 	for i := range sqls {
@@ -145,9 +146,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], w
 		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
 		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
-		content += utils.FormatPlan(diff.OriPlan)
+		content += wk.FormatPlan(diff.OriPlan)
 		content += "\n\n------------------ optimized plan -----------------\n"
-		content += utils.FormatPlan(diff.OptPlan)
+		content += wk.FormatPlan(diff.OptPlan)
 		var ppath string
 		if diff.SQL.Alias != "" {
 			ppath = path.Join(savePath, fmt.Sprintf("%s.txt", diff.SQL.Alias))

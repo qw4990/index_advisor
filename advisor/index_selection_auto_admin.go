@@ -3,6 +3,7 @@ package advisor
 import (
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 )
 
 /*
@@ -14,7 +15,7 @@ import (
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimizer optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
+func SelectIndexAAAlgo(workload wk.WorkloadInfo, parameter Parameter, optimizer optimizer.WhatIfOptimizer) (utils.Set[wk.Index], error) {
 	aa := &autoAdmin{
 		optimizer:  optimizer,
 		maxIndexes: parameter.MaximumIndexesToRecommend,
@@ -39,17 +40,17 @@ type autoAdmin struct {
 	maxIndexWidth    int // The number of columns an index can contain at maximum.
 }
 
-func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set[utils.Index] {
+func (aa *autoAdmin) calculateBestIndexes(workload wk.WorkloadInfo) utils.Set[wk.Index] {
 	if aa.maxIndexes == 0 {
 		return nil
 	}
 
-	potentialIndexes := utils.NewSet[utils.Index]() // each indexable column as a single-column index
+	potentialIndexes := utils.NewSet[wk.Index]() // each indexable column as a single-column index
 	for _, col := range workload.IndexableColumns.ToList() {
-		potentialIndexes.Add(utils.NewIndex(col.SchemaName, col.TableName, utils.TempIndexName(col), col.ColumnName))
+		potentialIndexes.Add(wk.NewIndex(col.SchemaName, col.TableName, wk.TempIndexName(col), col.ColumnName))
 	}
 
-	currentBestIndexes := utils.NewSet[utils.Index]()
+	currentBestIndexes := utils.NewSet[wk.Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
 		utils.Debugf("AutoAdmin Algo current max index width: %d", currentMaxIndexWidth)
 		candidates := aa.selectIndexCandidates(workload, potentialIndexes)
@@ -81,23 +82,23 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set
 	return currentBestIndexes
 }
 
-func (aa *autoAdmin) createMultiColumnIndexes(workload utils.WorkloadInfo, indexes utils.Set[utils.Index]) utils.Set[utils.Index] {
-	multiColumnCandidates := utils.NewSet[utils.Index]()
+func (aa *autoAdmin) createMultiColumnIndexes(workload wk.WorkloadInfo, indexes utils.Set[wk.Index]) utils.Set[wk.Index] {
+	multiColumnCandidates := utils.NewSet[wk.Index]()
 	for _, index := range indexes.ToList() {
-		table, found := workload.TableSchemas.Find(utils.TableSchema{SchemaName: index.SchemaName, TableName: index.TableName})
+		table, found := workload.TableSchemas.Find(wk.TableSchema{SchemaName: index.SchemaName, TableName: index.TableName})
 		if !found {
 			continue
 		}
-		tableColsSet := utils.ListToSet[utils.Column](table.Columns...)
+		tableColsSet := utils.ListToSet[wk.Column](table.Columns...)
 		indexableColsSet := workload.IndexableColumns
-		indexColsSet := utils.ListToSet[utils.Column](index.Columns...)
+		indexColsSet := utils.ListToSet[wk.Column](index.Columns...)
 		for _, column := range utils.DiffSet(utils.AndSet(tableColsSet, indexableColsSet), indexColsSet).ToList() {
-			cols := append([]utils.Column{}, index.Columns...)
+			cols := append([]wk.Column{}, index.Columns...)
 			cols = append(cols, column)
-			multiColumnCandidates.Add(utils.Index{
+			multiColumnCandidates.Add(wk.Index{
 				SchemaName: index.SchemaName,
 				TableName:  index.TableName,
-				IndexName:  utils.TempIndexName(cols...),
+				IndexName:  wk.TempIndexName(cols...),
 				Columns:    cols,
 			})
 		}
@@ -108,9 +109,9 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload utils.WorkloadInfo, index
 // filterIndexes filters some obviously unreasonable indexes.
 // Rule 1: if index X is a prefix of index Y, then remove X.
 // Rule 2(TBD): remove unnecessary suffix columns, e.g. X(a, b, c) to X(a, b) if no query can gain benefit from the suffix column c.
-func (aa *autoAdmin) filterIndexes(indexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) filterIndexes(indexes utils.Set[wk.Index]) utils.Set[wk.Index] {
 	indexList := indexes.ToList()
-	filteredIndexes := utils.NewSet[utils.Index]()
+	filteredIndexes := utils.NewSet[wk.Index]()
 	for i, x := range indexList {
 		filtered := false
 		for j, y := range indexList {
@@ -133,14 +134,14 @@ func (aa *autoAdmin) filterIndexes(indexes utils.Set[utils.Index]) utils.Set[uti
 // Rule 1: if candidate index X has no benefit, then remove X.
 // Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
 // Rule 3(TBD): if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
-func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates utils.Set[utils.Index]) utils.Set[utils.Index] {
-	mergedCandidates := utils.NewSet[utils.Index]()
+func (aa *autoAdmin) mergeCandidates(workload wk.WorkloadInfo, candidates utils.Set[wk.Index]) utils.Set[wk.Index] {
+	mergedCandidates := utils.NewSet[wk.Index]()
 	candidatesList := candidates.ToList()
-	var candidateCosts []utils.IndexConfCost
+	var candidateCosts []wk.IndexConfCost
 	for _, c := range candidatesList {
 		candidateCosts = append(candidateCosts, EvaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c)))
 	}
-	originalCost := EvaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[utils.Index]())
+	originalCost := EvaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[wk.Index]())
 	for i, x := range candidatesList {
 		// rule 1
 		if originalCost.Less(candidateCosts[i]) {
@@ -148,7 +149,7 @@ func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates uti
 		}
 
 		// rule 2
-		table, ok := workload.TableSchemas.Find(utils.TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
+		table, ok := workload.TableSchemas.Find(wk.TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
 		if !ok {
 			panic("table not found")
 		}
@@ -179,13 +180,13 @@ func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates uti
 }
 
 // selectIndexCandidates selects the best indexes for each single-query.
-func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
-	candidates := utils.NewSet[utils.Index]()
+func (aa *autoAdmin) selectIndexCandidates(workload wk.WorkloadInfo, potentialIndexes utils.Set[wk.Index]) utils.Set[wk.Index] {
+	candidates := utils.NewSet[wk.Index]()
 	for _, query := range workload.SQLs.ToList() {
-		if query.Type() != utils.SQLTypeSelect {
+		if query.Type() != wk.SQLTypeSelect {
 			continue
 		}
-		queryWorkload := utils.WorkloadInfo{ // each query as a workload
+		queryWorkload := wk.WorkloadInfo{ // each query as a workload
 			SQLs:         utils.ListToSet(query),
 			TableSchemas: workload.TableSchemas,
 			TableStats:   workload.TableStats,
@@ -197,7 +198,7 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 }
 
 // potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
-func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) enumerateCombinations(workload wk.WorkloadInfo, candidateIndexes utils.Set[wk.Index]) utils.Set[wk.Index] {
 	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), aa.maxIndexes)
 	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 
@@ -207,14 +208,14 @@ func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo, candidat
 }
 
 // enumerateGreedy finds the best combination of indexes with a greedy algorithm.
-func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes utils.Set[utils.Index],
-	currentCost utils.IndexConfCost, candidateIndexes utils.Set[utils.Index], numberIndexes int) (utils.Set[utils.Index], utils.IndexConfCost) {
+func (aa *autoAdmin) enumerateGreedy(workload wk.WorkloadInfo, currentIndexes utils.Set[wk.Index],
+	currentCost wk.IndexConfCost, candidateIndexes utils.Set[wk.Index], numberIndexes int) (utils.Set[wk.Index], wk.IndexConfCost) {
 	if currentIndexes.Size() >= numberIndexes {
 		return currentIndexes, currentCost
 	}
 
-	var bestIndex utils.Index
-	var bestCost utils.IndexConfCost
+	var bestIndex wk.Index
+	var bestCost wk.IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
 		cost := EvaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
 		if cost.Less(bestCost) {
@@ -232,9 +233,9 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 }
 
 // enumerateNaive enumerates all possible combinations of indexes with at most numberIndexesNaive indexes and returns the best one.
-func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index], numberIndexesNaive int) (utils.Set[utils.Index], utils.IndexConfCost) {
-	lowestCostIndexes := utils.NewSet[utils.Index]()
-	var lowestCost utils.IndexConfCost
+func (aa *autoAdmin) enumerateNaive(workload wk.WorkloadInfo, candidateIndexes utils.Set[wk.Index], numberIndexesNaive int) (utils.Set[wk.Index], wk.IndexConfCost) {
+	lowestCostIndexes := utils.NewSet[wk.Index]()
+	var lowestCost wk.IndexConfCost
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range utils.CombSet(candidateIndexes, numberOfIndexes) {
 			cost := EvaluateIndexConfCost(workload, aa.optimizer, indexCombination)
@@ -247,8 +248,8 @@ func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexe
 	return lowestCostIndexes, lowestCost
 }
 
-func (aa *autoAdmin) potentialIndexesForQuery(query utils.SQL, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
-	indexes := utils.NewSet[utils.Index]()
+func (aa *autoAdmin) potentialIndexesForQuery(query wk.SQL, potentialIndexes utils.Set[wk.Index]) utils.Set[wk.Index] {
+	indexes := utils.NewSet[wk.Index]()
 	for _, index := range potentialIndexes.ToList() {
 		// The leading index column must be referenced by the query.
 		if query.IndexableColumns.Contains(index.Columns[0]) {

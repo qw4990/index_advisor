@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/qw4990/index_advisor/advisor"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,8 +10,10 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/qw4990/index_advisor/advisor"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 	"github.com/spf13/cobra"
 )
 
@@ -40,14 +41,14 @@ func newExecWorkloadCmd() *cobra.Command {
 		Short: "exec all queries in the specified workload",
 		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := wk.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
+				info.SQLs = wk.FilterBySQLAlias(info.SQLs, qs)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -64,11 +65,11 @@ func newExecWorkloadCmd() *cobra.Command {
 			summaryContent := ""
 			var totExecTime time.Duration
 			for _, sql := range sqls {
-				if sql.Type() != utils.SQLTypeSelect {
+				if sql.Type() != wk.SQLTypeSelect {
 					continue
 				}
 				var execTimes []time.Duration
-				var plans []utils.Plan
+				var plans []wk.Plan
 				for k := 0; k < 5; k++ {
 					p, err := db.ExplainAnalyze(sql.Text)
 					utils.Must(err)
@@ -86,7 +87,7 @@ func newExecWorkloadCmd() *cobra.Command {
 				content += fmt.Sprintf("ExecTimes: %v\n", execTimes)
 				content += fmt.Sprintf("SQL:\n %s\n\n", sql.Text)
 				for _, p := range plans {
-					content += fmt.Sprintf("%v\n", utils.FormatPlan(p))
+					content += fmt.Sprintf("%v\n", wk.FormatPlan(p))
 				}
 				utils.SaveContentTo(fmt.Sprintf("%v/%v.txt", savePath, sql.Alias), content)
 
@@ -176,14 +177,14 @@ func newAdviseCmd() *cobra.Command {
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(logLevel)
-			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := wk.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
+				info.SQLs = wk.FilterBySQLAlias(info.SQLs, qs)
 			}
 
 			savePath := path.Join(opt.workloadPath, "advise-result")

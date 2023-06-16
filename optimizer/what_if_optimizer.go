@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/qw4990/index_advisor/utils"
+	"github.com/qw4990/index_advisor/workload"
 )
 
 type WhatIfOptimizerStats struct {
@@ -28,11 +29,11 @@ type WhatIfOptimizer interface {
 	Execute(sql string) error
 	Close() error // release the underlying database connection
 
-	CreateHypoIndex(index utils.Index) error
-	DropHypoIndex(index utils.Index) error
+	CreateHypoIndex(index workload.Index) error
+	DropHypoIndex(index workload.Index) error
 
-	Explain(query string) (plan utils.Plan, err error)
-	ExplainAnalyze(query string) (plan utils.Plan, err error)
+	Explain(query string) (plan workload.Plan, err error)
+	ExplainAnalyze(query string) (plan workload.Plan, err error)
 
 	ResetStats()
 	Stats() WhatIfOptimizerStats
@@ -87,7 +88,7 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 	return o.db.Close()
 }
 
-func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index utils.Index) error {
+func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index workload.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.ColumnNames(), ", "))
 	err := o.Execute(createStmt)
@@ -97,15 +98,15 @@ func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index utils.Index) error {
 	return err
 }
 
-func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
+func (o *TiDBWhatIfOptimizer) DropHypoIndex(index workload.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
-func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
+func (o *TiDBWhatIfOptimizer) Explain(query string) (plan workload.Plan, err error) {
 	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
-		return utils.Plan{}, err
+		return workload.Plan{}, err
 	}
 	defer result.Close()
 	var p [][]string
@@ -117,10 +118,10 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error)
 		}
 		p = append(p, []string{id, estRows, estCost, task, obj, opInfo})
 	}
-	return utils.Plan{p}, nil
+	return workload.Plan{p}, nil
 }
 
-func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err error) {
+func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan workload.Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
 	utils.Must(err)
 	defer result.Close()
@@ -133,7 +134,7 @@ func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err
 		}
 		p = append(p, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
 	}
-	return utils.Plan{p}, nil
+	return workload.Plan{p}, nil
 }
 
 func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {

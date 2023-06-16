@@ -3,16 +3,17 @@ package advisor
 import (
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 )
 
 // EvaluateIndexConfCost evaluates the workload cost under the given indexes.
-func EvaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[utils.Index]) utils.IndexConfCost {
+func EvaluateIndexConfCost(info wk.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[wk.Index]) wk.IndexConfCost {
 	for _, index := range indexes.ToList() {
 		utils.Must(optimizer.CreateHypoIndex(index))
 	}
 	var workloadCost float64
 	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
-		if sql.Type() != utils.SQLTypeSelect {
+		if sql.Type() != wk.SQLTypeSelect {
 			continue
 		}
 		utils.Must(optimizer.Execute(`use ` + sql.SchemaName))
@@ -27,5 +28,5 @@ func EvaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOp
 	for _, index := range indexes.ToList() {
 		totCols += len(index.Columns)
 	}
-	return utils.IndexConfCost{workloadCost, totCols}
+	return wk.IndexConfCost{workloadCost, totCols}
 }

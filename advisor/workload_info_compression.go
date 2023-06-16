@@ -2,6 +2,7 @@ package advisor
 
 import (
 	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 	"regexp"
 	"strings"
 )
@@ -14,30 +15,30 @@ const (
 )
 
 type Cluster struct {
-	SQLs      []utils.SQL
+	SQLs      []wk.SQL
 	Frequency int
 }
 type clusterList []*Cluster
 
 // NoneWorkloadInfoCompress does nothing.
-func NoneWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
+func NoneWorkloadInfoCompress(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo {
 	return workloadInfo
 }
 
 // NaiveWorkloadInfoCompress does nothing.
-func NaiveWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
+func NaiveWorkloadInfoCompress(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo {
 
 	return workloadInfo
 }
 
-func ClusteringWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
+func ClusteringWorkloadInfoCompress(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo {
 	clusters := make(clusterList, 0)
 
 	for _, sql := range workloadInfo.SQLs.ToList() {
 		clusters.addSQLToCluster(sql)
 	}
 
-	newSQLs := utils.NewSet[utils.SQL]()
+	newSQLs := utils.NewSet[wk.SQL]()
 	for _, c := range clusters {
 		maxFreq := 0
 		maxSQLIndex := -1
@@ -76,7 +77,7 @@ func getTemplate(query string) string {
 }
 
 // template + tpye + schemaName same
-func (cl *clusterList) addSQLToCluster(sql utils.SQL) {
+func (cl *clusterList) addSQLToCluster(sql wk.SQL) {
 	for _, c := range *cl {
 		if c.SQLs[0].Type() == sql.Type() && c.SQLs[0].SchemaName == sql.SchemaName && getTemplate(c.SQLs[0].Text) == getTemplate(sql.Text) {
 			c.SQLs = append(c.SQLs, sql)
@@ -85,7 +86,7 @@ func (cl *clusterList) addSQLToCluster(sql utils.SQL) {
 		}
 	}
 	*cl = append(*cl, &Cluster{
-		SQLs:      []utils.SQL{sql},
+		SQLs:      []wk.SQL{sql},
 		Frequency: sql.Frequency,
 	})
 }

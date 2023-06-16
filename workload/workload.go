@@ -1,7 +1,8 @@
-package utils
+package workload
 
 import (
 	"fmt"
+	"github.com/qw4990/index_advisor/utils"
 	"math"
 	"strconv"
 	"strings"
@@ -24,8 +25,8 @@ type SQL struct { // DQL or DML
 	SchemaName       string
 	Text             string
 	Frequency        int
-	IndexableColumns Set[Column] // Indexable columns related to this SQL
-	Plans            []Plan      // A SQL may have multiple different plans
+	IndexableColumns utils.Set[Column] // Indexable columns related to this SQL
+	Plans            []Plan            // A SQL may have multiple different plans
 }
 
 func (sql SQL) Type() SQLType {
@@ -151,7 +152,7 @@ func (p Plan) IsExecuted() bool {
 
 func (p Plan) PlanCost() float64 {
 	v, err := strconv.ParseFloat(p.Plan[0][2], 64)
-	Must(err)
+	utils.Must(err)
 	return v
 }
 
@@ -166,7 +167,7 @@ func (p Plan) ExecTime() time.Duration {
 	e := strings.Index(execInfo, ",")
 	tStr := execInfo[b+len("time:") : e]
 	d, err := time.ParseDuration(tStr)
-	Must(err)
+	utils.Must(err)
 	return d
 }
 
@@ -175,10 +176,10 @@ type SampleRows struct {
 }
 
 type WorkloadInfo struct {
-	SQLs             Set[SQL]
-	TableSchemas     Set[TableSchema]
-	TableStats       Set[TableStats]
-	IndexableColumns Set[Column]
+	SQLs             utils.Set[SQL]
+	TableSchemas     utils.Set[TableSchema]
+	TableStats       utils.Set[TableStats]
+	IndexableColumns utils.Set[Column]
 	SampleRows       []SampleRows
 }
 
