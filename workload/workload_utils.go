@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// FilterBySQLAlias filters SQLs by their alias.
 func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
 	aliasMap := make(map[string]struct{})
 	for _, a := range alias {
@@ -24,7 +25,6 @@ func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
 }
 
 // CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
-// This function is mainly for testing.
 func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
 	sqls := utils.NewSet[SQL]()
 	for _, rawSQL := range rawSQLs {
