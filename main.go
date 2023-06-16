@@ -87,7 +87,7 @@ func newExecWorkloadCmd() *cobra.Command {
 				content += fmt.Sprintf("ExecTimes: %v\n", execTimes)
 				content += fmt.Sprintf("SQL:\n %s\n\n", sql.Text)
 				for _, p := range plans {
-					content += fmt.Sprintf("%v\n", wk.FormatPlan(p))
+					content += fmt.Sprintf("%v\n", p.Format())
 				}
 				utils.SaveContentTo(fmt.Sprintf("%v/%v.txt", savePath, sql.Alias), content)
 

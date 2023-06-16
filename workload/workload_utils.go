@@ -2,12 +2,10 @@ package workload
 
 import (
 	"fmt"
+	"github.com/pingcap/parser/ast"
 	"github.com/qw4990/index_advisor/utils"
 	"path"
 	"strings"
-	"unicode/utf8"
-
-	"github.com/pingcap/parser/ast"
 )
 
 func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
@@ -25,7 +23,7 @@ func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
 	return filtered
 }
 
-// createWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
+// CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
 // This function is mainly for testing.
 func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
 	sqls := utils.NewSet[SQL]()
@@ -123,69 +121,4 @@ func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, erro
 	}
 	// TODO: parse indexes
 	return t, nil
-}
-
-// TempIndexName returns a temp index name for the given columns.
-func TempIndexName(cols ...Column) string {
-	var names []string
-	for _, col := range cols {
-		names = append(names, col.ColumnName)
-	}
-	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
-}
-
-// FormatPlan formats the given plan.
-func FormatPlan(p Plan) string {
-	blank := strings.Repeat(" ", 4)
-	nRows, nCols := len(p.Plan), len(p.Plan[0])
-	lines := make([]string, nRows)
-	for c := 0; c < nCols; c++ {
-		maxLen := 0
-		for r := 0; r < nRows; r++ {
-			lines[r] += p.Plan[r][c] + blank
-			maxLen = utils.Max(maxLen, utf8.RuneCountInString(lines[r]))
-		}
-		for r := 0; r < nRows; r++ {
-			lines[r] += strings.Repeat(" ", maxLen-utf8.RuneCountInString(lines[r]))
-		}
-	}
-	return strings.Join(lines, "\n")
-}
-
-func CheckWorkloadInfo(w WorkloadInfo) {
-	for _, col := range w.IndexableColumns.ToList() {
-		if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-			panic(fmt.Sprintf("invalid indexable column: %v", col))
-		}
-	}
-	for _, sql := range w.SQLs.ToList() {
-		if sql.SchemaName == "" || sql.Text == "" {
-			panic(fmt.Sprintf("invalid sql: %v", sql))
-		}
-		for _, col := range sql.IndexableColumns.ToList() {
-			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-				panic(fmt.Sprintf("invalid indexable column: %v", col))
-			}
-		}
-	}
-	for _, tbl := range w.TableSchemas.ToList() {
-		if tbl.SchemaName == "" || tbl.TableName == "" {
-			panic(fmt.Sprintf("invalid table schema: %v", tbl))
-		}
-		for _, col := range tbl.Columns {
-			if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" || col.ColumnType == nil {
-				panic(fmt.Sprintf("invalid indexable column: %v", col))
-			}
-		}
-		for _, idx := range tbl.Indexes {
-			if idx.SchemaName == "" || idx.TableName == "" || idx.IndexName == "" {
-				panic(fmt.Sprintf("invalid index: %v", idx))
-			}
-			for _, col := range idx.Columns {
-				if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
-					panic(fmt.Sprintf("invalid indexable column: %v", col))
-				}
-			}
-		}
-	}
 }

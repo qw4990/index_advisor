@@ -47,7 +47,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload wk.WorkloadInfo) utils.Set[wk
 
 	potentialIndexes := utils.NewSet[wk.Index]() // each indexable column as a single-column index
 	for _, col := range workload.IndexableColumns.ToList() {
-		potentialIndexes.Add(wk.NewIndex(col.SchemaName, col.TableName, wk.TempIndexName(col), col.ColumnName))
+		potentialIndexes.Add(wk.NewIndex(col.SchemaName, col.TableName, tempIndexName(col), col.ColumnName))
 	}
 
 	currentBestIndexes := utils.NewSet[wk.Index]()
@@ -70,7 +70,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload wk.WorkloadInfo) utils.Set[wk
 	currentBestIndexes = aa.filterIndexes(currentBestIndexes)
 	for currentBestIndexes.Size() < aa.maxIndexes {
 		potentialIndexes = utils.DiffSet(potentialIndexes, currentBestIndexes)
-		currentCost := EvaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
+		currentCost := evaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
 		currentBestIndexes, _ = aa.enumerateGreedy(workload, currentBestIndexes, currentCost, potentialIndexes, aa.maxIndexes)
 		currentBestIndexes = aa.filterIndexes(currentBestIndexes)
 		limit++
@@ -98,7 +98,7 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload wk.WorkloadInfo, indexes 
 			multiColumnCandidates.Add(wk.Index{
 				SchemaName: index.SchemaName,
 				TableName:  index.TableName,
-				IndexName:  wk.TempIndexName(cols...),
+				IndexName:  tempIndexName(cols...),
 				Columns:    cols,
 			})
 		}
@@ -139,9 +139,9 @@ func (aa *autoAdmin) mergeCandidates(workload wk.WorkloadInfo, candidates utils.
 	candidatesList := candidates.ToList()
 	var candidateCosts []wk.IndexConfCost
 	for _, c := range candidatesList {
-		candidateCosts = append(candidateCosts, EvaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c)))
+		candidateCosts = append(candidateCosts, evaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c)))
 	}
-	originalCost := EvaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[wk.Index]())
+	originalCost := evaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[wk.Index]())
 	for i, x := range candidatesList {
 		// rule 1
 		if originalCost.Less(candidateCosts[i]) {
@@ -217,7 +217,7 @@ func (aa *autoAdmin) enumerateGreedy(workload wk.WorkloadInfo, currentIndexes ut
 	var bestIndex wk.Index
 	var bestCost wk.IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
-		cost := EvaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
+		cost := evaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
 		if cost.Less(bestCost) {
 			bestIndex, bestCost = index, cost
 		}
@@ -238,7 +238,7 @@ func (aa *autoAdmin) enumerateNaive(workload wk.WorkloadInfo, candidateIndexes u
 	var lowestCost wk.IndexConfCost
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range utils.CombSet(candidateIndexes, numberOfIndexes) {
-			cost := EvaluateIndexConfCost(workload, aa.optimizer, indexCombination)
+			cost := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
 			if cost.Less(lowestCost) {
 				lowestCostIndexes = indexCombination
 				lowestCost = cost

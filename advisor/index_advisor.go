@@ -76,7 +76,7 @@ func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath strin
 	utils.Must(indexable(&compressedWorkloadInfo))
 	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
-	wk.CheckWorkloadInfo(compressedWorkloadInfo)
+	checkWorkloadInfo(compressedWorkloadInfo)
 	recommendedIndexes, err := selection(compressedWorkloadInfo, param, optimizer)
 	utils.Must(err)
 
@@ -146,9 +146,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
 		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
 		content += "\n\n------------------ original plan ------------------\n"
-		content += wk.FormatPlan(diff.OriPlan)
+		content += diff.OriPlan.Format()
 		content += "\n\n------------------ optimized plan -----------------\n"
-		content += wk.FormatPlan(diff.OptPlan)
+		content += diff.OptPlan.Format()
 		var ppath string
 		if diff.SQL.Alias != "" {
 			ppath = path.Join(savePath, fmt.Sprintf("%s.txt", diff.SQL.Alias))

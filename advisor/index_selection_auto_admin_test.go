@@ -20,10 +20,10 @@ func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []str
 	utils.Must(err)
 	//opt.SetDebug(true)
 
-	for _, schemaName := range w.AllSchemaNames() {
-		utils.Must(opt.Execute("drop database if exists " + schemaName))
-		utils.Must(opt.Execute("create database " + schemaName))
-	}
+	//for _, schemaName := range w.AllSchemaNames() {
+	//	utils.Must(opt.Execute("drop database if exists " + schemaName))
+	//	utils.Must(opt.Execute("create database " + schemaName))
+	//}
 	for _, t := range w.TableSchemas.ToList() {
 		utils.Must(opt.Execute("use " + t.SchemaName))
 		utils.Must(opt.Execute(t.CreateStmtText))
@@ -85,14 +85,14 @@ func TestSimulateAndCost(t *testing.T) {
 	plan1, _ := opt.Explain("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(wk.NewIndex("test", "t", "a", "a"))
 
-	for _, p := range plan1.Plan {
+	for _, p := range plan1 {
 		fmt.Println(">> ", p)
 	}
 
 	opt.CreateHypoIndex(wk.NewIndex("test", "t", "ac", "a", "c"))
 	plan2, _ := opt.Explain("select * from t where a = 1 and c < 1")
 	opt.DropHypoIndex(wk.NewIndex("test", "t", "ac", "a", "c"))
-	for _, p := range plan2.Plan {
+	for _, p := range plan2 {
 		fmt.Println(">> ", p)
 	}
 }

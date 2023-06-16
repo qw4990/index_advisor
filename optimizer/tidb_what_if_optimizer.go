@@ -97,7 +97,7 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan workload.Plan, err err
 		}
 		p = append(p, []string{id, estRows, estCost, task, obj, opInfo})
 	}
-	return workload.Plan{p}, nil
+	return p, nil
 }
 
 // ExplainAnalyze returns the execution plan of the specified query.
@@ -114,7 +114,7 @@ func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan workload.Plan, 
 		}
 		p = append(p, []string{id, estRows, estCost, actRows, task, obj, execInfo, opInfo, mem, disk})
 	}
-	return workload.Plan{p}, nil
+	return p, nil
 }
 
 // SetDebug sets the debug flag.
