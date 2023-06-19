@@ -10,8 +10,8 @@ import (
 func TestFindIndexableColumnsSimple(t *testing.T) {
 	workload := workload.WorkloadInfo{
 		TableSchemas: utils.ListToSet(workload.TableSchema{"test", "t", workload.NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
-		SQLs: utils.ListToSet(workload.SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil, nil},
-			workload.SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil, nil}),
+		SQLs: utils.ListToSet(workload.SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
+			workload.SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil}),
 	}
 	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
@@ -27,7 +27,7 @@ func TestFindIndexableColumnsSimple2(t *testing.T) {
 	utils.Must(err)
 	workload := workload.WorkloadInfo{
 		TableSchemas: utils.ListToSet(t1, t2),
-		SQLs:         utils.ListToSet(workload.SQL{"", "test", "select * from t2 tx where a<1", 1, nil, nil}),
+		SQLs:         utils.ListToSet(workload.SQL{"", "test", "select * from t2 tx where a<1", 1, nil}),
 	}
 	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
@@ -86,7 +86,7 @@ group by
 order by
 	supp_nation,
 	cust_nation,
-	l_year`, 1, nil, nil})}
+	l_year`, 1, nil})}
 	utils.Must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.SQLs.ToList() {

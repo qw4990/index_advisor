@@ -43,7 +43,7 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 	for i, c := range cases {
 		fmt.Printf("======================= case %v =======================\n", i)
 		w, opt := prepareTestWorkload(dsn, c.schemaName, c.createTableStmts, c.rawSQLs)
-		res, err := SelectIndexAAAlgo(w, Parameter{MaximumIndexesToRecommend: c.numIndexes}, opt)
+		res, err := SelectIndexAAAlgo(w, Parameter{MaxNumberIndexes: c.numIndexes}, opt)
 		utils.Must(err)
 		indexList := res.ToList()
 

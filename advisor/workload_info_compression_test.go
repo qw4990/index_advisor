@@ -2,13 +2,18 @@ package advisor
 
 import (
 	"testing"
+
+	"github.com/qw4990/index_advisor/utils"
+	wk "github.com/qw4990/index_advisor/workload"
 )
 
-func Test_getTemplate(t *testing.T) {
-	query := "SELECT name FROM users WHERE age > 18 AND city = 'New York' AND hash = '1234'"
-	expected := "SELECT name FROM users WHERE age > # AND city = &&& AND hash = &&&"
-	result := getTemplate(query)
-	if result != expected {
-		t.Errorf("Template mismatch. Expected: %v, but got: %v", expected, result)
+func TestDigestCompression(t *testing.T) {
+	s := utils.NewSet[wk.SQL]()
+	s.Add(wk.SQL{Text: "select * from t1 where a = 1", Frequency: 1})
+	s.Add(wk.SQL{Text: "select * from t1 where a = 2", Frequency: 2})
+	s.Add(wk.SQL{Text: "select * from t1 where a = 3", Frequency: 3})
+	cs := compressBySQLDigest(s)
+	if cs.ToList()[0].Frequency != 1+2+3 {
+		t.Errorf("expect 6, got %v", cs.ToList()[0].Frequency)
 	}
 }

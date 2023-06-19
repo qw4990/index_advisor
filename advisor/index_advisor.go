@@ -25,9 +25,8 @@ type WorkloadInfoCompressionAlgo func(workloadInfo wk.WorkloadInfo) wk.WorkloadI
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
-		"none":       NoneWorkloadInfoCompress,
-		"naive":      NaiveWorkloadInfoCompress,
-		"clustering": ClusteringWorkloadInfoCompress,
+		"none":   NoneWorkloadInfoCompress,
+		"digest": DigestWorkloadInfoCompress,
 	}
 
 	findIndexableColsAlgorithms = map[string]IndexableColumnsSelectionAlgo{
@@ -36,7 +35,6 @@ var (
 
 	selectIndexAlgorithms = map[string]IndexSelectionAlgo{
 		"auto_admin": SelectIndexAAAlgo,
-		"genetic":    nil,
 	}
 )
 

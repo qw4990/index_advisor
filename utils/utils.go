@@ -96,6 +96,11 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	return p.ParseOneStmt(sqlText, "", "")
 }
 
+// NormalizeDigest normalizes the given SQL text and returns the normalized SQL text and its digest.
+func NormalizeDigest(sqlText string) (string, string) {
+	return parser.NormalizeDigest(sqlText)
+}
+
 type tableNameCollector struct {
 	tableNames Set[LowerString]
 }
