@@ -63,7 +63,7 @@ func (p Parameter) Validate() {
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(db optimizer.WhatIfOptimizer, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) error {
+func IndexAdvise(db optimizer.WhatIfOptimizer, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) (utils.Set[wk.Index], error) {
 	utils.Debugf("starting index advise with save-path %s", savePath)
 
 	param.Validate()
@@ -82,14 +82,16 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, savePath string, originalWorkload
 	utils.Must(err)
 
 	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, db)
-	return nil
+	return recommendedIndexes, nil
 }
 
 // PrintAndSaveAdviseResult prints and saves the index advisor result.
 func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], workload wk.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
-	os.MkdirAll(savePath, 0777)
+	if savePath != "" {
+		os.MkdirAll(savePath, 0777)
+	}
 	indexList := indexes.ToList()
 	sort.Slice(indexList, func(i, j int) bool {
 		return indexList[i].Key() < indexList[j].Key()
@@ -99,7 +101,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 		ddlContent += index.DDL() + ";\n"
 	}
 	fmt.Println(ddlContent)
-	utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
+	if savePath != "" {
+		utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
+	}
 
 	sqls := workload.SQLs.ToList()
 	var oriPlans, optPlans []wk.Plan
@@ -156,7 +160,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 		} else {
 			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
 		}
-		utils.SaveContentTo(ppath, content)
+		if savePath != "" {
+			utils.SaveContentTo(ppath, content)
+		}
 		oriTotCost += diff.OriPlan.PlanCost()
 		optTotCost += diff.OptPlan.PlanCost()
 
@@ -167,5 +173,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 		}
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
-	utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
+	if savePath != "" {
+		utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
+	}
 }
