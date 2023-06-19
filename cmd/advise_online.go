@@ -45,25 +45,28 @@ func NewAdviseOnlineCmd() *cobra.Command {
 }
 
 func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[workload.SQL] {
-	//mysql> select STMT_TYPE, SCHEMA_NAME, DIGEST_TEXT, EXEC_COUNT, AVG_LATENCY from information_schema.statements_summary;
-	q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, DIGEST_TEXT, EXEC_COUNT, AVG_LATENCY from information_schema.statements_summary_history `+
-		`where SCHEMA_NAME in ('%s')`, strings.Join(schemas, "', '"))
-	rows, err := db.Query(q)
-	utils.Must(err)
-	defer rows.Close()
-
 	s := utils.NewSet[workload.SQL]()
-	for rows.Next() {
-		var schemaName, digest, text, execCountStr, avgLatStr string
-		utils.Must(rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr))
-		execCount, err := strconv.Atoi(execCountStr)
+	for _, table := range []string{
+		`information_schema.statements_summary`,
+		`information_schema.statements_summary_history`,
+	} {
+		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, DIGEST_TEXT, EXEC_COUNT, AVG_LATENCY from %v `+
+			`where SCHEMA_NAME in ('%s')`, table, strings.Join(schemas, "', '"))
+		rows, err := db.Query(q)
 		utils.Must(err)
-		s.Add(workload.SQL{
-			Alias:      digest,
-			SchemaName: schemaName,
-			Text:       text,
-			Frequency:  execCount,
-		})
+		for rows.Next() {
+			var schemaName, digest, text, execCountStr, avgLatStr string
+			utils.Must(rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr))
+			execCount, err := strconv.Atoi(execCountStr)
+			utils.Must(err)
+			s.Add(workload.SQL{
+				Alias:      digest,
+				SchemaName: schemaName,
+				Text:       text,
+				Frequency:  execCount,
+			})
+		}
+		utils.Must(rows.Close())
 	}
 	return s
 }

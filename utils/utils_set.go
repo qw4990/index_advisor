@@ -21,6 +21,7 @@ type Set[T SetKey] interface {
 	AddList(items ...T)
 	AddSet(set Set[T])
 	Contains(item T) bool
+	ContainsKey(k string) bool
 	Find(k SetKey) (T, bool)
 	Remove(item T)
 	ToList() []T
@@ -48,7 +49,15 @@ func (s *setImpl[T]) Contains(item T) bool {
 	if s.s == nil {
 		return false
 	}
-	_, ok := s.s[item.Key()]
+	return s.ContainsKey(item.Key())
+}
+
+func (s *setImpl[T]) ContainsKey(k string) bool {
+	if s.s == nil {
+		return false
+	}
+
+	_, ok := s.s[k]
 	return ok
 }
 
