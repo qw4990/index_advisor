@@ -14,6 +14,7 @@ import (
 
 type adviseOnlineCmdOpt struct {
 	maxNumIndexes int
+	maxIndexWidth int
 
 	dsn     string
 	schemas []string
@@ -38,10 +39,18 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				TableSchemas: tables,
 			}
 
-			advisor.IndexAdvise(db, "", info, advisor.Parameter{})
-			return nil
+			return advisor.IndexAdvise(db, "", info, advisor.Parameter{
+				MaxNumberIndexes: opt.maxNumIndexes,
+				MaxIndexWidth:    opt.maxIndexWidth,
+			})
 		},
 	}
+
+	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 10, "max number of indexes to recommend, 0 means no limit")
+	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-index-width", 3, "the max number of columns in recommended indexes")
+
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringSliceVar(&opt.schemas, "schemas", []string{}, "the schema(database) name to consider, e.g. 'test1, test2'")
 	return cmd
 }
 

@@ -41,12 +41,34 @@ var (
 )
 
 type Parameter struct {
-	MaximumIndexesToRecommend int
+	MaxNumberIndexes int
+	MaxIndexWidth    int
+}
+
+func (p Parameter) Validate() {
+	if p.MaxNumberIndexes < 1 {
+		utils.Warningf("max number of indexes should be at least 1, set from %v to 1", p.MaxNumberIndexes)
+		p.MaxNumberIndexes = 1
+	}
+	if p.MaxNumberIndexes > 10 {
+		utils.Warningf("max number of indexes should be at most 10, set from %v to 10", p.MaxNumberIndexes)
+		p.MaxNumberIndexes = 10
+	}
+	if p.MaxIndexWidth < 1 {
+		utils.Warningf("max index width should be at least 1, set from %v to 1", p.MaxIndexWidth)
+		p.MaxIndexWidth = 1
+	}
+	if p.MaxIndexWidth > 5 {
+		utils.Warningf("max index width should be at most 5, set from %v to 5", p.MaxIndexWidth)
+		p.MaxIndexWidth = 5
+	}
 }
 
 // IndexAdvise is the entry point of index advisor.
 func IndexAdvise(db optimizer.WhatIfOptimizer, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) error {
 	utils.Debugf("starting index advise with save-path %s", savePath)
+
+	param.Validate()
 
 	compress := compressAlgorithms["none"]
 	indexable := findIndexableColsAlgorithms["simple"]

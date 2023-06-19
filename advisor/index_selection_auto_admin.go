@@ -17,12 +17,12 @@ import (
 // SelectIndexAAAlgo implements the auto-admin algorithm.
 func SelectIndexAAAlgo(workload wk.WorkloadInfo, parameter Parameter, optimizer optimizer.WhatIfOptimizer) (utils.Set[wk.Index], error) {
 	aa := &autoAdmin{
-		optimizer:  optimizer,
-		maxIndexes: parameter.MaximumIndexesToRecommend,
+		optimizer:     optimizer,
+		maxIndexes:    parameter.MaxNumberIndexes,
+		maxIndexWidth: parameter.MaxIndexWidth,
 
 		// TODO: make these 2 variables configurable.
 		maxIndexesNative: 2,
-		maxIndexWidth:    3,
 	}
 	utils.Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
 
