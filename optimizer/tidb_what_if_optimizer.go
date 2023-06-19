@@ -49,6 +49,13 @@ func (o *TiDBWhatIfOptimizer) recordStats(startTime time.Time, dur *time.Duratio
 	*counter = *counter + 1
 }
 
+func (o *TiDBWhatIfOptimizer) Query(sql string) (*sql.Rows, error) {
+	if o.debugFlag {
+		fmt.Println(sql)
+	}
+	return o.db.Query(sql)
+}
+
 // Execute executes the specified SQL statement.
 func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 	defer o.recordStats(time.Now(), &o.stats.ExecuteTime, &o.stats.ExecuteCount)

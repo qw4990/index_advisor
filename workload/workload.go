@@ -29,7 +29,6 @@ type SQL struct { // DQL or DML
 	Text             string
 	Frequency        int
 	IndexableColumns utils.Set[Column] // Indexable columns related to this SQL
-	Plans            []Plan            // A SQL may have multiple different plans
 }
 
 // Type returns the type of the SQL.

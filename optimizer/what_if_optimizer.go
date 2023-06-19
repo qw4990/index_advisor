@@ -1,6 +1,7 @@
 package optimizer
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -26,8 +27,9 @@ func (s WhatIfOptimizerStats) Format() string {
 
 // WhatIfOptimizer is the interface of a what-if optimizer.
 type WhatIfOptimizer interface {
-	Execute(sql string) error // execute the specified SQL statement
-	Close() error             // release the underlying database connection
+	Query(sql string) (*sql.Rows, error) // execute the specified SQL statement and return the result
+	Execute(sql string) error            // execute the specified SQL statement
+	Close() error                        // release the underlying database connection
 
 	CreateHypoIndex(index workload.Index) error // create a hypothetical index
 	DropHypoIndex(index workload.Index) error   // drop a hypothetical index
