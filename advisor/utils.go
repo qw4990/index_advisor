@@ -2,6 +2,7 @@ package advisor
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/qw4990/index_advisor/optimizer"
@@ -28,10 +29,14 @@ func evaluateIndexConfCost(info wk.WorkloadInfo, optimizer optimizer.WhatIfOptim
 		utils.Must(optimizer.DropHypoIndex(index))
 	}
 	var totCols int
+	var keys []string
 	for _, index := range indexes.ToList() {
 		totCols += len(index.Columns)
+		keys = append(keys, index.Key())
 	}
-	return wk.IndexConfCost{workloadCost, totCols}
+	sort.Strings(keys)
+
+	return wk.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}
 }
 
 // tempIndexName returns a temp index name for the given columns.

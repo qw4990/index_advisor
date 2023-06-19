@@ -219,6 +219,7 @@ type WorkloadInfo struct {
 type IndexConfCost struct {
 	TotalWorkloadQueryCost    float64
 	TotalNumberOfIndexColumns int
+	IndexKeysStr              string // IndexKeysStr is the string representation of the index keys.
 }
 
 // Less returns whether the cost of c is less than the cost of other.
@@ -230,9 +231,16 @@ func (c IndexConfCost) Less(other IndexConfCost) bool {
 		return true
 	}
 	cc, cOther := c.TotalWorkloadQueryCost, other.TotalWorkloadQueryCost
-	if math.Abs(cc-cOther) < 10 || math.Abs(cc-cOther)/math.Max(cc, cOther) < 0.01 {
+	if math.Abs(cc-cOther) > 10 && math.Abs(cc-cOther)/math.Max(cc, cOther) > 0.001 {
+		// their cost is very different, then the less cost, the better.
+		return cc < cOther
+	}
+
+	if c.TotalNumberOfIndexColumns != other.TotalNumberOfIndexColumns {
 		// if they have the same cost, then the less columns, the better.
 		return c.TotalNumberOfIndexColumns < other.TotalNumberOfIndexColumns
 	}
-	return c.TotalWorkloadQueryCost < other.TotalWorkloadQueryCost
+
+	// if they have the same cost and the same number of columns, then use the IndexKeysStr to compare to make the result stable.
+	return c.IndexKeysStr < other.IndexKeysStr
 }
