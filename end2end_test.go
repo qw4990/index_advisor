@@ -87,6 +87,13 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 
 		// multi-predicate cases
 		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{3, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(b,a)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(b,a)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(b)"}},
+		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(a)"}},
+		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
 	}
 
 	for i, c := range cases {
@@ -104,7 +111,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		expected := strings.Join(c.result, ",")
 		actual := strings.Join(resultKeys, ",")
 		if expected != actual {
-			t.Errorf("case: %v, expected: %v, actual: %v", i, expected, actual)
+			t.Errorf("case: %v, expected: %v, actual: %v, query: %v", i, expected, actual, c.queries)
 		}
 	}
 }
