@@ -39,11 +39,13 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				TableSchemas: tables,
 			}
 
-			_, err = advisor.IndexAdvise(db, "", info, advisor.Parameter{
+			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})
-			return err
+			utils.Must(err)
+			PrintAndSaveAdviseResult("TODO", indexes, info, db)
+			return nil
 		},
 	}
 
