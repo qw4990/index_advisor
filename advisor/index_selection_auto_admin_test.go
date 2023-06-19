@@ -61,9 +61,9 @@ func testIndexSelection(dsn string, cases []indexSelectionCase) {
 		}
 
 		if notEqual {
-			originalCost := EvaluateIndexConfCost(w, opt, utils.NewSet[wk.Index]())
-			expectedCost := EvaluateIndexConfCost(w, opt, utils.ListToSet(c.expectedIndexes...))
-			actualCost := EvaluateIndexConfCost(w, opt, utils.ListToSet(indexList...))
+			originalCost := evaluateIndexConfCost(w, opt, utils.NewSet[wk.Index]())
+			expectedCost := evaluateIndexConfCost(w, opt, utils.ListToSet(c.expectedIndexes...))
+			actualCost := evaluateIndexConfCost(w, opt, utils.ListToSet(indexList...))
 			fmt.Printf("original cost: %.2E, expected cost: %.2E, actual cost: %.2E\n",
 				originalCost.TotalWorkloadQueryCost, expectedCost.TotalWorkloadQueryCost, actualCost.TotalWorkloadQueryCost)
 			fmt.Printf("expected: %v\n", c.expectedIndexes)
