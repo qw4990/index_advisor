@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type adviseCmdOpt struct {
+type adviseOfflineCmdOpt struct {
 	maxNumIndexes int
 
 	dsn          string
@@ -19,11 +19,11 @@ type adviseCmdOpt struct {
 	queries      string
 }
 
-func NewAdviseCmd() *cobra.Command {
-	var opt adviseCmdOpt
+func NewAdviseOfflineCmd() *cobra.Command {
+	var opt adviseOfflineCmdOpt
 	var logLevel string
 	cmd := &cobra.Command{
-		Use:   "advise",
+		Use:   "advise-offline",
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {

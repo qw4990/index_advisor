@@ -15,7 +15,7 @@ var (
 
 func init() {
 	cobra.OnInitialize()
-	rootCmd.AddCommand(cmd.NewAdviseCmd())
+	rootCmd.AddCommand(cmd.NewAdviseOfflineCmd())
 	rootCmd.AddCommand(cmd.NewLoadWorkloadCmd())
 	rootCmd.AddCommand(cmd.NewExecWorkloadCmd())
 }
