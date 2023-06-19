@@ -37,7 +37,8 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				SQLs:         sqls,
 				TableSchemas: tables,
 			}
-			advisor.IndexAdvise("none", "simple", "auto_admin", opt.dsn, "", info, advisor.Parameter{})
+
+			advisor.IndexAdvise(db, "", info, advisor.Parameter{})
 			return nil
 		},
 	}

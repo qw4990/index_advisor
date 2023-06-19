@@ -45,42 +45,23 @@ type Parameter struct {
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(compressAlgo, indexableAlgo, selectionAlgo, dsn, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) error {
-	utils.Debugf("starting index advise with compress algorithm %s, indexable algorithm %s, index selection algorithm %s", compressAlgo, indexableAlgo, selectionAlgo)
+func IndexAdvise(db optimizer.WhatIfOptimizer, savePath string, originalWorkloadInfo wk.WorkloadInfo, param Parameter) error {
+	utils.Debugf("starting index advise with save-path %s", savePath)
 
-	compress, ok := compressAlgorithms[compressAlgo]
-	if !ok {
-		return fmt.Errorf("compress algorithm %s not found", compressAlgo)
-	}
-
-	indexable, ok := findIndexableColsAlgorithms[indexableAlgo]
-	if !ok {
-		return fmt.Errorf("indexable algorithm %s not found", indexableAlgo)
-	}
-
-	selection, ok := selectIndexAlgorithms[selectionAlgo]
-	if !ok {
-		return fmt.Errorf("selection algorithm %s not found", selectionAlgo)
-	}
-
-	optimizer, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
-	if err != nil {
-		return err
-	}
+	compress := compressAlgorithms["none"]
+	indexable := findIndexableColsAlgorithms["simple"]
+	selection := selectIndexAlgorithms["auto_admin"]
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
-	if compressAlgo != "none" {
-		utils.Debugf("compressing workload info from %v SQLs to %v SQLs", originalWorkloadInfo.SQLs.Size(), compress(originalWorkloadInfo).SQLs.Size())
-	}
 
 	utils.Must(indexable(&compressedWorkloadInfo))
 	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	checkWorkloadInfo(compressedWorkloadInfo)
-	recommendedIndexes, err := selection(compressedWorkloadInfo, param, optimizer)
+	recommendedIndexes, err := selection(compressedWorkloadInfo, param, db)
 	utils.Must(err)
 
-	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, optimizer)
+	PrintAndSaveAdviseResult(savePath, recommendedIndexes, originalWorkloadInfo, db)
 	return nil
 }
 

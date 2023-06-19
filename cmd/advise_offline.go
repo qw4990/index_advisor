@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/qw4990/index_advisor/optimizer"
 	"path"
 	"strings"
 
@@ -38,9 +39,13 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				info.SQLs = wk.FilterBySQLAlias(info.SQLs, qs)
 			}
 
+			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
+			if err != nil {
+				return err
+			}
+
 			savePath := path.Join(opt.workloadPath, "advise-result")
-			return advisor.IndexAdvise("none", "simple", "auto_admin", opt.dsn, savePath, info,
-				advisor.Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
+			return advisor.IndexAdvise(db, savePath, info, advisor.Parameter{MaximumIndexesToRecommend: opt.maxNumIndexes})
 		},
 	}
 
