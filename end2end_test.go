@@ -42,7 +42,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	utils.Must(err)
 
-	prepareData := true
+	prepareData := false
 	schema := "test_aa"
 	createTableStmts := []string{
 		`create table t1 (a int)`,
@@ -64,7 +64,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 
 	for _, c := range cases {
 		workload := wk.CreateWorkloadFromRawStmt(schema, createTableStmts, c.queries)
-		result, err := advisor.IndexAdvise(db, "", workload, c.param)
+		result, err := advisor.IndexAdvise(db, workload, c.param)
 		utils.Must(err)
 		for _, r := range result.ToList() {
 			fmt.Println(">> ", r.DDL())
