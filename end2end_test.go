@@ -51,7 +51,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		`create table t3 (a int, b int, c int)`,
 	}
 	if prepareData {
-		prepareTestIndexSelectionAAEnd2End(db, schema, createTableStmts, 100)
+		prepareTestIndexSelectionAAEnd2End(db, schema, createTableStmts, 3000)
 	}
 
 	type aaCase struct {
