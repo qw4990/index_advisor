@@ -94,6 +94,10 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(b)"}},
 		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(a)"}},
 		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+
+		// multi-queries cases
+		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t1(a)", "test_aa.t2(a)"}},
 	}
 
 	for i, c := range cases {
