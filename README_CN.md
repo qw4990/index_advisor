@@ -12,7 +12,7 @@ Index Advisor 基于 TiDB 的 Hypo Index 功能实现，此功能允许用户在
 
 Index Advisor 的工作原理如下图，大致可以分为三步：
 
-![img.png](img.png)
+![overview.png](doc/overview.png)
 
 1. Index Advisor 会从 TiDB 实例的系统表中搜集工作负载相关的表结构、统计信息、相关查询等信息。
 2. Index Advisor 根据搜集到的信息，生成一些列候选的索引，并使用 Hypo Index 创建这些索引。
@@ -30,6 +30,7 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 
 - 请确保你的 TiDB 小版本高于 v6.5.x 或 v7.1.x，或大版本高于 v7.2，以使用 Hypo Index 的功能。 
 - 请确保你的 TiDB 上默认打开了 `Statement Summary` 功能，Index Advisor 需要从此系统表获取负载的查询信息。
+- 需要关闭 `tidb_redact_log` 功能，否则 Index Advisor 无法从 `Statement Summary` 中拿到查询原文。
 - 使用 Index Advisor 进行索引推荐，如 `index_advisor --online --dsn='user1:@tcp(127.0.0.1:4000)' --max-num-indexes=5 --query-exec-time-threshold=300ms`，其中参数的含义为：
    - `online`：表示使用在线模式。
    - `dsn`：访问你 TiDB 实例的 DSN。
