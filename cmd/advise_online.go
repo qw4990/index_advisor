@@ -55,7 +55,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return PrintAndSaveAdviseResult("TODO", indexes, info, db)
+			return outputAdviseResult(indexes, info, db, "")
 		},
 	}
 

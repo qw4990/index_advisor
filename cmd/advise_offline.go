@@ -53,7 +53,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return PrintAndSaveAdviseResult(savePath, indexes, info, db)
+			return outputAdviseResult(indexes, info, db, savePath)
 		},
 	}
 
@@ -67,104 +67,129 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	return cmd
 }
 
-// PrintAndSaveAdviseResult prints and saves the index advisor result.
-func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) error {
-	fmt.Println("===================== index advisor result =====================")
-	defer fmt.Println("===================== index advisor result =====================")
-	if savePath != "" {
-		os.MkdirAll(savePath, 0777)
-	}
+func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, savePath string) error {
+	// index DDL statements
 	indexList := indexes.ToList()
-	sort.Slice(indexList, func(i, j int) bool {
+	sort.Slice(indexList, func(i, j int) bool { // to make the result stable
 		return indexList[i].Key() < indexList[j].Key()
 	})
-	ddlContent := ""
+	indexDDLStmts := make([]string, 0, len(indexList))
 	for _, index := range indexList {
-		ddlContent += index.DDL() + ";\n"
-	}
-	fmt.Println(ddlContent)
-	if savePath != "" {
-		utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent)
+		indexDDLStmts = append(indexDDLStmts, index.DDL())
 	}
 
+	// query plan changes
+	planChanges, err := getPlanChanges(optimizer, workload, indexList)
+	if err != nil {
+		return err
+	}
+	var originalWorkloadCost, optimizerWorkloadCost float64
+	for _, change := range planChanges {
+		originalWorkloadCost += change.OriPlan.PlanCost()
+		optimizerWorkloadCost += change.OptPlan.PlanCost()
+	}
+
+	// summary content
+	var summaryContent string
+	summaryContent += fmt.Sprintf("Total SQLs in the workload: %d\n", workload.SQLs.Size())
+	summaryContent += fmt.Sprintf("Total number of indexes: %d\n", len(indexList))
+	for _, ddlStmt := range indexDDLStmts {
+		summaryContent += fmt.Sprintf("  %s;\n", ddlStmt)
+	}
+	summaryContent += fmt.Sprintf("Total original workload cost: %.2E\n", originalWorkloadCost)
+	summaryContent += fmt.Sprintf("Total optimized workload cost: %.2E\n", optimizerWorkloadCost)
+	summaryContent += fmt.Sprintf("Total cost reduction ratio: %.2f\n", optimizerWorkloadCost/originalWorkloadCost)
+	summaryContent += fmt.Sprintf("Top %d queries with the most cost reduction:\n", utils.Min(len(planChanges), 5))
+	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
+		change := planChanges[i]
+		summaryContent += fmt.Sprintf("  Alias: %s, Cost Reduction Ratio: %.2E->%.2E(%.2f)\n", change.SQL.Alias,
+			change.OptPlan.PlanCost(), change.OriPlan.PlanCost(), change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
+	}
+
+	fmt.Println(summaryContent)
+	if savePath != "" {
+		os.MkdirAll(savePath, 0777)
+
+		// summary
+		if err := utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent); err != nil {
+			return err
+		}
+
+		// DDL statements
+		ddlContent := strings.Join(indexDDLStmts, ";\n")
+		if err := utils.SaveContentTo(path.Join(savePath, "ddl.sql"), ddlContent); err != nil {
+			return err
+		}
+
+		// plan changes
+		for i, change := range planChanges {
+			var content string
+			content += fmt.Sprintf("Alias: %s\n", change.SQL.Alias)
+			content += fmt.Sprintf("SQL: \n%s\n\n", change.SQL.Text)
+			content += fmt.Sprintf("Original Cost: %.2E\n", change.OriPlan.PlanCost())
+			content += fmt.Sprintf("Optimized Cost: %.2E\n", change.OptPlan.PlanCost())
+			content += fmt.Sprintf("Cost Reduction Ratio: %.2f\n", change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
+			content += "\n\n===================== original plan =====================\n"
+			content += change.OriPlan.Format()
+			content += "\n\n===================== optimized plan =====================\n"
+			content += change.OptPlan.Format()
+			var planPath string
+			if change.SQL.Alias != "" {
+				planPath = path.Join(savePath, fmt.Sprintf("%s.txt", change.SQL.Alias))
+			} else {
+				planPath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
+			}
+			if err := utils.SaveContentTo(planPath, content); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type planChange struct {
+	SQL     utils.SQL
+	OriPlan utils.Plan
+	OptPlan utils.Plan
+}
+
+func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, indexList []utils.Index) ([]planChange, error) {
 	sqls := workload.SQLs.ToList()
 	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		oriPlans = append(oriPlans, p)
 	}
 	for _, idx := range indexList {
 		if err := optimizer.CreateHypoIndex(idx); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		optPlans = append(optPlans, p)
 	}
 	for _, idx := range indexList {
 		if err := optimizer.DropHypoIndex(idx); err != nil {
-			return err
+			return nil, err
 		}
 	}
-
-	type PlanDiff struct {
-		SQL     utils.SQL
-		OriPlan utils.Plan
-		OptPlan utils.Plan
-	}
-	var planDiffs []PlanDiff
+	var planChanges []planChange
 	for i := range sqls {
-		planDiffs = append(planDiffs, PlanDiff{
+		planChanges = append(planChanges, planChange{
 			SQL:     sqls[i],
 			OriPlan: oriPlans[i],
 			OptPlan: optPlans[i],
 		})
 	}
-	sort.Slice(planDiffs, func(i, j int) bool {
-		return planDiffs[i].OptPlan.PlanCost()/planDiffs[i].OriPlan.PlanCost() < planDiffs[j].OptPlan.PlanCost()/planDiffs[j].OriPlan.PlanCost()
+	sort.Slice(planChanges, func(i, j int) bool {
+		return planChanges[i].OptPlan.PlanCost()/planChanges[i].OriPlan.PlanCost() < planChanges[j].OptPlan.PlanCost()/planChanges[j].OriPlan.PlanCost()
 	})
-
-	var oriTotCost, optTotCost float64
-	var summaryContent string
-	for i, diff := range planDiffs {
-		content := ""
-		content += fmt.Sprintf("Alias: %s\n", diff.SQL.Alias)
-		content += fmt.Sprintf("SQL: \n%s\n\n", diff.SQL.Text)
-		content += fmt.Sprintf("Original Cost: %.2E\n", diff.OriPlan.PlanCost())
-		content += fmt.Sprintf("Optimized Cost: %.2E\n", diff.OptPlan.PlanCost())
-		content += fmt.Sprintf("Cost Ratio: %.2f\n", diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
-		content += "\n\n------------------ original plan ------------------\n"
-		content += diff.OriPlan.Format()
-		content += "\n\n------------------ optimized plan -----------------\n"
-		content += diff.OptPlan.Format()
-		var ppath string
-		if diff.SQL.Alias != "" {
-			ppath = path.Join(savePath, fmt.Sprintf("%s.txt", diff.SQL.Alias))
-		} else {
-			ppath = path.Join(savePath, fmt.Sprintf("q%v.txt", i))
-		}
-		if savePath != "" {
-			utils.SaveContentTo(ppath, content)
-		}
-		oriTotCost += diff.OriPlan.PlanCost()
-		optTotCost += diff.OptPlan.PlanCost()
-
-		if diff.SQL.Alias != "" {
-			summary := fmt.Sprintf("Cost Ratio for %v: %.2f\n", diff.SQL.Alias, diff.OptPlan.PlanCost()/diff.OriPlan.PlanCost())
-			fmt.Printf(summary)
-			summaryContent += summary
-		}
-	}
-	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
-	if savePath != "" {
-		return utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
-	}
-	return nil
+	return planChanges, nil
 }
