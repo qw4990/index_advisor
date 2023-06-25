@@ -98,7 +98,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			return nil, err
 		}
 		limit++
-		if limit > 0 {
+		if limit > 5 {
 			break
 		}
 	}
