@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -62,6 +63,11 @@ func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 		if err != nil {
 			return err
 		}
+		tableName, err := getStatsFileTableName(absStatsPath)
+		if err != nil {
+			return err
+		}
+		utils.Infof("load stats for table %s from %s", tableName, statsPath)
 		mysql.RegisterLocalFile(absStatsPath)
 		loadStatsSQL := fmt.Sprintf("load stats '%s'", absStatsPath)
 		if err := db.Execute(loadStatsSQL); err != nil {
@@ -69,4 +75,21 @@ func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 		}
 	}
 	return nil
+}
+
+type statsJSON struct {
+	DatabaseName string `json:"database_name"`
+	TableName    string `json:"table_name"`
+}
+
+func getStatsFileTableName(statsFile string) (utils.TableName, error) {
+	var stats statsJSON
+	data, err := os.ReadFile(statsFile)
+	if err != nil {
+		return utils.TableName{}, err
+	}
+	if err := json.Unmarshal(data, &stats); err != nil {
+		return utils.TableName{}, err
+	}
+	return utils.TableName{stats.DatabaseName, stats.TableName}, nil
 }
