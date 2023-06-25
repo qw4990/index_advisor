@@ -63,8 +63,9 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 		`information_schema.statements_summary`,
 		`information_schema.statements_summary_history`,
 	} {
-		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, DIGEST_TEXT, EXEC_COUNT, AVG_LATENCY from %v `+
-			`where SCHEMA_NAME in ('%s')`, table, strings.Join(schemas, "', '"))
+		// TODO: consider Execute statements
+		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, QUERY_SAMPLE_TEXT, EXEC_COUNT, AVG_LATENCY from %v `+
+			`where SCHEMA_NAME in ('%s') and stmt_type='Select'`, table, strings.Join(schemas, "', '"))
 		rows, err := db.Query(q)
 		utils.Must(err)
 		for rows.Next() {

@@ -29,7 +29,15 @@ func TestReadQueries(t *testing.T) {
 	for _, q := range queries {
 		utils.Must(db.Execute(q))
 	}
+	// SQLs below should be ignored
+	utils.Must(db.Execute(`select * from information_schema.statements_summary`))
+	utils.Must(db.Execute(`use mysql`))
+	utils.Must(db.Execute(`select * from bind_info`))
 	sqls := readQueriesFromStatementSummary(db, []string{"read_queries_test"})
+	sqls = filterSQLAccessingSystemTables(sqls)
+	if sqls.Size() != len(queries) {
+		t.Fatalf("expect %+v, got %+v", queries, sqls)
+	}
 	for _, q := range queries {
 		if !sqls.Contains(utils.SQL{Text: q}) {
 			t.Fatalf("expect %+v, got %+v", queries, sqls)
