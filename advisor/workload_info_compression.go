@@ -2,25 +2,24 @@ package advisor
 
 import (
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
 // NoneWorkloadInfoCompress does nothing.
-func NoneWorkloadInfoCompress(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo {
+func NoneWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
 	return workloadInfo
 }
 
 // DigestWorkloadInfoCompress compresses queries by digest.
-func DigestWorkloadInfoCompress(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo {
+func DigestWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
 	compressed := workloadInfo
 	compressed.SQLs = compressBySQLDigest(compressed.SQLs)
 	return compressed
 }
 
-func compressBySQLDigest(sqls utils.Set[wk.SQL]) utils.Set[wk.SQL] {
-	s := utils.NewSet[wk.SQL]()
+func compressBySQLDigest(sqls utils.Set[utils.SQL]) utils.Set[utils.SQL] {
+	s := utils.NewSet[utils.SQL]()
 	digestFreq := make(map[string]int)
-	digestSQL := make(map[string]wk.SQL)
+	digestSQL := make(map[string]utils.SQL)
 	for _, sql := range sqls.ToList() {
 		_, digest := utils.NormalizeDigest(sql.Text)
 		if _, ok := digestFreq[digest]; ok {

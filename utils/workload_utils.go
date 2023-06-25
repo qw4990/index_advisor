@@ -1,21 +1,20 @@
-package workload
+package utils
 
 import (
 	"fmt"
 	"github.com/pingcap/parser/ast"
-	"github.com/qw4990/index_advisor/utils"
 	"path"
 	"strings"
 )
 
 // FilterBySQLAlias filters SQLs by their alias.
-func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
+func FilterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
 	aliasMap := make(map[string]struct{})
 	for _, a := range alias {
 		aliasMap[strings.TrimSpace(a)] = struct{}{}
 	}
 
-	filtered := utils.NewSet[SQL]()
+	filtered := NewSet[SQL]()
 	for _, sql := range sqls.ToList() {
 		if _, ok := aliasMap[sql.Alias]; ok {
 			filtered.Add(sql)
@@ -26,7 +25,7 @@ func FilterBySQLAlias(sqls utils.Set[SQL], alias []string) utils.Set[SQL] {
 
 // CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
 func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
-	sqls := utils.NewSet[SQL]()
+	sqls := NewSet[SQL]()
 	for _, rawSQL := range rawSQLs {
 		sqls.Add(SQL{
 			SchemaName: schemaName,
@@ -34,10 +33,10 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 			Frequency:  1,
 		})
 	}
-	tableSchemas := utils.NewSet[TableSchema]()
+	tableSchemas := NewSet[TableSchema]()
 	for _, createStmt := range createTableStmts {
 		tableSchema, err := ParseCreateTableStmt(schemaName, createStmt)
-		utils.Must(err)
+		Must(err)
 		tableSchemas.Add(tableSchema)
 	}
 	return WorkloadInfo{
@@ -48,10 +47,10 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 
 // LoadWorkloadInfo loads workload info from the given path.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
-	utils.Debugf("loading workload info from %s", workloadInfoPath)
-	sqls := utils.NewSet[SQL]()
-	if exist, isDir := utils.FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
-		rawSQLs, names, err := utils.ParseRawSQLsFromDir(path.Join(workloadInfoPath, "queries"))
+	Debugf("loading workload info from %s", workloadInfoPath)
+	sqls := NewSet[SQL]()
+	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
+		rawSQLs, names, err := ParseRawSQLsFromDir(path.Join(workloadInfoPath, "queries"))
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
@@ -63,8 +62,8 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 				Frequency:  1,
 			})
 		}
-	} else if exist, isDir := utils.FileExists(path.Join(workloadInfoPath, "queries.sql")); exist || !isDir {
-		rawSQLs, err := utils.ParseRawSQLsFromFile(path.Join(workloadInfoPath, "queries.sql"))
+	} else if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries.sql")); exist || !isDir {
+		rawSQLs, err := ParseRawSQLsFromFile(path.Join(workloadInfoPath, "queries.sql"))
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
@@ -81,11 +80,11 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 	}
 
 	schemaFilePath := path.Join(workloadInfoPath, "schema.sql")
-	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaFilePath)
+	rawSQLs, err := ParseRawSQLsFromFile(schemaFilePath)
 	if err != nil {
 		return WorkloadInfo{}, err
 	}
-	tableSchemas := utils.NewSet[TableSchema]()
+	tableSchemas := NewSet[TableSchema]()
 	for _, rawSQL := range rawSQLs {
 		tableSchema, err := ParseCreateTableStmt(schemaName, rawSQL)
 		if err != nil {
@@ -103,8 +102,8 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 
 // ParseCreateTableStmt parses a create table statement and returns a TableSchema.
 func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
-	stmt, err := utils.ParseOneSQL(createTableStmt)
-	utils.Must(err, createTableStmt)
+	stmt, err := ParseOneSQL(createTableStmt)
+	Must(err, createTableStmt)
 	createTable := stmt.(*ast.CreateTableStmt)
 	t := TableSchema{
 		SchemaName:     schemaName,

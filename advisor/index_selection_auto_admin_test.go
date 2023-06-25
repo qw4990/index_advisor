@@ -6,11 +6,10 @@ import (
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
-func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (wk.WorkloadInfo, optimizer.WhatIfOptimizer) {
-	w := wk.CreateWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
+func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (utils.WorkloadInfo, optimizer.WhatIfOptimizer) {
+	w := utils.CreateWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
 	utils.Must(IndexableColumnsSelectionSimple(&w))
 	if dsn == "" {
 		dsn = "root:@tcp(127.0.0.1:4000)/"
@@ -32,17 +31,17 @@ func TestSimulateAndCost(t *testing.T) {
 			"select * from t where b = 1 and e = 1",
 		})
 
-	opt.CreateHypoIndex(wk.NewIndex("test", "t", "a", "a"))
+	opt.CreateHypoIndex(utils.NewIndex("test", "t", "a", "a"))
 	plan1, _ := opt.Explain("select * from t where a = 1 and c < 1")
-	opt.DropHypoIndex(wk.NewIndex("test", "t", "a", "a"))
+	opt.DropHypoIndex(utils.NewIndex("test", "t", "a", "a"))
 
 	for _, p := range plan1 {
 		fmt.Println(">> ", p)
 	}
 
-	opt.CreateHypoIndex(wk.NewIndex("test", "t", "ac", "a", "c"))
+	opt.CreateHypoIndex(utils.NewIndex("test", "t", "ac", "a", "c"))
 	plan2, _ := opt.Explain("select * from t where a = 1 and c < 1")
-	opt.DropHypoIndex(wk.NewIndex("test", "t", "ac", "a", "c"))
+	opt.DropHypoIndex(utils.NewIndex("test", "t", "ac", "a", "c"))
 	for _, p := range plan2 {
 		fmt.Println(">> ", p)
 	}

@@ -3,21 +3,20 @@ package advisor
 import (
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
 // IndexSelectionAlgo is the interface for index selection algorithms.
 type IndexSelectionAlgo func(
-	workloadInfo wk.WorkloadInfo, // the target workload
+	workloadInfo utils.WorkloadInfo, // the target workload
 	parameter Parameter, // the input parameters
 	optimizer optimizer.WhatIfOptimizer, // the what-if optimizer
-) (utils.Set[wk.Index], error)
+) (utils.Set[utils.Index], error)
 
 // IndexableColumnsSelectionAlgo is the interface for indexable columns selection algorithms.
-type IndexableColumnsSelectionAlgo func(workloadInfo *wk.WorkloadInfo) error
+type IndexableColumnsSelectionAlgo func(workloadInfo *utils.WorkloadInfo) error
 
 // WorkloadInfoCompressionAlgo is the interface for workload info compression algorithms.
-type WorkloadInfoCompressionAlgo func(workloadInfo wk.WorkloadInfo) wk.WorkloadInfo
+type WorkloadInfoCompressionAlgo func(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo
 
 var (
 	compressAlgorithms = map[string]WorkloadInfoCompressionAlgo{
@@ -59,7 +58,7 @@ func (p *Parameter) Validate() {
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo wk.WorkloadInfo, param *Parameter) (utils.Set[wk.Index], error) {
+func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo utils.WorkloadInfo, param *Parameter) (utils.Set[utils.Index], error) {
 	utils.Debugf("starting index advise")
 	param.Validate()
 

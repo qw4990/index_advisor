@@ -8,7 +8,6 @@ import (
 	"github.com/qw4990/index_advisor/advisor"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	"github.com/qw4990/index_advisor/workload"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 
 			sqls := readQueriesFromStatementSummary(db, opt.schemas)
 			tables := readTableSchemas(db, opt.schemas)
-			info := workload.WorkloadInfo{
+			info := utils.WorkloadInfo{
 				SQLs:         sqls,
 				TableSchemas: tables,
 			}
@@ -57,8 +56,8 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	return cmd
 }
 
-func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[workload.SQL] {
-	s := utils.NewSet[workload.SQL]()
+func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[utils.SQL] {
+	s := utils.NewSet[utils.SQL]()
 	for _, table := range []string{
 		`information_schema.statements_summary`,
 		`information_schema.statements_summary_history`,
@@ -72,7 +71,7 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 			utils.Must(rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr))
 			execCount, err := strconv.Atoi(execCountStr)
 			utils.Must(err)
-			s.Add(workload.SQL{
+			s.Add(utils.SQL{
 				Alias:      digest,
 				SchemaName: schemaName,
 				Text:       text,
@@ -84,8 +83,8 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 	return s
 }
 
-func readTableSchemas(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[workload.TableSchema] {
-	s := utils.NewSet[workload.TableSchema]()
+func readTableSchemas(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[utils.TableSchema] {
+	s := utils.NewSet[utils.TableSchema]()
 	for _, schemaName := range schemas {
 		tableNames := readTableNames(db, schemaName)
 		for _, tableName := range tableNames {
@@ -95,7 +94,7 @@ func readTableSchemas(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[
 			for rows.Next() {
 				var name, createTableStmt string
 				utils.Must(rows.Scan(&name, &createTableStmt))
-				tableSchema, err := workload.ParseCreateTableStmt(schemaName, createTableStmt)
+				tableSchema, err := utils.ParseCreateTableStmt(schemaName, createTableStmt)
 				utils.Must(err)
 				s.Add(tableSchema)
 			}

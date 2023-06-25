@@ -10,7 +10,6 @@ import (
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 	"github.com/spf13/cobra"
 )
 
@@ -29,14 +28,14 @@ func NewExecWorkloadCmd() *cobra.Command {
 		Short: "exec all queries in the specified workload",
 		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := wk.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = wk.FilterBySQLAlias(info.SQLs, qs)
+				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -63,7 +62,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func execWorkload(db optimizer.WhatIfOptimizer, info wk.WorkloadInfo, savePath string) {
+func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePath string) {
 	sqls := info.SQLs.ToList()
 	sort.Slice(sqls, func(i, j int) bool {
 		return sqls[i].Alias < sqls[j].Alias
@@ -73,11 +72,11 @@ func execWorkload(db optimizer.WhatIfOptimizer, info wk.WorkloadInfo, savePath s
 	summaryContent := ""
 	var totExecTime time.Duration
 	for _, sql := range sqls {
-		if sql.Type() != wk.SQLTypeSelect {
+		if sql.Type() != utils.SQLTypeSelect {
 			continue
 		}
 		var execTimes []time.Duration
-		var plans []wk.Plan
+		var plans []utils.Plan
 		for k := 0; k < 5; k++ {
 			p, err := db.ExplainAnalyze(sql.Text)
 			utils.Must(err)

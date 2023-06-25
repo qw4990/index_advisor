@@ -7,17 +7,16 @@ import (
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
 // evaluateIndexConfCost evaluates the workload cost under the given indexes.
-func evaluateIndexConfCost(info wk.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[wk.Index]) wk.IndexConfCost {
+func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[utils.Index]) utils.IndexConfCost {
 	for _, index := range indexes.ToList() {
 		utils.Must(optimizer.CreateHypoIndex(index))
 	}
 	var workloadCost float64
 	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
-		if sql.Type() != wk.SQLTypeSelect {
+		if sql.Type() != utils.SQLTypeSelect {
 			continue
 		}
 		utils.Must(optimizer.Execute(`use ` + sql.SchemaName))
@@ -36,11 +35,11 @@ func evaluateIndexConfCost(info wk.WorkloadInfo, optimizer optimizer.WhatIfOptim
 	}
 	sort.Strings(keys)
 
-	return wk.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}
+	return utils.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}
 }
 
 // tempIndexName returns a temp index name for the given columns.
-func tempIndexName(cols ...wk.Column) string {
+func tempIndexName(cols ...utils.Column) string {
 	var names []string
 	for _, col := range cols {
 		names = append(names, col.ColumnName)
@@ -48,7 +47,7 @@ func tempIndexName(cols ...wk.Column) string {
 	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
 }
 
-func checkWorkloadInfo(w wk.WorkloadInfo) {
+func checkWorkloadInfo(w utils.WorkloadInfo) {
 	for _, col := range w.IndexableColumns.ToList() {
 		if col.SchemaName == "" || col.TableName == "" || col.ColumnName == "" {
 			panic(fmt.Sprintf("invalid indexable column: %v", col))

@@ -10,7 +10,6 @@ import (
 	"github.com/qw4990/index_advisor/advisor"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 	"github.com/spf13/cobra"
 )
 
@@ -31,14 +30,14 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := wk.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = wk.FilterBySQLAlias(info.SQLs, qs)
+				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -68,7 +67,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 }
 
 // PrintAndSaveAdviseResult prints and saves the index advisor result.
-func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], workload wk.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
+func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	if savePath != "" {
@@ -88,7 +87,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 	}
 
 	sqls := workload.SQLs.ToList()
-	var oriPlans, optPlans []wk.Plan
+	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
 		utils.Must(err)
@@ -107,9 +106,9 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[wk.Index], work
 	}
 
 	type PlanDiff struct {
-		SQL     wk.SQL
-		OriPlan wk.Plan
-		OptPlan wk.Plan
+		SQL     utils.SQL
+		OriPlan utils.Plan
+		OptPlan utils.Plan
 	}
 	var planDiffs []PlanDiff
 	for i := range sqls {

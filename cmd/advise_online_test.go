@@ -6,7 +6,6 @@ import (
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	"github.com/qw4990/index_advisor/workload"
 )
 
 func TestReadQueries(t *testing.T) {
@@ -32,7 +31,7 @@ func TestReadQueries(t *testing.T) {
 	}
 	sqls := readQueriesFromStatementSummary(db, []string{"read_queries_test"})
 	for _, q := range queries {
-		if !sqls.Contains(workload.SQL{Text: q}) {
+		if !sqls.Contains(utils.SQL{Text: q}) {
 			t.Fatalf("expect %+v, got %+v", queries, sqls)
 		}
 	}

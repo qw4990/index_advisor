@@ -8,7 +8,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/qw4990/index_advisor/utils"
-	"github.com/qw4990/index_advisor/workload"
 )
 
 // TiDBWhatIfOptimizer is the what-if optimizer implementation fot TiDB.
@@ -72,7 +71,7 @@ func (o *TiDBWhatIfOptimizer) Close() error {
 }
 
 // CreateHypoIndex creates a hypothetical index.
-func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index workload.Index) error {
+func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index utils.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	createStmt := fmt.Sprintf(`create index %v type hypo on %v.%v (%v)`, index.IndexName, index.SchemaName, index.TableName, strings.Join(index.ColumnNames(), ", "))
 	err := o.Execute(createStmt)
@@ -83,16 +82,16 @@ func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index workload.Index) error {
 }
 
 // DropHypoIndex drops a hypothetical index.
-func (o *TiDBWhatIfOptimizer) DropHypoIndex(index workload.Index) error {
+func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
 	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
 // Explain returns the execution plan of the specified query.
-func (o *TiDBWhatIfOptimizer) Explain(query string) (plan workload.Plan, err error) {
+func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
 	result, err := o.query("explain format = 'verbose' " + query)
 	if err != nil {
-		return workload.Plan{}, err
+		return utils.Plan{}, err
 	}
 	defer result.Close()
 	var p [][]string
@@ -108,7 +107,7 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan workload.Plan, err err
 }
 
 // ExplainAnalyze returns the execution plan of the specified query.
-func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan workload.Plan, err error) {
+func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
 	utils.Must(err)
 	defer result.Close()

@@ -1,4 +1,4 @@
-package workload
+package utils
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/pingcap/parser/types"
-	"github.com/qw4990/index_advisor/utils"
 )
 
 // SQLType represents the type of a SQL.
@@ -28,7 +27,7 @@ type SQL struct { // DQL or DML
 	SchemaName       string
 	Text             string
 	Frequency        int
-	IndexableColumns utils.Set[Column] // Indexable columns related to this SQL
+	IndexableColumns Set[Column] // Indexable columns related to this SQL
 }
 
 // Type returns the type of the SQL.
@@ -170,7 +169,7 @@ func (p Plan) IsExecuted() bool {
 // PlanCost returns the cost of the plan.
 func (p Plan) PlanCost() float64 {
 	v, err := strconv.ParseFloat(p[0][2], 64)
-	utils.Must(err)
+	Must(err)
 	return v
 }
 
@@ -186,7 +185,7 @@ func (p Plan) ExecTime() time.Duration {
 	e := strings.Index(execInfo, ",")
 	tStr := execInfo[b+len("time:") : e]
 	d, err := time.ParseDuration(tStr)
-	utils.Must(err)
+	Must(err)
 	return d
 }
 
@@ -198,7 +197,7 @@ func (p Plan) Format() string {
 		maxLen := 0
 		for r := 0; r < nRows; r++ {
 			lines[r] += p[r][c] + blank
-			maxLen = utils.Max(maxLen, utf8.RuneCountInString(lines[r]))
+			maxLen = Max(maxLen, utf8.RuneCountInString(lines[r]))
 		}
 		for r := 0; r < nRows; r++ {
 			lines[r] += strings.Repeat(" ", maxLen-utf8.RuneCountInString(lines[r]))
@@ -209,10 +208,10 @@ func (p Plan) Format() string {
 
 // WorkloadInfo represents the workload information.
 type WorkloadInfo struct {
-	SQLs             utils.Set[SQL]
-	TableSchemas     utils.Set[TableSchema]
-	TableStats       utils.Set[TableStats]
-	IndexableColumns utils.Set[Column]
+	SQLs             Set[SQL]
+	TableSchemas     Set[TableSchema]
+	TableStats       Set[TableStats]
+	IndexableColumns Set[Column]
 }
 
 // IndexConfCost is the cost of a index configuration.
