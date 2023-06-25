@@ -71,6 +71,9 @@ func (s *setImpl[T]) ToList() []T {
 	for _, v := range s.s {
 		list = append(list, v)
 	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Key() < list[j].Key()
+	}) // to make the result stable
 	return list
 }
 
