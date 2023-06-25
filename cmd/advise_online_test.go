@@ -29,7 +29,7 @@ func TestReadQueries(t *testing.T) {
 	for _, q := range queries {
 		must(db.Execute(q))
 	}
-	// SQLs below should be ignored
+	// Queries below should be ignored
 	must(db.Execute(`select * from information_schema.statements_summary`))
 	must(db.Execute(`use mysql`))
 	must(db.Execute(`select * from bind_info`))
@@ -39,7 +39,7 @@ func TestReadQueries(t *testing.T) {
 		t.Fatalf("expect %+v, got %+v", queries, sqls)
 	}
 	for _, q := range queries {
-		if !sqls.Contains(utils.SQL{Text: q}) {
+		if !sqls.Contains(utils.Query{Text: q}) {
 			t.Fatalf("expect %+v, got %+v", queries, sqls)
 		}
 	}

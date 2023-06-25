@@ -45,7 +45,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				return err
 			}
 			info := utils.WorkloadInfo{
-				SQLs:         sqls,
+				Queries:      sqls,
 				TableSchemas: tables,
 			}
 
@@ -69,8 +69,8 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	return cmd
 }
 
-func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) (utils.Set[utils.SQL], error) {
-	s := utils.NewSet[utils.SQL]()
+func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) (utils.Set[utils.Query], error) {
+	s := utils.NewSet[utils.Query]()
 	for _, table := range []string{
 		`information_schema.statements_summary`,
 		`information_schema.statements_summary_history`,
@@ -91,7 +91,7 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 			if err != nil {
 				return nil, err
 			}
-			s.Add(utils.SQL{
+			s.Add(utils.Query{
 				Alias:      digest,
 				SchemaName: schemaName,
 				Text:       text,
@@ -156,8 +156,8 @@ func readTableNames(db optimizer.WhatIfOptimizer, schemaName string) ([]string, 
 	return tableNames, nil
 }
 
-func filterSQLAccessingSystemTables(sqls utils.Set[utils.SQL]) (utils.Set[utils.SQL], error) {
-	s := utils.NewSet[utils.SQL]()
+func filterSQLAccessingSystemTables(sqls utils.Set[utils.Query]) (utils.Set[utils.Query], error) {
+	s := utils.NewSet[utils.Query]()
 	for _, sql := range sqls.ToList() {
 		accessSystemTable := false
 		tables, err := utils.CollectTableNamesFromSQL(sql.SchemaName, sql.Text)

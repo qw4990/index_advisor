@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-// FilterBySQLAlias filters SQLs by their alias.
-func FilterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
+// FilterBySQLAlias filters Queries by their alias.
+func FilterBySQLAlias(sqls Set[Query], alias []string) Set[Query] {
 	aliasMap := make(map[string]struct{})
 	for _, a := range alias {
 		aliasMap[strings.TrimSpace(a)] = struct{}{}
 	}
 
-	filtered := NewSet[SQL]()
+	filtered := NewSet[Query]()
 	for _, sql := range sqls.ToList() {
 		if _, ok := aliasMap[sql.Alias]; ok {
 			filtered.Add(sql)
@@ -23,11 +23,11 @@ func FilterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
 	return filtered
 }
 
-// CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
+// CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw Queries.
 func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) (WorkloadInfo, error) {
-	sqls := NewSet[SQL]()
+	sqls := NewSet[Query]()
 	for _, rawSQL := range rawSQLs {
-		sqls.Add(SQL{
+		sqls.Add(Query{
 			SchemaName: schemaName,
 			Text:       rawSQL,
 			Frequency:  1,
@@ -42,7 +42,7 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 		tableSchemas.Add(tableSchema)
 	}
 	return WorkloadInfo{
-		SQLs:         sqls,
+		Queries:      sqls,
 		TableSchemas: tableSchemas,
 	}, nil
 }
@@ -50,16 +50,16 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 // LoadWorkloadInfo loads workload info from the given path.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
 	Debugf("loading workload info from %s", workloadInfoPath)
-	sqls := NewSet[SQL]()
+	sqls := NewSet[Query]()
 	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
 		rawSQLs, names, err := ParseRawSQLsFromDir(path.Join(workloadInfoPath, "queries"))
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
 		for i, rawSQL := range rawSQLs {
-			sqls.Add(SQL{
+			sqls.Add(Query{
 				Alias:      strings.Split(names[i], ".")[0], // q1.sql, 2a.sql, etc.
-				SchemaName: schemaName,                      // Notice: for simplification, assume all SQLs are under the same schema here.
+				SchemaName: schemaName,                      // Notice: for simplification, assume all Queries are under the same schema here.
 				Text:       rawSQL,
 				Frequency:  1,
 			})
@@ -70,9 +70,9 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 			return WorkloadInfo{}, err
 		}
 		for i, rawSQL := range rawSQLs {
-			sqls.Add(SQL{
+			sqls.Add(Query{
 				Alias:      fmt.Sprintf("q%v", i+1),
-				SchemaName: schemaName, // Notice: for simplification, assume all SQLs are under the same schema here.
+				SchemaName: schemaName, // Notice: for simplification, assume all Queries are under the same schema here.
 				Text:       rawSQL,
 				Frequency:  1,
 			})
@@ -97,7 +97,7 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 
 	// TODO: parse stats
 	return WorkloadInfo{
-		SQLs:         sqls,
+		Queries:      sqls,
 		TableSchemas: tableSchemas,
 	}, nil
 }

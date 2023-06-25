@@ -38,10 +38,10 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return err
 			}
 
-			utils.Infof("%v queries loaded", info.SQLs.Size())
+			utils.Infof("%v queries loaded", info.Queries.Size())
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
+				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
 			}
 
 			utils.Infof("connect to %s", opt.dsn)
@@ -97,7 +97,7 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 
 	// summary content
 	var summaryContent string
-	summaryContent += fmt.Sprintf("Total SQLs in the workload: %d\n", workload.SQLs.Size())
+	summaryContent += fmt.Sprintf("Total Queries in the workload: %d\n", workload.Queries.Size())
 	summaryContent += fmt.Sprintf("Total number of indexes: %d\n", len(indexList))
 	for _, ddlStmt := range indexDDLStmts {
 		summaryContent += fmt.Sprintf("  %s;\n", ddlStmt)
@@ -131,7 +131,7 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 		for i, change := range planChanges {
 			var content string
 			content += fmt.Sprintf("Alias: %s\n", change.SQL.Alias)
-			content += fmt.Sprintf("SQL: \n%s\n\n", change.SQL.Text)
+			content += fmt.Sprintf("Query: \n%s\n\n", change.SQL.Text)
 			content += fmt.Sprintf("Original Cost: %.2E\n", change.OriPlan.PlanCost())
 			content += fmt.Sprintf("Optimized Cost: %.2E\n", change.OptPlan.PlanCost())
 			content += fmt.Sprintf("Cost Reduction Ratio: %.2f\n", change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
@@ -154,13 +154,13 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 }
 
 type planChange struct {
-	SQL     utils.SQL
+	SQL     utils.Query
 	OriPlan utils.Plan
 	OptPlan utils.Plan
 }
 
 func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, indexList []utils.Index) ([]planChange, error) {
-	sqls := workload.SQLs.ToList()
+	sqls := workload.Queries.ToList()
 	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)

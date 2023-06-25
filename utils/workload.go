@@ -11,47 +11,18 @@ import (
 	"github.com/pingcap/parser/types"
 )
 
-// SQLType represents the type of a SQL.
-type SQLType int
-
-const (
-	SQLTypeSelect SQLType = iota
-	SQLTypeInsert
-	SQLTypeUpdate
-	SQLTypeOthers
-)
-
-// SQL represents a SQL statement.
-type SQL struct { // DQL or DML
+// Query represents a Query statement.
+type Query struct { // DQL or DML
 	Alias            string
 	SchemaName       string
 	Text             string
 	Frequency        int
-	IndexableColumns Set[Column] // Indexable columns related to this SQL
+	IndexableColumns Set[Column] // Indexable columns related to this Query
 }
 
-// Type returns the type of the SQL.
-func (sql SQL) Type() SQLType {
-	text := strings.TrimSpace(sql.Text)
-	if len(text) < 6 {
-		return SQLTypeOthers
-	}
-	prefix := strings.ToLower(text[:6])
-	if strings.HasPrefix(prefix, "select") {
-		return SQLTypeSelect
-	}
-	if strings.HasPrefix(prefix, "insert") {
-		return SQLTypeInsert
-	}
-	if strings.HasPrefix(prefix, "update") {
-		return SQLTypeUpdate
-	}
-	return SQLTypeOthers
-}
-
-// Key returns the key of the SQL.
-func (sql SQL) Key() string {
-	return sql.Text
+// Key returns the key of the Query.
+func (q Query) Key() string {
+	return q.Text
 }
 
 // TableName returns a table name.
@@ -223,7 +194,7 @@ func (p Plan) Format() string {
 
 // WorkloadInfo represents the workload information.
 type WorkloadInfo struct {
-	SQLs             Set[SQL]
+	Queries          Set[Query]
 	TableSchemas     Set[TableSchema]
 	TableStats       Set[TableStats]
 	IndexableColumns Set[Column]

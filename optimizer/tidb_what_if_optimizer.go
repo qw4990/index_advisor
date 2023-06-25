@@ -55,7 +55,7 @@ func (o *TiDBWhatIfOptimizer) Query(sql string) (*sql.Rows, error) {
 	return o.db.Query(sql)
 }
 
-// Execute executes the specified SQL statement.
+// Execute executes the specified Query statement.
 func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 	defer o.recordStats(time.Now(), &o.stats.ExecuteTime, &o.stats.ExecuteCount)
 	if o.debugFlag {

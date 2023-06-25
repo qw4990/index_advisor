@@ -14,8 +14,8 @@ import (
 type simpleIndexableColumnsVisitor struct {
 	tables      utils.Set[utils.TableSchema]
 	cols        utils.Set[utils.Column] // key = 'schema.table.column'
-	currentSQL  utils.SQL
-	currentCols utils.Set[utils.Column] // columns related to the current utils.SQL
+	currentSQL  utils.Query
+	currentCols utils.Set[utils.Column] // columns related to the current utils.Query
 }
 
 func (v *simpleIndexableColumnsVisitor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
@@ -123,7 +123,7 @@ func IndexableColumnsSelectionSimple(workloadInfo *utils.WorkloadInfo) error {
 		cols:   utils.NewSet[utils.Column](),
 		tables: workloadInfo.TableSchemas,
 	}
-	sqls := workloadInfo.SQLs.ToList()
+	sqls := workloadInfo.Queries.ToList()
 	for _, sql := range sqls {
 		stmt, err := utils.ParseOneSQL(sql.Text)
 		if err != nil {
@@ -133,7 +133,7 @@ func IndexableColumnsSelectionSimple(workloadInfo *utils.WorkloadInfo) error {
 		v.currentCols = utils.NewSet[utils.Column]()
 		stmt.Accept(v)
 		sql.IndexableColumns = v.currentCols
-		workloadInfo.SQLs.Add(sql)
+		workloadInfo.Queries.Add(sql)
 	}
 	workloadInfo.IndexableColumns = v.cols
 	return nil

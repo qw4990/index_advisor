@@ -20,8 +20,8 @@ func FileExists(filename string) (exist, isDir bool) {
 	return true, info.IsDir()
 }
 
-// ParseRawSQLsFromDir parses raw SQLs from the given directory.
-// Each *.sql in this directory is parsed as a single SQL.
+// ParseRawSQLsFromDir parses raw Queries from the given directory.
+// Each *.sql in this directory is parsed as a single Query.
 func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
 	des, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -43,8 +43,8 @@ func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
 	return
 }
 
-// ParseRawSQLsFromFile parses raw SQLs from the given file.
-// It ignore all comments, and assume all SQLs are separated by ';'.
+// ParseRawSQLsFromFile parses raw Queries from the given file.
+// It ignore all comments, and assume all Queries are separated by ';'.
 func ParseRawSQLsFromFile(fpath string) ([]string, error) {
 	data, err := os.ReadFile(fpath)
 	if err != nil {

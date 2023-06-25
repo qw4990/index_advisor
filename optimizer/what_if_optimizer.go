@@ -11,7 +11,7 @@ import (
 
 // WhatIfOptimizerStats records the statistics of a what-if optimizer.
 type WhatIfOptimizerStats struct {
-	ExecuteCount             int           // number of executed SQL statements
+	ExecuteCount             int           // number of executed Query statements
 	ExecuteTime              time.Duration // total execution time
 	CreateOrDropHypoIdxCount int           // number of executed CreateHypoIndex/DropHypoIndex
 	CreateOrDropHypoIdxTime  time.Duration // total execution time of CreateHypoIndex/DropHypoIndex
@@ -27,8 +27,8 @@ func (s WhatIfOptimizerStats) Format() string {
 
 // WhatIfOptimizer is the interface of a what-if optimizer.
 type WhatIfOptimizer interface {
-	Query(sql string) (*sql.Rows, error) // execute the specified SQL statement and return the result
-	Execute(sql string) error            // execute the specified SQL statement
+	Query(sql string) (*sql.Rows, error) // execute the specified Query statement and return the result
+	Execute(sql string) error            // execute the specified Query statement
 	Close() error                        // release the underlying database connection
 
 	CreateHypoIndex(index utils.Index) error // create a hypothetical index

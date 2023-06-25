@@ -16,12 +16,12 @@ func must(err error) {
 func TestFindIndexableColumnsSimple(t *testing.T) {
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(utils.TableSchema{"test", "t", utils.NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
-		SQLs: utils.ListToSet(utils.SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
-			utils.SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil}),
+		Queries: utils.ListToSet(utils.Query{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
+			utils.Query{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
-	for _, sql := range workload.SQLs.ToList() {
+	for _, sql := range workload.Queries.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
 	}
 }
@@ -33,7 +33,7 @@ func TestFindIndexableColumnsSimple2(t *testing.T) {
 	must(err)
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(t1, t2),
-		SQLs:         utils.ListToSet(utils.SQL{"", "test", "select * from t2 tx where a<1", 1, nil}),
+		Queries:      utils.ListToSet(utils.Query{"", "test", "select * from t2 tx where a<1", 1, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
@@ -42,7 +42,7 @@ func TestFindIndexableColumnsSimple2(t *testing.T) {
 func TestFindIndexableColumnsSimpleJOB(t *testing.T) {
 	w, err := utils.LoadWorkloadInfo("imdbload", "./workload/job")
 	must(err)
-	w.SQLs = utils.FilterBySQLAlias(w.SQLs, []string{"1a"})
+	w.Queries = utils.FilterBySQLAlias(w.Queries, []string{"1a"})
 	must(IndexableColumnsSelectionSimple(&w))
 	for _, c := range w.IndexableColumns.ToList() {
 		fmt.Println(c)
@@ -53,8 +53,8 @@ func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(
 			utils.TableSchema{"tpch", "nation", utils.NewColumns("tpch", "nation", "N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT"), nil, ""}),
-		SQLs: utils.ListToSet(
-			utils.SQL{"", "tpch", `select
+		Queries: utils.ListToSet(
+			utils.Query{"", "tpch", `select
 	supp_nation,
 	cust_nation,
 	l_year,
@@ -95,7 +95,7 @@ order by
 	l_year`, 1, nil})}
 	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
-	for _, sql := range workload.SQLs.ToList() {
+	for _, sql := range workload.Queries.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
 	}
 }

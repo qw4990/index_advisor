@@ -2,19 +2,19 @@ package utils
 
 import (
 	"strings"
-	
+
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
-// ParseOneSQL parses the given SQL text and returns the AST.
+// ParseOneSQL parses the given Query text and returns the AST.
 func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	p := parser.New()
 	return p.ParseOneStmt(sqlText, "", "")
 }
 
-// NormalizeDigest normalizes the given SQL text and returns the normalized SQL text and its digest.
+// NormalizeDigest normalizes the given Query text and returns the normalized Query text and its digest.
 func NormalizeDigest(sqlText string) (string, string) {
 	return parser.NormalizeDigest(sqlText)
 }
@@ -40,7 +40,7 @@ func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
 	return n, true
 }
 
-// CollectTableNamesFromSQL returns all referenced table names in the given SQL text.
+// CollectTableNamesFromSQL returns all referenced table names in the given Query text.
 // The returned format is `schemaName.tableName`.
 func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) (Set[TableName], error) {
 	node, err := ParseOneSQL(sqlText)

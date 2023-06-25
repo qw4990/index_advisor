@@ -9,7 +9,7 @@ import (
 	This algorithm resembles the index selection algorithm published in 1997 by Chaudhuri
 	and Narasayya. Details can be found in the original paper:
 	Surajit Chaudhuri, Vivek R. Narasayya: An Efficient Cost-Driven Index Selection
-	Tool for Microsoft SQL Server. VLDB 1997: 146-155
+	Tool for Microsoft Query Server. VLDB 1997: 146-155
 	This implementation is the Golang version of github.com/hyrise/index_selection_evaluation/blob/refactoring/selection/algorithms/auto_admin_algorithm.py.
 */
 
@@ -206,12 +206,9 @@ func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates uti
 // selectIndexCandidates selects the best indexes for each single-query.
 func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	candidates := utils.NewSet[utils.Index]()
-	for _, query := range workload.SQLs.ToList() {
-		if query.Type() != utils.SQLTypeSelect {
-			continue
-		}
+	for _, query := range workload.Queries.ToList() {
 		queryWorkload := utils.WorkloadInfo{ // each query as a workload
-			SQLs:         utils.ListToSet(query),
+			Queries:      utils.ListToSet(query),
 			TableSchemas: workload.TableSchemas,
 			TableStats:   workload.TableStats,
 		}
@@ -285,7 +282,7 @@ func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexe
 	return lowestCostIndexes, lowestCost, nil
 }
 
-func (aa *autoAdmin) potentialIndexesForQuery(query utils.SQL, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) potentialIndexesForQuery(query utils.Query, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
 	indexes := utils.NewSet[utils.Index]()
 	for _, index := range potentialIndexes.ToList() {
 		// The leading index column must be referenced by the query.

@@ -12,14 +12,14 @@ func NoneWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInf
 // DigestWorkloadInfoCompress compresses queries by digest.
 func DigestWorkloadInfoCompress(workloadInfo utils.WorkloadInfo) utils.WorkloadInfo {
 	compressed := workloadInfo
-	compressed.SQLs = compressBySQLDigest(compressed.SQLs)
+	compressed.Queries = compressBySQLDigest(compressed.Queries)
 	return compressed
 }
 
-func compressBySQLDigest(sqls utils.Set[utils.SQL]) utils.Set[utils.SQL] {
-	s := utils.NewSet[utils.SQL]()
+func compressBySQLDigest(sqls utils.Set[utils.Query]) utils.Set[utils.Query] {
+	s := utils.NewSet[utils.Query]()
 	digestFreq := make(map[string]int)
-	digestSQL := make(map[string]utils.SQL)
+	digestSQL := make(map[string]utils.Query)
 	for _, sql := range sqls.ToList() {
 		_, digest := utils.NormalizeDigest(sql.Text)
 		if _, ok := digestFreq[digest]; ok {

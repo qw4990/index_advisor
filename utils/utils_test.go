@@ -15,20 +15,20 @@ func isTrue(flag bool, args ...interface{}) {
 func TestLoadWorkloadInfo(t *testing.T) {
 	w, err := LoadWorkloadInfo("test", "./workload/test")
 	isTrue(err == nil)
-	isTrue(w.SQLs.Size() == 8)
+	isTrue(w.Queries.Size() == 8)
 }
 
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
 	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
 	isTrue(err == nil)
-	isTrue(w.SQLs.Size() == 21)
-	fmt.Println(w.SQLs.Size())
+	isTrue(w.Queries.Size() == 21)
+	fmt.Println(w.Queries.Size())
 }
 
 func TestLoadWorkloadJOB(t *testing.T) {
 	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
 	isTrue(err == nil)
-	isTrue(w.SQLs.Size() == 113)
+	isTrue(w.Queries.Size() == 113)
 }
 
 func TestCollectTableNames(t *testing.T) {

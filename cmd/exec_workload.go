@@ -35,7 +35,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
+				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -46,7 +46,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 				return err
 			}
 
-			sqls := info.SQLs.ToList()
+			sqls := info.Queries.ToList()
 			sort.Slice(sqls, func(i, j int) bool {
 				return sqls[i].Alias < sqls[j].Alias
 			})
@@ -67,7 +67,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 }
 
 func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePath string) error {
-	sqls := info.SQLs.ToList()
+	sqls := info.Queries.ToList()
 	sort.Slice(sqls, func(i, j int) bool {
 		return sqls[i].Alias < sqls[j].Alias
 	})
@@ -76,9 +76,6 @@ func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePat
 	summaryContent := ""
 	var totExecTime time.Duration
 	for _, sql := range sqls {
-		if sql.Type() != utils.SQLTypeSelect {
-			continue
-		}
 		var execTimes []time.Duration
 		var plans []utils.Plan
 		for k := 0; k < 5; k++ {
@@ -98,7 +95,7 @@ func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePat
 		content := fmt.Sprintf("Alias: %s\n", sql.Alias)
 		content += fmt.Sprintf("AvgTime: %v\n", avgTime)
 		content += fmt.Sprintf("ExecTimes: %v\n", execTimes)
-		content += fmt.Sprintf("SQL:\n %s\n\n", sql.Text)
+		content += fmt.Sprintf("Query:\n %s\n\n", sql.Text)
 		for _, p := range plans {
 			content += fmt.Sprintf("%v\n", p.Format())
 		}
