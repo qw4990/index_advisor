@@ -39,6 +39,13 @@ func GetStmtType(stmt string) StmtType {
 	return StmtUnknown
 }
 
+// GetDBNameFromUseDBStmt returns the database name of the given `USE` statement.
+func GetDBNameFromUseDBStmt(stmt string) string {
+	db := strings.Split(stmt, " ")[1]
+	db = strings.Trim(db, "` '\"")
+	return db
+}
+
 // ParseOneSQL parses the given Query text and returns the AST.
 func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	p := parser.New()
