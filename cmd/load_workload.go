@@ -42,11 +42,12 @@ func NewLoadWorkloadCmd() *cobra.Command {
 
 func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 	schemaSQLPath := path.Join(workloadPath, "schema.sql")
-	schemaSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
+	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
 	if err != nil {
 		return err
 	}
-	for _, stmt := range schemaSQLs {
+
+	for _, stmt := range rawSQLs {
 		if err := db.Execute(stmt); err != nil {
 			return err
 		}

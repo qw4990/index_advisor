@@ -8,6 +8,37 @@ import (
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
+type StmtType int
+
+const (
+	StmtCreateDB StmtType = iota
+	StmtUseDB
+	StmtCreateTable
+	StmtUnknown
+)
+
+// GetStmtType returns the type of the given statement.
+func GetStmtType(stmt string) StmtType {
+	containAll := func(s string, substrs ...string) bool {
+		s = strings.ToLower(s)
+		for _, substr := range substrs {
+			if !strings.Contains(s, substr) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if containAll(stmt, "create", "database") {
+		return StmtCreateDB
+	} else if containAll(stmt, "use") {
+		return StmtUseDB
+	} else if containAll(stmt, "create", "table") {
+		return StmtCreateTable
+	}
+	return StmtUnknown
+}
+
 // ParseOneSQL parses the given Query text and returns the AST.
 func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	p := parser.New()

@@ -88,6 +88,10 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 	}
 	tableSchemas := NewSet[TableSchema]()
 	for _, rawSQL := range rawSQLs {
+		if GetStmtType(rawSQL) != StmtCreateTable {
+			continue
+		}
+
 		tableSchema, err := ParseCreateTableStmt(schemaName, rawSQL)
 		if err != nil {
 			return WorkloadInfo{}, err
