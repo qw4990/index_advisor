@@ -7,6 +7,13 @@ import (
 	wk "github.com/qw4990/index_advisor/workload"
 )
 
+func isTrue(flag bool, args ...interface{}) {
+	if !flag {
+		fmt.Println("panic args: ", args)
+		panic("not true")
+	}
+}
+
 func TestLoadWorkloadInfo(t *testing.T) {
 	w, err := wk.LoadWorkloadInfo("test", "./workload/test")
 	Must(err)
