@@ -50,6 +50,7 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
    - `offline`：表示使用离线模式。
    - `data-dir`：数据文件夹的路径。
    - `max-num-indexes`：最多推荐的索引数量。
+   - `cost-model-version`：TiDB 使用的代价模型版本，见 [TiDB 代价模型版本](https://docs.pingcap.com/zh/tidb/dev/system-variables#tidb_cost_model_version-%E4%BB%8E-v620-%E7%89%88%E6%9C%AC%E5%BC%80%E5%A7%8B%E5%BC%95%E5%85%A5)。
 
 ### 输出说明
 

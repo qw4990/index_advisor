@@ -20,8 +20,9 @@ type adviseOfflineCmdOpt struct {
 	dsn          string
 	schemaName   string
 	workloadPath string
-	queries      string
 	output       string
+	costModelVer string
+	queries      string
 }
 
 func NewAdviseOfflineCmd() *cobra.Command {
@@ -31,16 +32,19 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.Infof("load workload info from %s", opt.workloadPath)
 			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
+			utils.Infof("%v queries loaded", info.SQLs.Size())
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
 				info.SQLs = utils.FilterBySQLAlias(info.SQLs, qs)
 			}
 
+			utils.Infof("connect to %s", opt.dsn)
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 			if err != nil {
 				return err
@@ -62,9 +66,10 @@ func NewAdviseOfflineCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
-	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
-	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
+	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
+	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
 	return cmd
 }
 
