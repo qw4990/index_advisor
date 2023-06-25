@@ -31,9 +31,18 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				return err
 			}
 
-			sqls := readQueriesFromStatementSummary(db, opt.schemas)
-			sqls = filterSQLAccessingSystemTables(sqls)
-			tables := readTableSchemas(db, opt.schemas)
+			sqls, err := readQueriesFromStatementSummary(db, opt.schemas)
+			if err != nil {
+				return err
+			}
+			sqls, err = filterSQLAccessingSystemTables(sqls)
+			if err != nil {
+				return err
+			}
+			tables, err := readTableSchemas(db, opt.schemas)
+			if err != nil {
+				return err
+			}
 			info := utils.WorkloadInfo{
 				SQLs:         sqls,
 				TableSchemas: tables,
@@ -43,9 +52,10 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})
-			utils.Must(err)
-			PrintAndSaveAdviseResult("TODO", indexes, info, db)
-			return nil
+			if err != nil {
+				return err
+			}
+			return PrintAndSaveAdviseResult("TODO", indexes, info, db)
 		},
 	}
 
@@ -57,7 +67,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	return cmd
 }
 
-func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[utils.SQL] {
+func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) (utils.Set[utils.SQL], error) {
 	s := utils.NewSet[utils.SQL]()
 	for _, table := range []string{
 		`information_schema.statements_summary`,
@@ -67,12 +77,18 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, QUERY_SAMPLE_TEXT, EXEC_COUNT, AVG_LATENCY from %v `+
 			`where SCHEMA_NAME in ('%s') and stmt_type='Select'`, table, strings.Join(schemas, "', '"))
 		rows, err := db.Query(q)
-		utils.Must(err)
+		if err != nil {
+			return nil, err
+		}
 		for rows.Next() {
 			var schemaName, digest, text, execCountStr, avgLatStr string
-			utils.Must(rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr))
+			if err := rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr); err != nil {
+				return nil, err
+			}
 			execCount, err := strconv.Atoi(execCountStr)
-			utils.Must(err)
+			if err != nil {
+				return nil, err
+			}
 			s.Add(utils.SQL{
 				Alias:      digest,
 				SchemaName: schemaName,
@@ -80,52 +96,72 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []str
 				Frequency:  execCount,
 			})
 		}
-		utils.Must(rows.Close())
+		if err := rows.Close(); err != nil {
+			return nil, err
+		}
 	}
-	return s
+	return s, nil
 }
 
-func readTableSchemas(db optimizer.WhatIfOptimizer, schemas []string) utils.Set[utils.TableSchema] {
+func readTableSchemas(db optimizer.WhatIfOptimizer, schemas []string) (utils.Set[utils.TableSchema], error) {
 	s := utils.NewSet[utils.TableSchema]()
 	for _, schemaName := range schemas {
-		tableNames := readTableNames(db, schemaName)
+		tableNames, err := readTableNames(db, schemaName)
+		if err != nil {
+			return nil, err
+		}
 		for _, tableName := range tableNames {
 			q := fmt.Sprintf(`show create table %s.%s`, schemaName, tableName)
 			rows, err := db.Query(q)
-			utils.Must(err)
+			if err != nil {
+				return nil, err
+			}
 			for rows.Next() {
 				var name, createTableStmt string
-				utils.Must(rows.Scan(&name, &createTableStmt))
+				if err := rows.Scan(&name, &createTableStmt); err != nil {
+					return nil, err
+				}
 				tableSchema, err := utils.ParseCreateTableStmt(schemaName, createTableStmt)
-				utils.Must(err)
+				if err != nil {
+					return nil, err
+				}
 				s.Add(tableSchema)
 			}
 			rows.Close()
 		}
 	}
-	return s
+	return s, nil
 }
 
-func readTableNames(db optimizer.WhatIfOptimizer, schemaName string) []string {
-	utils.Must(db.Execute(fmt.Sprintf(`use %s`, schemaName)))
+func readTableNames(db optimizer.WhatIfOptimizer, schemaName string) ([]string, error) {
+	if err := db.Execute(fmt.Sprintf(`use %s`, schemaName)); err != nil {
+		return nil, err
+	}
 	q := `show tables`
 	rows, err := db.Query(q)
-	utils.Must(err)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 	var tableNames []string
 	for rows.Next() {
 		var tableName string
-		utils.Must(rows.Scan(&tableName))
+		if err := rows.Scan(&tableName); err != nil {
+			return nil, err
+		}
 		tableNames = append(tableNames, tableName)
 	}
-	return tableNames
+	return tableNames, nil
 }
 
-func filterSQLAccessingSystemTables(sqls utils.Set[utils.SQL]) utils.Set[utils.SQL] {
+func filterSQLAccessingSystemTables(sqls utils.Set[utils.SQL]) (utils.Set[utils.SQL], error) {
 	s := utils.NewSet[utils.SQL]()
 	for _, sql := range sqls.ToList() {
 		accessSystemTable := false
-		tables := utils.CollectTableNamesFromSQL(sql.SchemaName, sql.Text)
+		tables, err := utils.CollectTableNamesFromSQL(sql.SchemaName, sql.Text)
+		if err != nil {
+			return nil, err
+		}
 		for _, t := range tables.ToList() {
 			if utils.IsTiDBSystemTableName(t) {
 				accessSystemTable = true
@@ -136,5 +172,5 @@ func filterSQLAccessingSystemTables(sqls utils.Set[utils.SQL]) utils.Set[utils.S
 			s.Add(sql)
 		}
 	}
-	return s
+	return s, nil
 }

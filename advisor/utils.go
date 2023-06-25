@@ -10,22 +10,30 @@ import (
 )
 
 // evaluateIndexConfCost evaluates the workload cost under the given indexes.
-func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[utils.Index]) utils.IndexConfCost {
+func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[utils.Index]) (utils.IndexConfCost, error) {
 	for _, index := range indexes.ToList() {
-		utils.Must(optimizer.CreateHypoIndex(index))
+		if err := optimizer.CreateHypoIndex(index); err != nil {
+			return utils.IndexConfCost{}, err
+		}
 	}
 	var workloadCost float64
 	for _, sql := range info.SQLs.ToList() { // TODO: run them concurrently to save time
 		if sql.Type() != utils.SQLTypeSelect {
 			continue
 		}
-		utils.Must(optimizer.Execute(`use ` + sql.SchemaName))
+		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
+			return utils.IndexConfCost{}, err
+		}
 		p, err := optimizer.Explain(sql.Text)
-		utils.Must(err, sql.Text)
+		if err != nil {
+			return utils.IndexConfCost{}, err
+		}
 		workloadCost += p.PlanCost() * float64(sql.Frequency)
 	}
 	for _, index := range indexes.ToList() {
-		utils.Must(optimizer.DropHypoIndex(index))
+		if err := optimizer.DropHypoIndex(index); err != nil {
+			return utils.IndexConfCost{}, err
+		}
 	}
 	var totCols int
 	var keys []string
@@ -35,7 +43,7 @@ func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOp
 	}
 	sort.Strings(keys)
 
-	return utils.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}
+	return utils.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}, nil
 }
 
 // tempIndexName returns a temp index name for the given columns.

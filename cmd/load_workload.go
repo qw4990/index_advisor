@@ -27,9 +27,10 @@ func NewLoadWorkloadCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// create a connection
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
-			utils.Must(err)
-			loadWorkload(db, opt.workloadPath)
-			return nil
+			if err != nil {
+				return err
+			}
+			return loadWorkload(db, opt.workloadPath)
 		},
 	}
 
@@ -38,23 +39,34 @@ func NewLoadWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) {
+func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 	schemaSQLPath := path.Join(workloadPath, "schema.sql")
 	schemaSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
-	utils.Must(err)
+	if err != nil {
+		return err
+	}
 	for _, stmt := range schemaSQLs {
-		utils.Must(db.Execute(stmt))
+		if err := db.Execute(stmt); err != nil {
+			return err
+		}
 	}
 
 	// load statistics
 	statsFiles, err := os.ReadDir(path.Join(workloadPath, "stats"))
-	utils.Must(err)
+	if err != nil {
+		return err
+	}
 	for _, statsFile := range statsFiles {
 		statsPath := path.Join(workloadPath, "stats", statsFile.Name())
 		absStatsPath, err := filepath.Abs(statsPath)
-		utils.Must(err, statsPath)
+		if err != nil {
+			return err
+		}
 		mysql.RegisterLocalFile(absStatsPath)
 		loadStatsSQL := fmt.Sprintf("load stats '%s'", absStatsPath)
-		utils.Must(db.Execute(loadStatsSQL))
+		if err := db.Execute(loadStatsSQL); err != nil {
+			return err
+		}
 	}
+	return nil
 }

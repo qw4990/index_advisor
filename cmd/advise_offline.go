@@ -50,9 +50,10 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})
-			utils.Must(err)
-			PrintAndSaveAdviseResult(savePath, indexes, info, db)
-			return err
+			if err != nil {
+				return err
+			}
+			return PrintAndSaveAdviseResult(savePath, indexes, info, db)
 		},
 	}
 
@@ -67,7 +68,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 }
 
 // PrintAndSaveAdviseResult prints and saves the index advisor result.
-func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) {
+func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer) error {
 	fmt.Println("===================== index advisor result =====================")
 	defer fmt.Println("===================== index advisor result =====================")
 	if savePath != "" {
@@ -90,19 +91,27 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], w
 	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
-		utils.Must(err)
+		if err != nil {
+			return err
+		}
 		oriPlans = append(oriPlans, p)
 	}
 	for _, idx := range indexList {
-		utils.Must(optimizer.CreateHypoIndex(idx))
+		if err := optimizer.CreateHypoIndex(idx); err != nil {
+			return err
+		}
 	}
 	for _, sql := range sqls {
 		p, err := optimizer.Explain(sql.Text)
-		utils.Must(err)
+		if err != nil {
+			return err
+		}
 		optPlans = append(optPlans, p)
 	}
 	for _, idx := range indexList {
-		utils.Must(optimizer.DropHypoIndex(idx))
+		if err := optimizer.DropHypoIndex(idx); err != nil {
+			return err
+		}
 	}
 
 	type PlanDiff struct {
@@ -155,6 +164,7 @@ func PrintAndSaveAdviseResult(savePath string, indexes utils.Set[utils.Index], w
 	}
 	fmt.Printf("total cost ratio: %.2E/%.2E=%.2f\n", optTotCost, oriTotCost, optTotCost/oriTotCost)
 	if savePath != "" {
-		utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
+		return utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent)
 	}
+	return nil
 }

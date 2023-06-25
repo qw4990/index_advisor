@@ -14,20 +14,20 @@ func isTrue(flag bool, args ...interface{}) {
 
 func TestLoadWorkloadInfo(t *testing.T) {
 	w, err := LoadWorkloadInfo("test", "./workload/test")
-	Must(err)
+	isTrue(err == nil)
 	isTrue(w.SQLs.Size() == 8)
 }
 
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
 	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
-	Must(err)
+	isTrue(err == nil)
 	isTrue(w.SQLs.Size() == 21)
 	fmt.Println(w.SQLs.Size())
 }
 
 func TestLoadWorkloadJOB(t *testing.T) {
 	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
-	Must(err)
+	isTrue(err == nil)
 	isTrue(w.SQLs.Size() == 113)
 }
 
@@ -47,7 +47,7 @@ WHERE ct.kind = 'production companies'
 	AND mc.movie_id = mi_idx.movie_id
 	AND it.id = mi_idx.info_type_id;
 `
-	tables := CollectTableNamesFromSQL("test", sql)
+	tables, _ := CollectTableNamesFromSQL("test", sql)
 	fmt.Println(tables.ToList())
 }
 

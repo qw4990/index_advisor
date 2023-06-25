@@ -180,7 +180,9 @@ func (p Plan) IsExecuted() bool {
 // PlanCost returns the cost of the plan.
 func (p Plan) PlanCost() float64 {
 	v, err := strconv.ParseFloat(p[0][2], 64)
-	Must(err)
+	if err != nil {
+		// TODO: log or return the error?
+	}
 	return v
 }
 
@@ -196,7 +198,9 @@ func (p Plan) ExecTime() time.Duration {
 	e := strings.Index(execInfo, ",")
 	tStr := execInfo[b+len("time:") : e]
 	d, err := time.ParseDuration(tStr)
-	Must(err)
+	if err != nil {
+		// TODO: log or return the error?
+	}
 	return d
 }
 

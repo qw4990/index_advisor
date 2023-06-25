@@ -7,13 +7,19 @@ import (
 	"github.com/qw4990/index_advisor/utils"
 )
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestFindIndexableColumnsSimple(t *testing.T) {
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(utils.TableSchema{"test", "t", utils.NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
 		SQLs: utils.ListToSet(utils.SQL{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
 			utils.SQL{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil}),
 	}
-	utils.Must(IndexableColumnsSelectionSimple(&workload))
+	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.SQLs.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
@@ -22,22 +28,22 @@ func TestFindIndexableColumnsSimple(t *testing.T) {
 
 func TestFindIndexableColumnsSimple2(t *testing.T) {
 	t1, err := utils.ParseCreateTableStmt("test", "create table t1 (a int)")
-	utils.Must(err)
+	must(err)
 	t2, err := utils.ParseCreateTableStmt("test", "create table t2 (a int)")
-	utils.Must(err)
+	must(err)
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(t1, t2),
 		SQLs:         utils.ListToSet(utils.SQL{"", "test", "select * from t2 tx where a<1", 1, nil}),
 	}
-	utils.Must(IndexableColumnsSelectionSimple(&workload))
+	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 }
 
 func TestFindIndexableColumnsSimpleJOB(t *testing.T) {
 	w, err := utils.LoadWorkloadInfo("imdbload", "./workload/job")
-	utils.Must(err)
+	must(err)
 	w.SQLs = utils.FilterBySQLAlias(w.SQLs, []string{"1a"})
-	utils.Must(IndexableColumnsSelectionSimple(&w))
+	must(IndexableColumnsSelectionSimple(&w))
 	for _, c := range w.IndexableColumns.ToList() {
 		fmt.Println(c)
 	}
@@ -87,7 +93,7 @@ order by
 	supp_nation,
 	cust_nation,
 	l_year`, 1, nil})}
-	utils.Must(IndexableColumnsSelectionSimple(&workload))
+	must(IndexableColumnsSelectionSimple(&workload))
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.SQLs.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())

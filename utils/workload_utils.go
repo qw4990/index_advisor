@@ -24,7 +24,7 @@ func FilterBySQLAlias(sqls Set[SQL], alias []string) Set[SQL] {
 }
 
 // CreateWorkloadFromRawStmt creates a WorkloadInfo from some raw SQLs.
-func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) WorkloadInfo {
+func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []string) (WorkloadInfo, error) {
 	sqls := NewSet[SQL]()
 	for _, rawSQL := range rawSQLs {
 		sqls.Add(SQL{
@@ -36,13 +36,15 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 	tableSchemas := NewSet[TableSchema]()
 	for _, createStmt := range createTableStmts {
 		tableSchema, err := ParseCreateTableStmt(schemaName, createStmt)
-		Must(err)
+		if err != nil {
+			return WorkloadInfo{}, err
+		}
 		tableSchemas.Add(tableSchema)
 	}
 	return WorkloadInfo{
 		SQLs:         sqls,
 		TableSchemas: tableSchemas,
-	}
+	}, nil
 }
 
 // LoadWorkloadInfo loads workload info from the given path.
@@ -103,7 +105,9 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 // ParseCreateTableStmt parses a create table statement and returns a TableSchema.
 func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, error) {
 	stmt, err := ParseOneSQL(createTableStmt)
-	Must(err, createTableStmt)
+	if err != nil {
+		return TableSchema{}, err
+	}
 	createTable := stmt.(*ast.CreateTableStmt)
 	t := TableSchema{
 		SchemaName:     schemaName,

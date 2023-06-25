@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"strings"
+	
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"strings"
 )
 
 // ParseOneSQL parses the given SQL text and returns the AST.
@@ -41,12 +42,14 @@ func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
 
 // CollectTableNamesFromSQL returns all referenced table names in the given SQL text.
 // The returned format is `schemaName.tableName`.
-func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) Set[TableName] {
+func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) (Set[TableName], error) {
 	node, err := ParseOneSQL(sqlText)
-	Must(err)
+	if err != nil {
+		return nil, err
+	}
 	c := &tableNameCollector{defaultSchemaName: defaultSchemaName, tableNames: NewSet[TableName]()}
 	node.Accept(c)
-	return c.tableNames
+	return c.tableNames, nil
 }
 
 // IsTiDBSystemTableName returns whether the given table name is a TiDB system table name.

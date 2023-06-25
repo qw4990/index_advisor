@@ -26,7 +26,10 @@ func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimiz
 	utils.Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
 
 	optimizer.ResetStats()
-	bestIndexes := aa.calculateBestIndexes(workload)
+	bestIndexes, err := aa.calculateBestIndexes(workload)
+	if err != nil {
+		return nil, err
+	}
 	utils.Debugf("what-if optimizer stats: %v", optimizer.Stats().Format())
 	return bestIndexes, nil
 }
@@ -39,9 +42,9 @@ type autoAdmin struct {
 	maxIndexWidth    int // The number of columns an index can contain at maximum.
 }
 
-func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set[utils.Index] {
+func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Set[utils.Index], error) {
 	if aa.maxIndexes == 0 {
-		return nil
+		return nil, nil
 	}
 
 	potentialIndexes := utils.NewSet[utils.Index]() // each indexable column as a single-column index
@@ -52,16 +55,25 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set
 	currentBestIndexes := utils.NewSet[utils.Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
 		utils.Debugf("AutoAdmin Algo current max index width: %d", currentMaxIndexWidth)
-		candidates := aa.selectIndexCandidates(workload, potentialIndexes)
+		candidates, err := aa.selectIndexCandidates(workload, potentialIndexes)
+		if err != nil {
+			return nil, err
+		}
 		utils.Debugf("AutoAdmin Algo selectIndexCandidates: %v", candidates.Size())
-		currentBestIndexes = aa.enumerateCombinations(workload, candidates)
+		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates)
+		if err != nil {
+			return nil, err
+		}
 		utils.Debugf("AutoAdmin Algo enumerateCombinations: %v", currentBestIndexes.Size())
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			potentialIndexes = aa.mergeCandidates(workload, potentialIndexes)
+			potentialIndexes, err = aa.mergeCandidates(workload, potentialIndexes)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -69,8 +81,14 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set
 	currentBestIndexes = aa.filterIndexes(currentBestIndexes)
 	for currentBestIndexes.Size() < aa.maxIndexes {
 		potentialIndexes = utils.DiffSet(potentialIndexes, currentBestIndexes)
-		currentCost := evaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
-		currentBestIndexes, _ = aa.enumerateGreedy(workload, currentBestIndexes, currentCost, potentialIndexes, aa.maxIndexes)
+		currentCost, err := evaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
+		if err != nil {
+			return nil, err
+		}
+		currentBestIndexes, _, err = aa.enumerateGreedy(workload, currentBestIndexes, currentCost, potentialIndexes, aa.maxIndexes)
+		if err != nil {
+			return nil, err
+		}
 		currentBestIndexes = aa.filterIndexes(currentBestIndexes)
 		limit++
 		if limit > 5 {
@@ -78,7 +96,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) utils.Set
 		}
 	}
 
-	return currentBestIndexes
+	return currentBestIndexes, nil
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(workload utils.WorkloadInfo, indexes utils.Set[utils.Index]) utils.Set[utils.Index] {
@@ -133,14 +151,21 @@ func (aa *autoAdmin) filterIndexes(indexes utils.Set[utils.Index]) utils.Set[uti
 // Rule 1: if candidate index X has no benefit, then remove X.
 // Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
 // Rule 3(TBD): if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
-func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	mergedCandidates := utils.NewSet[utils.Index]()
 	candidatesList := candidates.ToList()
 	var candidateCosts []utils.IndexConfCost
 	for _, c := range candidatesList {
-		candidateCosts = append(candidateCosts, evaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c)))
+		cost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c))
+		if err != nil {
+			return nil, err
+		}
+		candidateCosts = append(candidateCosts, cost)
 	}
-	originalCost := evaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[utils.Index]())
+	originalCost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[utils.Index]())
+	if err != nil {
+		return nil, err
+	}
 	for i, x := range candidatesList {
 		// rule 1
 		if originalCost.Less(candidateCosts[i]) {
@@ -175,11 +200,11 @@ func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates uti
 		//}
 		mergedCandidates.Add(x)
 	}
-	return mergedCandidates
+	return mergedCandidates, nil
 }
 
 // selectIndexCandidates selects the best indexes for each single-query.
-func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	candidates := utils.NewSet[utils.Index]()
 	for _, query := range workload.SQLs.ToList() {
 		if query.Type() != utils.SQLTypeSelect {
@@ -191,32 +216,42 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 			TableStats:   workload.TableStats,
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
-		candidates.AddSet(aa.enumerateCombinations(queryWorkload, indexes)) // best indexes for each single-query
+		indexes, err := aa.enumerateCombinations(queryWorkload, indexes)
+		if err != nil {
+			return nil, err
+		}
+		candidates.AddSet(indexes) // best indexes for each single-query
 	}
-	return candidates
+	return candidates, nil
 }
 
 // potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
-func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), aa.maxIndexes)
-	currentIndexes, cost := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
+	currentIndexes, cost, err := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
+	if err != nil {
+		return nil, err
+	}
 
 	numberIndexes := utils.Min(aa.maxIndexes, candidateIndexes.Size())
-	indexes, cost := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
-	return indexes
+	indexes, cost, err := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
+	return indexes, err
 }
 
 // enumerateGreedy finds the best combination of indexes with a greedy algorithm.
 func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes utils.Set[utils.Index],
-	currentCost utils.IndexConfCost, candidateIndexes utils.Set[utils.Index], numberIndexes int) (utils.Set[utils.Index], utils.IndexConfCost) {
+	currentCost utils.IndexConfCost, candidateIndexes utils.Set[utils.Index], numberIndexes int) (utils.Set[utils.Index], utils.IndexConfCost, error) {
 	if currentIndexes.Size() >= numberIndexes {
-		return currentIndexes, currentCost
+		return currentIndexes, currentCost, nil
 	}
 
 	var bestIndex utils.Index
 	var bestCost utils.IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
-		cost := evaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
+		cost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
+		if err != nil {
+			return nil, utils.IndexConfCost{}, err
+		}
 		if cost.Less(bestCost) {
 			bestIndex, bestCost = index, cost
 		}
@@ -228,23 +263,26 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 		return aa.enumerateGreedy(workload, currentIndexes, currentCost, candidateIndexes, numberIndexes)
 	}
 
-	return currentIndexes, currentCost
+	return currentIndexes, currentCost, nil
 }
 
 // enumerateNaive enumerates all possible combinations of indexes with at most numberIndexesNaive indexes and returns the best one.
-func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index], numberIndexesNaive int) (utils.Set[utils.Index], utils.IndexConfCost) {
+func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index], numberIndexesNaive int) (utils.Set[utils.Index], utils.IndexConfCost, error) {
 	lowestCostIndexes := utils.NewSet[utils.Index]()
 	var lowestCost utils.IndexConfCost
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
 		for _, indexCombination := range utils.CombSet(candidateIndexes, numberOfIndexes) {
-			cost := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
+			cost, err := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
+			if err != nil {
+				return nil, utils.IndexConfCost{}, err
+			}
 			if cost.Less(lowestCost) {
 				lowestCostIndexes = indexCombination
 				lowestCost = cost
 			}
 		}
 	}
-	return lowestCostIndexes, lowestCost
+	return lowestCostIndexes, lowestCost, nil
 }
 
 func (aa *autoAdmin) potentialIndexesForQuery(query utils.SQL, potentialIndexes utils.Set[utils.Index]) utils.Set[utils.Index] {

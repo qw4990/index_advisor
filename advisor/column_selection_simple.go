@@ -57,7 +57,10 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 			schemaName = v.currentSQL.SchemaName
 		}
 		colName = x.Name.L
-		possibleColumns := v.matchPossibleColumns(schemaName, colName)
+		possibleColumns, err := v.matchPossibleColumns(schemaName, colName)
+		if err != nil {
+			// TODO: log or return this error?
+		}
 		if len(possibleColumns) == 0 || schemaName == "" {
 			return // ignore this column
 		}
@@ -88,8 +91,11 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c utils.Colum
 	return false
 }
 
-func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []utils.Column) {
-	relatedTableNames := utils.CollectTableNamesFromSQL(schemaName, v.currentSQL.Text)
+func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []utils.Column, err error) {
+	relatedTableNames, err := utils.CollectTableNamesFromSQL(schemaName, v.currentSQL.Text)
+	if err != nil {
+		return nil, err
+	}
 	for _, table := range v.tables.ToList() {
 		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.TableName{schemaName, table.TableName}) {
 			continue
@@ -120,7 +126,9 @@ func IndexableColumnsSelectionSimple(workloadInfo *utils.WorkloadInfo) error {
 	sqls := workloadInfo.SQLs.ToList()
 	for _, sql := range sqls {
 		stmt, err := utils.ParseOneSQL(sql.Text)
-		utils.Must(err, sql.Text)
+		if err != nil {
+			return err
+		}
 		v.currentSQL = sql
 		v.currentCols = utils.NewSet[utils.Column]()
 		stmt.Accept(v)

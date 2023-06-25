@@ -39,8 +39,12 @@ func NewExecWorkloadCmd() *cobra.Command {
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
-			utils.Must(err)
-			utils.Must(db.Execute(`use ` + opt.schemaName))
+			if err != nil {
+				return err
+			}
+			if err := db.Execute(`use ` + opt.schemaName); err != nil {
+				return err
+			}
 
 			sqls := info.SQLs.ToList()
 			sort.Slice(sqls, func(i, j int) bool {
@@ -62,7 +66,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePath string) {
+func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePath string) error {
 	sqls := info.SQLs.ToList()
 	sort.Slice(sqls, func(i, j int) bool {
 		return sqls[i].Alias < sqls[j].Alias
@@ -79,7 +83,9 @@ func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePat
 		var plans []utils.Plan
 		for k := 0; k < 5; k++ {
 			p, err := db.ExplainAnalyze(sql.Text)
-			utils.Must(err)
+			if err != nil {
+				return err
+			}
 			plans = append(plans, p)
 			execTimes = append(execTimes, p.ExecTime())
 		}
@@ -103,5 +109,5 @@ func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePat
 	}
 	fmt.Println("TotalExecutionTime:", totExecTime)
 	summaryContent += fmt.Sprintf("TotalExecutionTime: %v\n", totExecTime)
-	utils.SaveContentTo(fmt.Sprintf("%v/summary.txt", savePath), summaryContent)
+	return utils.SaveContentTo(fmt.Sprintf("%v/summary.txt", savePath), summaryContent)
 }

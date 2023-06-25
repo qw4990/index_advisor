@@ -109,7 +109,9 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error)
 // ExplainAnalyze returns the execution plan of the specified query.
 func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err error) {
 	result, err := o.query("explain analyze format = 'verbose' " + query)
-	utils.Must(err)
+	if err != nil {
+		return utils.Plan{}, err
+	}
 	defer result.Close()
 	var p [][]string
 	for result.Next() {

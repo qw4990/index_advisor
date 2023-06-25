@@ -70,7 +70,9 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo utils.Worklo
 
 	compressedWorkloadInfo := compress(originalWorkloadInfo)
 
-	utils.Must(indexable(&compressedWorkloadInfo))
+	if err := indexable(&compressedWorkloadInfo); err != nil {
+		return nil, err
+	}
 	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	checkWorkloadInfo(compressedWorkloadInfo)

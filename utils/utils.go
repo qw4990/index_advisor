@@ -1,21 +1,14 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
 )
 
-func Must(err error, args ...interface{}) {
-	if err != nil {
-		fmt.Println("panic args: ", args)
-		panic(err)
-	}
-}
-
-func SaveContentTo(fpath, content string) {
-	Must(os.WriteFile(fpath, []byte(content), 0644))
+// SaveContentTo saves the given content to the given file.
+func SaveContentTo(fpath, content string) error {
+	return os.WriteFile(fpath, []byte(content), 0644)
 }
 
 // FileExists tests whether this file exists and is or not a directory.

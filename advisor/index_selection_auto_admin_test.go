@@ -9,16 +9,17 @@ import (
 )
 
 func prepareTestWorkload(dsn, schemaName string, createTableStmts, rawSQLs []string) (utils.WorkloadInfo, optimizer.WhatIfOptimizer) {
-	w := utils.CreateWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
-	utils.Must(IndexableColumnsSelectionSimple(&w))
+	w, err := utils.CreateWorkloadFromRawStmt(schemaName, createTableStmts, rawSQLs)
+	must(err)
+	must(IndexableColumnsSelectionSimple(&w))
 	if dsn == "" {
 		dsn = "root:@tcp(127.0.0.1:4000)/"
 	}
 	opt, err := optimizer.NewTiDBWhatIfOptimizer("root:@tcp(127.0.0.1:4000)/")
-	utils.Must(err)
+	must(err)
 	for _, t := range w.TableSchemas.ToList() {
-		utils.Must(opt.Execute("use " + t.SchemaName))
-		utils.Must(opt.Execute(t.CreateStmtText))
+		must(opt.Execute("use " + t.SchemaName))
+		must(opt.Execute(t.CreateStmtText))
 	}
 	return w, opt
 }
