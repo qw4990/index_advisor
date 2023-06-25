@@ -123,7 +123,7 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
 		change := planChanges[i]
 		summaryContent += fmt.Sprintf("  Alias: %s, Cost Reduction Ratio: %.2E->%.2E(%.2f)\n", change.SQL.Alias,
-			change.OptPlan.PlanCost(), change.OriPlan.PlanCost(), change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
+			change.OriPlan.PlanCost(), change.OptPlan.PlanCost(), change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
 	}
 
 	fmt.Println(summaryContent)
