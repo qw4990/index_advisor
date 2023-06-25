@@ -6,12 +6,6 @@ import (
 	"strings"
 )
 
-type LowerString string
-
-func (s LowerString) Key() string {
-	return strings.ToLower(string(s))
-}
-
 type SetKey interface {
 	Key() string
 }

@@ -54,6 +54,17 @@ func (sql SQL) Key() string {
 	return sql.Text
 }
 
+// TableName returns a table name.
+type TableName struct {
+	SchemaName string
+	TableName  string
+}
+
+// Key returns the key of the table name.
+func (t TableName) Key() string {
+	return strings.ToLower(fmt.Sprintf("%v.%v", t.SchemaName, t.TableName))
+}
+
 // TableSchema represents the schema of a table.
 type TableSchema struct {
 	SchemaName     string

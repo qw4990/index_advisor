@@ -91,7 +91,7 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c utils.Colum
 func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []utils.Column) {
 	relatedTableNames := utils.CollectTableNamesFromSQL(schemaName, v.currentSQL.Text)
 	for _, table := range v.tables.ToList() {
-		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.LowerString(table.TableName)) {
+		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.TableName{schemaName, table.TableName}) {
 			continue
 		}
 		for _, col := range table.Columns {

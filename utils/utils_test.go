@@ -3,8 +3,6 @@ package utils
 import (
 	"fmt"
 	"testing"
-
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
 func isTrue(flag bool, args ...interface{}) {
@@ -15,20 +13,20 @@ func isTrue(flag bool, args ...interface{}) {
 }
 
 func TestLoadWorkloadInfo(t *testing.T) {
-	w, err := wk.LoadWorkloadInfo("test", "./workload/test")
+	w, err := LoadWorkloadInfo("test", "./workload/test")
 	Must(err)
 	isTrue(w.SQLs.Size() == 8)
 }
 
 func TestLoadWorkloadInfoTPCH(t *testing.T) {
-	w, err := wk.LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
+	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
 	Must(err)
 	isTrue(w.SQLs.Size() == 21)
 	fmt.Println(w.SQLs.Size())
 }
 
 func TestLoadWorkloadJOB(t *testing.T) {
-	w, err := wk.LoadWorkloadInfo("imdbload", "./workload/job")
+	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
 	Must(err)
 	isTrue(w.SQLs.Size() == 113)
 }
@@ -54,9 +52,9 @@ WHERE ct.kind = 'production companies'
 }
 
 func TestCombSet(t *testing.T) {
-	s := NewSet[wk.Column]()
+	s := NewSet[Column]()
 	for i := 0; i < 6; i++ {
-		s.Add(wk.NewColumn("test", "test", fmt.Sprintf("col%d", i)))
+		s.Add(NewColumn("test", "test", fmt.Sprintf("col%d", i)))
 	}
 
 	for i := 1; i < 6; i++ {
