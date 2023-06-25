@@ -57,7 +57,10 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
 			}
 
-			// TODO: set cost-model-version
+			// set cost-model-version
+			if err := db.Execute(fmt.Sprintf("set @@tidb_cost_model_version = %v", opt.costModelVer)); err != nil {
+				return nil
+			}
 
 			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
