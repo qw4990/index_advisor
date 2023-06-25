@@ -32,6 +32,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			}
 
 			sqls := readQueriesFromStatementSummary(db, opt.schemas)
+			sqls = filterSQLAccessingSystemTables(sqls)
 			tables := readTableSchemas(db, opt.schemas)
 			info := utils.WorkloadInfo{
 				SQLs:         sqls,
@@ -117,4 +118,22 @@ func readTableNames(db optimizer.WhatIfOptimizer, schemaName string) []string {
 		tableNames = append(tableNames, tableName)
 	}
 	return tableNames
+}
+
+func filterSQLAccessingSystemTables(sqls utils.Set[utils.SQL]) utils.Set[utils.SQL] {
+	s := utils.NewSet[utils.SQL]()
+	for _, sql := range sqls.ToList() {
+		accessSystemTable := false
+		tables := utils.CollectTableNamesFromSQL(sql.SchemaName, sql.Text)
+		for _, t := range tables.ToList() {
+			if utils.IsTiDBSystemTableName(t) {
+				accessSystemTable = true
+				break
+			}
+		}
+		if !accessSystemTable {
+			s.Add(sql)
+		}
+	}
+	return s
 }

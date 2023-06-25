@@ -4,6 +4,7 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"strings"
 )
 
 // ParseOneSQL parses the given SQL text and returns the AST.
@@ -46,4 +47,13 @@ func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) Set[TableName] 
 	c := &tableNameCollector{defaultSchemaName: defaultSchemaName, tableNames: NewSet[TableName]()}
 	node.Accept(c)
 	return c.tableNames
+}
+
+// IsTiDBSystemTableName returns whether the given table name is a TiDB system table name.
+func IsTiDBSystemTableName(t TableName) bool {
+	schemaName := strings.ToLower(t.SchemaName)
+	return schemaName == "information_schema" ||
+		schemaName == "metrics_schema" ||
+		schemaName == "performance_schema" ||
+		schemaName == "mysql"
 }
