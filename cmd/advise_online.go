@@ -17,6 +17,7 @@ type adviseOnlineCmdOpt struct {
 
 	dsn     string
 	schemas []string
+	output  string
 }
 
 func NewAdviseOnlineCmd() *cobra.Command {
@@ -55,7 +56,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return outputAdviseResult(indexes, info, db, "")
+			return outputAdviseResult(indexes, info, db, opt.output)
 		},
 	}
 
@@ -64,6 +65,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringSliceVar(&opt.schemas, "schemas", []string{}, "the schema(database) name to consider, e.g. 'test1, test2'")
+	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	return cmd
 }
 

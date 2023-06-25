@@ -21,6 +21,7 @@ type adviseOfflineCmdOpt struct {
 	schemaName   string
 	workloadPath string
 	queries      string
+	output       string
 }
 
 func NewAdviseOfflineCmd() *cobra.Command {
@@ -45,7 +46,6 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return err
 			}
 
-			savePath := path.Join(opt.workloadPath, "advise-result")
 			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
@@ -53,7 +53,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return outputAdviseResult(indexes, info, db, savePath)
+			return outputAdviseResult(indexes, info, db, opt.output)
 		},
 	}
 
@@ -64,6 +64,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	return cmd
 }
 
