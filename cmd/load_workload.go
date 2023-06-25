@@ -32,29 +32,44 @@ func NewLoadWorkloadCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return loadWorkload(db, "test", opt.workloadPath)
+			return loadWorkload(db, opt.workloadPath)
 		},
 	}
 
-	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)", "dsn")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	return cmd
 }
 
-func loadWorkload(db optimizer.WhatIfOptimizer, defaultDB, workloadPath string) error {
+func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 	schemaSQLPath := path.Join(workloadPath, "schema.sql")
 	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
 	if err != nil {
 		return err
 	}
+	if len(rawSQLs) == 0 {
+		return nil
+	}
 
-	currentDB := defaultDB
+	currentDB := ""
 	existingTables := utils.NewSet[utils.TableName]()
 	for _, stmt := range rawSQLs {
 		switch utils.GetStmtType(stmt) {
 		case utils.StmtUseDB:
 			currentDB = utils.GetDBNameFromUseDBStmt(stmt)
+		case utils.StmtCreateDB:
+			dbName := utils.GetDBNameFromCreateDBStmt(stmt)
+			exist, err := dbExists(dbName, db)
+			if err != nil {
+				return err
+			}
+			if exist {
+				continue
+			}
 		case utils.StmtCreateTable:
+			if currentDB == "" {
+				return fmt.Errorf("no database specified before create table statement, please add `use {database}` before `create table ...`")
+			}
 			table, err := utils.ParseCreateTableStmt(currentDB, stmt)
 			if err != nil {
 				return err
@@ -125,6 +140,23 @@ func getStatsFileTableName(statsFile string) (utils.TableName, error) {
 func tableExists(schemaName, tableName string, db optimizer.WhatIfOptimizer) (bool, error) {
 	q := fmt.Sprintf("select count(*) from information_schema.TABLES where lower(table_schema) = '%s' and lower(table_name)='%s'",
 		strings.ToLower(schemaName), strings.ToLower(tableName))
+	r, err := db.Query(q)
+	if err != nil {
+		return false, err
+	}
+	r.Next()
+	var count int
+	if err := r.Scan(&count); err != nil {
+		return false, err
+	}
+	if err := r.Close(); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func dbExists(schemaName string, db optimizer.WhatIfOptimizer) (bool, error) {
+	q := fmt.Sprintf("select count(*) from INFORMATION_SCHEMA.SCHEMATA where lower(SCHEMA_NAME) = '%s'", strings.ToLower(schemaName))
 	r, err := db.Query(q)
 	if err != nil {
 		return false, err

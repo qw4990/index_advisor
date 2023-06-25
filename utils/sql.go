@@ -46,6 +46,14 @@ func GetDBNameFromUseDBStmt(stmt string) string {
 	return db
 }
 
+// GetDBNameFromCreateDBStmt returns the database name of the given `CREATE DATABASE` statement.
+func GetDBNameFromCreateDBStmt(stmt string) string {
+	tmp := strings.Split(stmt, " ")
+	db := tmp[len(tmp)-1]
+	db = strings.Trim(db, "` '\"")
+	return db
+}
+
 // ParseOneSQL parses the given Query text and returns the AST.
 func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 	p := parser.New()
