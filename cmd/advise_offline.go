@@ -46,7 +46,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			}
 
 			savePath := path.Join(opt.workloadPath, "advise-result")
-			indexes, err := advisor.IndexAdvise(db, info, &advisor.Parameter{
+			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})

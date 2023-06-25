@@ -33,12 +33,13 @@ var (
 	}
 )
 
+// Parameter is the input parameters of index advisor.
 type Parameter struct {
-	MaxNumberIndexes int
-	MaxIndexWidth    int
+	MaxNumberIndexes int // the max number of indexes to recommend
+	MaxIndexWidth    int // the max number of columns in recommended indexes
 }
 
-func (p *Parameter) Validate() {
+func validateParameter(p Parameter) Parameter {
 	if p.MaxNumberIndexes < 1 {
 		utils.Warningf("max number of indexes should be at least 1, set from %v to 1", p.MaxNumberIndexes)
 		p.MaxNumberIndexes = 1
@@ -55,12 +56,13 @@ func (p *Parameter) Validate() {
 		utils.Warningf("max index width should be at most 5, set from %v to 5", p.MaxIndexWidth)
 		p.MaxIndexWidth = 5
 	}
+	return p
 }
 
 // IndexAdvise is the entry point of index advisor.
-func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo utils.WorkloadInfo, param *Parameter) (utils.Set[utils.Index], error) {
+func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo utils.WorkloadInfo, param Parameter) (utils.Set[utils.Index], error) {
 	utils.Debugf("starting index advise")
-	param.Validate()
+	param = validateParameter(param)
 
 	compress := compressAlgorithms["none"]
 	indexable := findIndexableColsAlgorithms["simple"]
@@ -72,6 +74,6 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, originalWorkloadInfo utils.Worklo
 	utils.Debugf("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	checkWorkloadInfo(compressedWorkloadInfo)
-	recommendedIndexes, err := selection(compressedWorkloadInfo, *param, db)
+	recommendedIndexes, err := selection(compressedWorkloadInfo, param, db)
 	return recommendedIndexes, err
 }
