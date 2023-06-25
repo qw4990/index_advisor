@@ -47,13 +47,11 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return err
 			}
 
-			utils.Infof("load workload info from %s", opt.workloadPath)
 			info, err := utils.LoadWorkloadInfo(dbName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
-			utils.Infof("%v queries loaded", info.Queries.Size())
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
 				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)

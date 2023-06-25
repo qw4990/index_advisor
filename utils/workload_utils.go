@@ -49,10 +49,11 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 
 // LoadWorkloadInfo loads workload info from the given path.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
-	Debugf("loading workload info from %s", workloadInfoPath)
+	Infof("loaf workload from %s", workloadInfoPath)
 	sqls := NewSet[Query]()
 	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
-		rawSQLs, names, err := ParseRawSQLsFromDir(path.Join(workloadInfoPath, "queries"))
+		queryDirPath := path.Join(workloadInfoPath, "queries")
+		rawSQLs, names, err := ParseRawSQLsFromDir(queryDirPath)
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
@@ -64,8 +65,10 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 				Frequency:  1,
 			})
 		}
+		Infof("load %d queries from dir %s", len(rawSQLs), queryDirPath)
 	} else if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries.sql")); exist || !isDir {
-		rawSQLs, err := ParseRawSQLsFromFile(path.Join(workloadInfoPath, "queries.sql"))
+		queryFilePath := path.Join(workloadInfoPath, "queries.sql")
+		rawSQLs, err := ParseRawSQLsFromFile(queryFilePath)
 		if err != nil {
 			return WorkloadInfo{}, err
 		}
@@ -77,6 +80,7 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 				Frequency:  1,
 			})
 		}
+		Infof("load %d queries from %s", len(rawSQLs), queryFilePath)
 	} else {
 		return WorkloadInfo{}, fmt.Errorf("can not find queries directory or queries.sql file under %s", workloadInfoPath)
 	}

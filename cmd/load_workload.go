@@ -42,11 +42,13 @@ func NewLoadWorkloadCmd() *cobra.Command {
 }
 
 func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
+	utils.Infof("load workload info from %s into the TiDB instance", workloadPath)
 	schemaSQLPath := path.Join(workloadPath, "schema.sql")
 	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
 	if err != nil {
 		return err
 	}
+	utils.Infof("load %d DDL statements from %s", len(rawSQLs), schemaSQLPath)
 	if len(rawSQLs) == 0 {
 		return nil
 	}
@@ -92,7 +94,14 @@ func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 	}
 
 	// load statistics
-	statsFiles, err := os.ReadDir(path.Join(workloadPath, "stats"))
+	statsDirPath := path.Join(workloadPath, "stats")
+	exist, _ := utils.FileExists(statsDirPath)
+	if !exist {
+		utils.Infof("no stats directory %s, skip loading stats", statsDirPath)
+		return nil
+	}
+	utils.Infof("load stats from %s", statsDirPath)
+	statsFiles, err := os.ReadDir(statsDirPath)
 	if err != nil {
 		return err
 	}
