@@ -37,7 +37,7 @@ func NewLoadWorkloadCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)", "dsn")
-	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
+	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
 	return cmd
 }
 
@@ -68,7 +68,7 @@ func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 			}
 		case utils.StmtCreateTable:
 			if currentDB == "" {
-				return fmt.Errorf("no database specified before create table statement, please add `use {database}` before `create table ...`")
+				return fmt.Errorf("no database specified before create table statement, please check %v to add `use {database}` before `create table ...`", schemaSQLPath)
 			}
 			table, err := utils.ParseCreateTableStmt(currentDB, stmt)
 			if err != nil {
@@ -80,10 +80,10 @@ func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
 			}
 			if exist {
 				utils.Infof("table %s.%s already exists, skip creating it", table.SchemaName, table.TableName)
+				existingTables.Add(utils.TableName{table.SchemaName, table.TableName})
 				continue
 			} else {
 				utils.Infof("create table %s.%s", table.SchemaName, table.TableName)
-				existingTables.Add(utils.TableName{table.SchemaName, table.TableName})
 			}
 		}
 		if err := db.Execute(stmt); err != nil {
