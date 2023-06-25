@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 // ParseOneSQL parses the given SQL text and returns the AST.
