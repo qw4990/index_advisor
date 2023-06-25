@@ -113,6 +113,9 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 	for _, ddlStmt := range indexDDLStmts {
 		summaryContent += fmt.Sprintf("  %s;\n", ddlStmt)
 	}
+	if len(indexDDLStmts) == 0 {
+		summaryContent += "  (no beneficial index recommended)\n"
+	}
 	summaryContent += fmt.Sprintf("Total original workload cost: %.2E\n", originalWorkloadCost)
 	summaryContent += fmt.Sprintf("Total optimized workload cost: %.2E\n", optimizerWorkloadCost)
 	summaryContent += fmt.Sprintf("Total cost reduction ratio: %.2f\n", optimizerWorkloadCost/originalWorkloadCost)
