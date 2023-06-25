@@ -209,10 +209,10 @@ type IndexConfCost struct {
 
 // Less returns whether the cost of c is less than the cost of other.
 func (c IndexConfCost) Less(other IndexConfCost) bool {
-	if c.TotalNumberOfIndexColumns == 0 { // not initialized
+	if c.TotalWorkloadQueryCost == 0 { // not initialized
 		return false
 	}
-	if other.TotalNumberOfIndexColumns == 0 { // not initialized
+	if other.TotalWorkloadQueryCost == 0 { // not initialized
 		return true
 	}
 	cc, cOther := c.TotalWorkloadQueryCost, other.TotalWorkloadQueryCost

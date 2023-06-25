@@ -78,7 +78,10 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 	}
 
 	limit := 0
-	currentBestIndexes = aa.filterIndexes(currentBestIndexes)
+	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
+	if err != nil {
+		return nil, err
+	}
 	for currentBestIndexes.Size() < aa.maxIndexes {
 		potentialIndexes = utils.DiffSet(potentialIndexes, currentBestIndexes)
 		currentCost, err := evaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
@@ -89,9 +92,13 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		if err != nil {
 			return nil, err
 		}
-		currentBestIndexes = aa.filterIndexes(currentBestIndexes)
+
+		currentBestIndexes, err = aa.filterIndexes(workload, currentBestIndexes)
+		if err != nil {
+			return nil, err
+		}
 		limit++
-		if limit > 5 {
+		if limit > 0 {
 			break
 		}
 	}
@@ -125,12 +132,18 @@ func (aa *autoAdmin) createMultiColumnIndexes(workload utils.WorkloadInfo, index
 
 // filterIndexes filters some obviously unreasonable indexes.
 // Rule 1: if index X is a prefix of index Y, then remove X.
-// Rule 2(TBD): remove unnecessary suffix columns, e.g. X(a, b, c) to X(a, b) if no query can gain benefit from the suffix column c.
-func (aa *autoAdmin) filterIndexes(indexes utils.Set[utils.Index]) utils.Set[utils.Index] {
+// Rule 2: if index X has no any benefit, then remove X.
+// Rule 3(TBD): remove unnecessary suffix columns, e.g. X(a, b, c) to X(a, b) if no query can gain benefit from the suffix column c.
+func (aa *autoAdmin) filterIndexes(workload utils.WorkloadInfo, indexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	indexList := indexes.ToList()
 	filteredIndexes := utils.NewSet[utils.Index]()
+	originalCost, err := evaluateIndexConfCost(workload, aa.optimizer, indexes)
+	if err != nil {
+		return nil, err
+	}
 	for i, x := range indexList {
 		filtered := false
+		// rule 1
 		for j, y := range indexList {
 			if i == j {
 				continue
@@ -140,11 +153,24 @@ func (aa *autoAdmin) filterIndexes(indexes utils.Set[utils.Index]) utils.Set[uti
 				continue
 			}
 		}
-		if !filtered {
-			filteredIndexes.Add(x)
+		if filtered {
+			continue
 		}
+
+		// rule 2
+		indexes.Remove(x)
+		newCost, err := evaluateIndexConfCost(workload, aa.optimizer, indexes)
+		if err != nil {
+			return nil, err
+		}
+		indexes.Add(x)
+		if !originalCost.Less(newCost) {
+			continue
+		}
+
+		filteredIndexes.Add(x)
 	}
-	return filteredIndexes
+	return filteredIndexes, nil
 }
 
 // mergeCandidates merges some index candidates.
