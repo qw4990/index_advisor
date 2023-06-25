@@ -18,7 +18,6 @@ type adviseOfflineCmdOpt struct {
 	maxIndexWidth int
 
 	dsn          string
-	schemaName   string
 	workloadPath string
 	output       string
 	costModelVer string
@@ -32,8 +31,24 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			dsnWithoutDB, dbName := utils.GetDBNameFromDSN(opt.dsn)
+			if dbName == "" {
+				return fmt.Errorf("invalid dsn: %s, no database specified", opt.dsn)
+			}
+			utils.Infof("connect to %s", opt.dsn)
+			db, err := optimizer.NewTiDBWhatIfOptimizer(dsnWithoutDB) // the DB may not exist yet
+			if err != nil {
+				return err
+			}
+			if err := loadWorkload(db, opt.workloadPath); err != nil { // load workload automatically
+				return err
+			}
+			if err := db.Execute(`use ` + dbName); err != nil {
+				return err
+			}
+
 			utils.Infof("load workload info from %s", opt.workloadPath)
-			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			info, err := utils.LoadWorkloadInfo(dbName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
@@ -42,12 +57,6 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
 				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
-			}
-
-			utils.Infof("connect to %s", opt.dsn)
-			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
-			if err != nil {
-				return err
 			}
 
 			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
@@ -65,7 +74,6 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-index-width", 3, "the max number of columns in recommended indexes")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")

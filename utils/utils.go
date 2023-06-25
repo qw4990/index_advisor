@@ -20,6 +20,15 @@ func FileExists(filename string) (exist, isDir bool) {
 	return true, info.IsDir()
 }
 
+// GetDBNameFromDSN extracts the database name from the given DSN.
+func GetDBNameFromDSN(dsn string) (dsnWithoutDB, dbName string) {
+	idx := strings.Index(dsn, "/")
+	if idx == -1 {
+		return dsn, ""
+	}
+	return dsn[:idx], strings.TrimSpace(dsn[idx+1:])
+}
+
 // ParseRawSQLsFromDir parses raw Queries from the given directory.
 // Each *.sql in this directory is parsed as a single Query.
 func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
