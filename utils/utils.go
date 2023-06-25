@@ -26,7 +26,7 @@ func GetDBNameFromDSN(dsn string) (dsnWithoutDB, dbName string) {
 	if idx == -1 {
 		return dsn, ""
 	}
-	return dsn[:idx], strings.TrimSpace(dsn[idx+1:])
+	return dsn[:idx+1], strings.TrimSpace(dsn[idx+1:])
 }
 
 // ParseRawSQLsFromDir parses raw Queries from the given directory.

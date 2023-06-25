@@ -49,7 +49,7 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 
 // LoadWorkloadInfo loads workload info from the given path.
 func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
-	Infof("loaf workload from %s", workloadInfoPath)
+	Infof("load workload from %s", workloadInfoPath)
 	sqls := NewSet[Query]()
 	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
 		queryDirPath := path.Join(workloadInfoPath, "queries")
