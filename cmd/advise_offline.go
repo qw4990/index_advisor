@@ -125,7 +125,7 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 
 	fmt.Println(summaryContent)
 	if savePath != "" {
-		os.Remove(savePath) // clear all existing data
+		os.RemoveAll(savePath) // clear all existing data
 		os.MkdirAll(savePath, 0777)
 
 		// summary
