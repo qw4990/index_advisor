@@ -90,7 +90,7 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c workload.Co
 }
 
 func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []workload.Column) {
-	relatedTableNames := utils.CollectTableNamesFromSQL(v.currentSQL.Text)
+	relatedTableNames := utils.CollectTableNamesFromSQL(schemaName, v.currentSQL.Text)
 	for _, table := range v.tables.ToList() {
 		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.LowerString(table.TableName)) {
 			continue

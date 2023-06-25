@@ -49,7 +49,7 @@ WHERE ct.kind = 'production companies'
 	AND mc.movie_id = mi_idx.movie_id
 	AND it.id = mi_idx.info_type_id;
 `
-	tables := CollectTableNamesFromSQL(sql)
+	tables := CollectTableNamesFromSQL("test", sql)
 	fmt.Println(tables.ToList())
 }
 

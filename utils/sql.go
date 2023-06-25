@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 )
@@ -17,13 +18,18 @@ func NormalizeDigest(sqlText string) (string, string) {
 }
 
 type tableNameCollector struct {
-	tableNames Set[LowerString]
+	defaultSchemaName string
+	tableNames        Set[LowerString]
 }
 
 func (c *tableNameCollector) Enter(n ast.Node) (out ast.Node, skipChildren bool) {
 	switch x := n.(type) {
 	case *ast.TableName:
-		c.tableNames.Add(LowerString(x.Name.String()))
+		if x.Schema.L == "" {
+			c.tableNames.Add(LowerString(fmt.Sprintf("%s.%s", c.defaultSchemaName, x.Name.String())))
+		} else {
+			c.tableNames.Add(LowerString(fmt.Sprintf("%s.%s", x.Schema.L, x.Name.String())))
+		}
 	}
 	return n, false
 }
@@ -33,10 +39,11 @@ func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
 }
 
 // CollectTableNamesFromSQL returns all referenced table names in the given SQL text.
-func CollectTableNamesFromSQL(sqlText string) Set[LowerString] {
+// The returned format is `schemaName.tableName`.
+func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) Set[LowerString] {
 	node, err := ParseOneSQL(sqlText)
 	Must(err)
-	c := &tableNameCollector{tableNames: NewSet[LowerString]()}
+	c := &tableNameCollector{defaultSchemaName: defaultSchemaName, tableNames: NewSet[LowerString]()}
 	node.Accept(c)
 	return c.tableNames
 }
