@@ -10,11 +10,10 @@ import (
 	"github.com/qw4990/index_advisor/advisor"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	wk "github.com/qw4990/index_advisor/workload"
 )
 
 func prepareTable(db optimizer.WhatIfOptimizer, schema, createStmt string, nRows int) {
-	t, err := wk.ParseCreateTableStmt(schema, createStmt)
+	t, err := utils.ParseCreateTableStmt(schema, createStmt)
 	utils.Must(err)
 
 	utils.Must(db.Execute(createStmt))
@@ -56,61 +55,61 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 
 	type aaCase struct {
 		queries []string
-		param   *advisor.Parameter
+		param   advisor.Parameter
 		result  []string
 	}
 	cases := []aaCase{
 		// single-table cases
 		// zero-predicate cases
-		{[]string{`select * from t1`}, &advisor.Parameter{1, 3},
+		{[]string{`select * from t1`}, advisor.Parameter{1, 3},
 			[]string{}}, // no index can help
 		// TODO: cannot pass this case now since `a` is not considered as an indexable column.
-		//{[]string{`select a from t1`}, &advisor.Parameter{1, 3},
+		//{[]string{`select a from t1`}, advisor.Parameter{1, 3},
 		//	[]string{"test_aa.t1(a)"}}, // idx(a) can help decrease the scan cost.
-		{[]string{`select a from t1 order by a`}, &advisor.Parameter{1, 3},
+		{[]string{`select a from t1 order by a`}, advisor.Parameter{1, 3},
 			[]string{"test_aa.t1(a)"}}, // idx(a) can help decrease the scan cost.
-		{[]string{`select a from t1 group by a`}, &advisor.Parameter{1, 3},
+		{[]string{`select a from t1 group by a`}, advisor.Parameter{1, 3},
 			[]string{"test_aa.t1(a)"}}, // idx(a) can help decrease the scan cost.
 
 		// 	single-predicate cases
-		{[]string{`select * from t1 where a=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
-		{[]string{`select * from t1 where a=1`}, &advisor.Parameter{5, 3},
+		{[]string{`select * from t1 where a=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t1 where a=1`}, advisor.Parameter{5, 3},
 			[]string{"test_aa.t1(a)"}}, // only 1 index should be generated even if it asks for 5.
-		{[]string{`select * from t1 where a<50`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
-		{[]string{`select * from t1 where a in (1, 2, 3, 4, 5)`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
-		{[]string{`select * from t1 where a=1 order by a`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
-		{[]string{`select * from t2 where a=1 order by b`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a in (1, 2, 3) order by b`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a < 20 order by b`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t1 where a<50`}, advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t1 where a in (1, 2, 3, 4, 5)`}, advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t1 where a=1 order by a`}, advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t2 where a=1 order by b`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a in (1, 2, 3) order by b`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a < 20 order by b`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
 		// TODO: should be t(b, a)
-		{[]string{`select * from t2 where a > 20 order by b`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a > 20 order by b`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
 
 		// multi-predicate cases
-		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a=1 and b=1`}, &advisor.Parameter{3, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(b,a)"}},
-		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(b,a)"}},
-		{[]string{`select * from t2 where a<1 and b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(b)"}},
-		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 1}, []string{"test_aa.t2(a)"}},
-		{[]string{`select * from t2 where a=1 or b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`}, advisor.Parameter{3, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(b,a)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t2(b,a)"}},
+		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{1, 1}, []string{"test_aa.t2(b)"}},
+		{[]string{`select * from t2 where a=1 or b=1`}, advisor.Parameter{1, 1}, []string{"test_aa.t2(a)"}},
+		{[]string{`select * from t2 where a=1 or b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
 
 		// multi-queries cases
-		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
-		{[]string{`select * from t1 where a>1`, `select * from t2 where a=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a)"}},
-		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t1(a)", "test_aa.t2(a)"}},
-		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t3(a)"}},
-		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t3(a)", "test_aa.t3(b)"}},
-		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1 and a=3`}, &advisor.Parameter{1, 3}, []string{"test_aa.t3(a,b)"}},
-		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1 and a=3`}, &advisor.Parameter{2, 3}, []string{"test_aa.t3(a,b)"}},
-		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
-		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(a,b)", "test_aa.t3(a,b)"}},
-		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, &advisor.Parameter{1, 3}, []string{"test_aa.t2(b,a)"}},
-		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, &advisor.Parameter{2, 3}, []string{"test_aa.t2(b,a)", "test_aa.t3(b,a)"}},
+		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t1(a)"}},
+		{[]string{`select * from t1 where a>1`, `select * from t2 where a=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a)"}},
+		{[]string{`select * from t1 where a=1`, `select * from t2 where a=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t1(a)", "test_aa.t2(a)"}},
+		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t3(a)"}},
+		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t3(a)", "test_aa.t3(b)"}},
+		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1 and a=3`}, advisor.Parameter{1, 3}, []string{"test_aa.t3(a,b)"}},
+		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1 and a=3`}, advisor.Parameter{2, 3}, []string{"test_aa.t3(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(a,b)"}},
+		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t2(a,b)", "test_aa.t3(a,b)"}},
+		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, advisor.Parameter{1, 3}, []string{"test_aa.t2(b,a)"}},
+		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, advisor.Parameter{2, 3}, []string{"test_aa.t2(b,a)", "test_aa.t3(b,a)"}},
 	}
 
 	for i, c := range cases {
-		workload := wk.CreateWorkloadFromRawStmt(schema, createTableStmts, c.queries)
+		workload := utils.CreateWorkloadFromRawStmt(schema, createTableStmts, c.queries)
 		result, err := advisor.IndexAdvise(db, workload, c.param)
 		utils.Must(err)
 
