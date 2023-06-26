@@ -239,11 +239,21 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 			TableStats:   workload.TableStats,
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
-		indexes, err := aa.enumerateCombinations(queryWorkload, indexes)
-		if err != nil {
-			return nil, err
+
+		bestPerQuery := 3 // keep 3 best indexes for each single-query
+		for i := 0; i < bestPerQuery; i++ {
+			best, err := aa.enumerateCombinations(queryWorkload, indexes)
+			if err != nil {
+				return nil, err
+			}
+			candidates.AddSet(best)
+			for _, index := range best.ToList() {
+				indexes.Remove(index)
+			}
+			if indexes.Size() == 0 {
+				break
+			}
 		}
-		candidates.AddSet(indexes) // best indexes for each single-query
 	}
 	return candidates, nil
 }
