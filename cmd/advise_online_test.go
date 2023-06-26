@@ -33,8 +33,8 @@ func TestReadQueries(t *testing.T) {
 	must(db.Execute(`select * from information_schema.statements_summary`))
 	must(db.Execute(`use mysql`))
 	must(db.Execute(`select * from bind_info`))
-	sqls := readQueriesFromStatementSummary(db, []string{"read_queries_test"})
-	sqls = filterSQLAccessingSystemTables(sqls)
+	sqls, _ := readQueriesFromStatementSummary(db, []string{"read_queries_test"})
+	sqls, _ = filterSQLAccessingSystemTables(sqls)
 	if sqls.Size() != len(queries) {
 		t.Fatalf("expect %+v, got %+v", queries, sqls)
 	}
@@ -60,7 +60,7 @@ func TestReadTableSchemas(t *testing.T) {
 	must(db.Execute(`create table t2 (a int)`))
 	must(db.Execute(`create table t3 (a int)`))
 
-	schemas := readTableSchemas(db, []string{`read_table_name_test`})
+	schemas, _ := readTableSchemas(db, []string{`read_table_name_test`})
 	if !schemas.ContainsKey("read_table_name_test.t1") ||
 		!schemas.ContainsKey("read_table_name_test.t2") ||
 		!schemas.ContainsKey("read_table_name_test.t3") {
@@ -83,7 +83,7 @@ func TestReadTableNames(t *testing.T) {
 	must(db.Execute(`create table t2 (a int)`))
 	must(db.Execute(`create table t3 (a int)`))
 
-	names := readTableNames(db, "read_table_name_test")
+	names, _ := readTableNames(db, "read_table_name_test")
 	sort.Strings(names)
 	if len(names) != 3 || names[0] != "t1" || names[1] != "t2" || names[2] != "t3" {
 		t.Fatalf("expect t1, t2, t3, got %+v", names)
