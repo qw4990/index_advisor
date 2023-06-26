@@ -74,7 +74,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 10, "max number of indexes to recommend, 0 means no limit")
-	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-index-width", 3, "the max number of columns in recommended indexes")
+	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
