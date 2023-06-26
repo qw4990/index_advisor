@@ -26,6 +26,25 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 
 在线模式更加方便易用，离线模式更加灵活。
 
+### 离线模式使用
+
+离线模式要将 Index Advisor 需要的数据提前准备好，需要的数据包括：
+
+- 查询文件（或文件夹）：可以以单个文件的方式，也可以以文件夹的形式。
+  - 文件夹方式：如 `examples/tpch_example1/queries`，一个文件夹，内部每个文件为一条查询。
+  - 单个文件方式：如 `examples/tpch_example2/queries.sql`，里面包含多条查询语句，用分号隔开。
+- schema 信息文件（可选）：如 `examples/tpch_example1/schema.sql`，里面包含 `create-table` 语句原文，用分号隔开。
+- 统计信息文件夹（可选）：如 `examples/tpch_example1/stats`，一个文件夹，内部存放相关表的统计信息文件，每个统计信息文件应该为 JSON 格式，可以通过 TiDB 统计信息 dump 下载。
+
+准备好上述文件后，则直接使用 Index Advisor 进行索引推荐，如 `index_advisor --offline --query-path=examples/tpch_example1/queries --max-num-indexes=5`，其中参数的含义为：
+- `offline`：表示使用离线模式。
+- `query-path`：查询文件的路径，可以是单个文件，也可以是文件夹。
+- `schema-path`：schema 信息文件的路径，可选；如果指定则会使用此文件创建表。
+- `stats-path`：统计信息文件夹的路径，可选；如果指定则会导入文件夹内的统计信息。
+- `max-num-indexes`：最多推荐的索引数量。
+- `cost-model-version`：TiDB 使用的代价模型版本，见 [TiDB 代价模型版本](https://docs.pingcap.com/zh/tidb/dev/system-variables#tidb_cost_model_version-%E4%BB%8E-v620-%E7%89%88%E6%9C%AC%E5%BC%80%E5%A7%8B%E5%BC%95%E5%85%A5)。
+- `output`：输出结果的保存路径，可选；如果为空则直接打印在终端上。
+
 ### 在线模式使用
 
 - 请确保你的 TiDB 小版本高于 v6.5.x 或 v7.1.x，或大版本高于 v7.2，以使用 Hypo Index 的功能。 
@@ -37,20 +56,6 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
    - `max-num-indexes`：最多推荐的索引数量。
    - `query-exec-time-threshold`：只对执行时间超过此阈值的查询进行索引推荐。
 - Index Advisor 会输出推荐的索引，以及对应查询的受益，你可以根据输出结果创建新的索引。
-
-### 离线模式使用
-
-离线模式需要将 Index Advisor 需要的数据提前准备好，并放在一个文件夹下，文件夹中包含下述文件：
-
-1. `schema.sql`：相关表的 schema 信息，为 `create-table` 语句原文，用分号隔开。
-2. `queries.sql`：需要考虑从查询原文，用用分号隔开。
-3. `stats`：一个文件夹，内部存放相关表的统计信息文件，每个统计信息文件应该为 JSON 格式，可以通过 TiDB 统计信息 dump 下载。
-
-准备好上述文件后，则直接使用 Index Advisor 进行索引推荐，如 `index_advisor --offline --data-dir=/path/to/data --max-num-indexes=5`，其中参数的含义为：
-   - `offline`：表示使用离线模式。
-   - `data-dir`：数据文件夹的路径。
-   - `max-num-indexes`：最多推荐的索引数量。
-   - `cost-model-version`：TiDB 使用的代价模型版本，见 [TiDB 代价模型版本](https://docs.pingcap.com/zh/tidb/dev/system-variables#tidb_cost_model_version-%E4%BB%8E-v620-%E7%89%88%E6%9C%AC%E5%BC%80%E5%A7%8B%E5%BC%95%E5%85%A5)。
 
 ### 输出说明
 
@@ -74,15 +79,15 @@ Q2 plan cost: 1000 -> 100, improvement: 90.00%
 
 ### TPC-H
 
-我们使用 TPC-H 1G 来进行测试，其包含 X 张表，X 个查询，Index Advisor 为这些查询生成了 X 个候选索引，最终我们选择了价值最大的 5 个索引。
+我们使用 TPC-H 1G 来进行测试，其包含 8 张表，21 个查询（不包含 q15），让 Index Advisor 为这些查询推荐 5 个索引。
 
-创建索引后，全部查询的执行时间从 Xs 下降为了 Xs，性能提升了 X 倍，其中：
+创建索引后，全部查询的执行时间从 32.86s 下降为了 26.61s，执行时间降低接近 20%：
 
-1. Q16 避免了对 X 表的扫描，执行时间从 1.4s 下降为 460ms，提升 3 倍。
-2. Q18 使用 IndexJoin，执行时间从 490ms 下降为 24ms，提升 20 倍。
-3. Q21 避免了对 X 表的扫描，执行时间从 228ms 下降为 88ms，提升 2.5 倍。
+![tpch_total](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_total.png)
 
-TODO：图
+下面是几个提升比较显著的查询：
+
+![tpch_query](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_query.png)
 
 ### JOB
 
