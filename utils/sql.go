@@ -14,6 +14,7 @@ const (
 	StmtCreateDB StmtType = iota
 	StmtUseDB
 	StmtCreateTable
+	StmtCreateIndex
 	StmtUnknown
 )
 
@@ -35,6 +36,8 @@ func GetStmtType(stmt string) StmtType {
 		return StmtUseDB
 	} else if containAll(stmt, "create", "table") {
 		return StmtCreateTable
+	} else if containAll(stmt, "create", "index") {
+		return StmtCreateIndex
 	}
 	return StmtUnknown
 }
