@@ -5,32 +5,6 @@ import (
 	"testing"
 )
 
-func isTrue(flag bool, args ...interface{}) {
-	if !flag {
-		fmt.Println("panic args: ", args)
-		panic("not true")
-	}
-}
-
-func TestLoadWorkloadInfo(t *testing.T) {
-	w, err := LoadWorkloadInfo("test", "./workload/test")
-	isTrue(err == nil)
-	isTrue(w.Queries.Size() == 8)
-}
-
-func TestLoadWorkloadInfoTPCH(t *testing.T) {
-	w, err := LoadWorkloadInfo("tpch", "./workload/tpch_1g_22")
-	isTrue(err == nil)
-	isTrue(w.Queries.Size() == 21)
-	fmt.Println(w.Queries.Size())
-}
-
-func TestLoadWorkloadJOB(t *testing.T) {
-	w, err := LoadWorkloadInfo("imdbload", "./workload/job")
-	isTrue(err == nil)
-	isTrue(w.Queries.Size() == 113)
-}
-
 func TestCollectTableNames(t *testing.T) {
 	sql := `
 SELECT MIN(mc.note) AS production_note, MIN(t.title) AS movie_title

@@ -47,18 +47,17 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 	}, nil
 }
 
-// LoadWorkloadInfo loads workload info from the given path.
-func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error) {
-	Infof("load workload from %s", workloadInfoPath)
-	sqls := NewSet[Query]()
-	if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries")); exist || isDir {
-		queryDirPath := path.Join(workloadInfoPath, "queries")
+// LoadQueries loads queries from the given path.
+func LoadQueries(schemaName, dirOrFilePath string) (Set[Query], error) {
+	queries := NewSet[Query]()
+	if exist, isDir := FileExists(path.Join(dirOrFilePath, "queries")); exist || isDir {
+		queryDirPath := path.Join(dirOrFilePath, "queries")
 		rawSQLs, names, err := ParseRawSQLsFromDir(queryDirPath)
 		if err != nil {
-			return WorkloadInfo{}, err
+			return nil, err
 		}
 		for i, rawSQL := range rawSQLs {
-			sqls.Add(Query{
+			queries.Add(Query{
 				Alias:      strings.Split(names[i], ".")[0], // q1.sql, 2a.sql, etc.
 				SchemaName: schemaName,                      // Notice: for simplification, assume all Queries are under the same schema here.
 				Text:       rawSQL,
@@ -66,14 +65,14 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 			})
 		}
 		Infof("load %d queries from dir %s", len(rawSQLs), queryDirPath)
-	} else if exist, isDir := FileExists(path.Join(workloadInfoPath, "queries.sql")); exist || !isDir {
-		queryFilePath := path.Join(workloadInfoPath, "queries.sql")
+	} else if exist, isDir := FileExists(path.Join(dirOrFilePath, "queries.sql")); exist || !isDir {
+		queryFilePath := path.Join(dirOrFilePath, "queries.sql")
 		rawSQLs, err := ParseRawSQLsFromFile(queryFilePath)
 		if err != nil {
-			return WorkloadInfo{}, err
+			return nil, err
 		}
 		for i, rawSQL := range rawSQLs {
-			sqls.Add(Query{
+			queries.Add(Query{
 				Alias:      fmt.Sprintf("q%v", i+1),
 				SchemaName: schemaName, // Notice: for simplification, assume all Queries are under the same schema here.
 				Text:       rawSQL,
@@ -82,32 +81,9 @@ func LoadWorkloadInfo(schemaName, workloadInfoPath string) (WorkloadInfo, error)
 		}
 		Infof("load %d queries from %s", len(rawSQLs), queryFilePath)
 	} else {
-		return WorkloadInfo{}, fmt.Errorf("can not find queries directory or queries.sql file under %s", workloadInfoPath)
+		return nil, fmt.Errorf("can not find queries directory or queries.sql file under %s", dirOrFilePath)
 	}
-
-	schemaFilePath := path.Join(workloadInfoPath, "schema.sql")
-	rawSQLs, err := ParseRawSQLsFromFile(schemaFilePath)
-	if err != nil {
-		return WorkloadInfo{}, err
-	}
-	tableSchemas := NewSet[TableSchema]()
-	for _, rawSQL := range rawSQLs {
-		if GetStmtType(rawSQL) != StmtCreateTable {
-			continue
-		}
-
-		tableSchema, err := ParseCreateTableStmt(schemaName, rawSQL)
-		if err != nil {
-			return WorkloadInfo{}, err
-		}
-		tableSchemas.Add(tableSchema)
-	}
-
-	// TODO: parse stats
-	return WorkloadInfo{
-		Queries:      sqls,
-		TableSchemas: tableSchemas,
-	}, nil
+	return queries, nil
 }
 
 // ParseCreateTableStmt parses a create table statement and returns a TableSchema.
