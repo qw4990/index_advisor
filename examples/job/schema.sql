@@ -1,5 +1,5 @@
-CREATE DATABASE imdb;
-USE imdb;
+CREATE DATABASE imdbload;
+USE imdbload;
 
 CREATE TABLE aka_name (
                           id integer NOT NULL PRIMARY KEY,
