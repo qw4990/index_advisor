@@ -54,17 +54,16 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 
 	currentBestIndexes := utils.NewSet[utils.Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
-		utils.Debugf("AutoAdmin Algo current max index width: %d", currentMaxIndexWidth)
+		utils.Debugf("auto-admin algorithm: current index width is %d", currentMaxIndexWidth)
 		candidates, err := aa.selectIndexCandidates(workload, potentialIndexes)
 		if err != nil {
 			return nil, err
 		}
-		utils.Debugf("AutoAdmin Algo selectIndexCandidates: %v", candidates.Size())
+		utils.Debugf("auto-admin algorithm: select best %v indexes from %v candidates", aa.maxIndexes, candidates.Size())
 		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates)
 		if err != nil {
 			return nil, err
 		}
-		utils.Debugf("AutoAdmin Algo enumerateCombinations: %v", currentBestIndexes.Size())
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
@@ -231,6 +230,7 @@ func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates uti
 
 // selectIndexCandidates selects the best indexes for each single-query.
 func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
+	utils.Debugf("auto-admin algorithm: select best index from %v candidates for each single query(total %v)", potentialIndexes.Size(), workload.Queries.Size())
 	candidates := utils.NewSet[utils.Index]()
 	for _, query := range workload.Queries.ToList() {
 		queryWorkload := utils.WorkloadInfo{ // each query as a workload
@@ -245,6 +245,9 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 			best, err := aa.enumerateCombinations(queryWorkload, indexes)
 			if err != nil {
 				return nil, err
+			}
+			if best.Size() > 0 {
+				utils.Debugf("auto-admin algorithm: current best index for %s is %s", query.Alias, best.ToList()[0].Key())
 			}
 			candidates.AddSet(best)
 			for _, index := range best.ToList() {
