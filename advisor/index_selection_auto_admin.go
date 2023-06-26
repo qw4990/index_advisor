@@ -240,7 +240,7 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
 
-		bestPerQuery := 3 // keep 3 best indexes for each single-query
+		bestPerQuery := 1 // keep 1 best indexes for each single-query
 		for i := 0; i < bestPerQuery; i++ {
 			best, err := aa.enumerateCombinations(queryWorkload, indexes)
 			if err != nil {
