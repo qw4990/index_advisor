@@ -84,7 +84,7 @@ func (o *TiDBWhatIfOptimizer) CreateHypoIndex(index utils.Index) error {
 // DropHypoIndex drops a hypothetical index.
 func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 	defer o.recordStats(time.Now(), &o.stats.CreateOrDropHypoIdxTime, &o.stats.CreateOrDropHypoIdxCount)
-	return o.Execute(fmt.Sprintf("drop index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
+	return o.Execute(fmt.Sprintf("drop hypo index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
 // Explain returns the execution plan of the specified query.
