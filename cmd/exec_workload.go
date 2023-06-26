@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +18,7 @@ type execWorkloadCmdOpt struct {
 	workloadPath string
 	prefix       string
 	queries      string
+	output       string
 }
 
 func NewExecWorkloadCmd() *cobra.Command {
@@ -51,10 +51,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 				return sqls[i].Alias < sqls[j].Alias
 			})
 
-			savePath := path.Join(opt.workloadPath, "exec-workload-result-"+opt.prefix)
-
-			execWorkload(db, queries, savePath)
-			return nil
+			return execWorkload(db, queries, opt.output)
 		},
 	}
 
@@ -63,19 +60,20 @@ func NewExecWorkloadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.prefix, "prefix", "exec", "prefix")
 	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	return cmd
 }
 
 func execWorkload(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], savePath string) error {
-	sqls := queries.ToList()
-	sort.Slice(sqls, func(i, j int) bool {
-		return sqls[i].Alias < sqls[j].Alias
+	queryList := queries.ToList()
+	sort.Slice(queryList, func(i, j int) bool {
+		return queryList[i].Alias < queryList[j].Alias
 	})
 
 	os.MkdirAll(savePath, 0777)
 	summaryContent := ""
 	var totExecTime time.Duration
-	for _, sql := range sqls {
+	for _, sql := range queryList {
 		var execTimes []time.Duration
 		var plans []utils.Plan
 		for k := 0; k < 5; k++ {
