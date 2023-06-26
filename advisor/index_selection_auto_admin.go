@@ -59,8 +59,10 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		if err != nil {
 			return nil, err
 		}
-		utils.Debugf("auto-admin algorithm: select best %v indexes from %v candidates", aa.maxIndexes, candidates.Size())
-		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates)
+
+		maxIndexes := aa.maxIndexes * (aa.maxIndexWidth - currentMaxIndexWidth + 1)
+		utils.Debugf("auto-admin algorithm: select best %v indexes from %v candidates", maxIndexes, candidates.Size())
+		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates, maxIndexes)
 		if err != nil {
 			return nil, err
 		}
@@ -240,36 +242,42 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 		}
 		indexes := aa.potentialIndexesForQuery(query, potentialIndexes)
 
-		bestPerQuery := 1 // keep 1 best indexes for each single-query
+		bestPerQuery := 3 // keep 3 best indexes for each single-query
+		bestQueryIndexes := utils.NewSet[utils.Index]()
 		for i := 0; i < bestPerQuery; i++ {
-			best, err := aa.enumerateCombinations(queryWorkload, indexes)
+			best, err := aa.enumerateCombinations(queryWorkload, indexes, 1)
 			if err != nil {
 				return nil, err
 			}
-			if best.Size() > 0 {
-				utils.Debugf("auto-admin algorithm: current best index for %s is %s", query.Alias, best.ToList()[0].Key())
+			if best.Size() == 0 {
+				break
 			}
-			candidates.AddSet(best)
+			bestQueryIndexes.AddSet(best)
 			for _, index := range best.ToList() {
 				indexes.Remove(index)
 			}
-			if indexes.Size() == 0 {
+			if bestQueryIndexes.Size() > bestPerQuery {
 				break
 			}
 		}
+
+		utils.Debugf("auto-admin algorithm: current best index for %s is %s", query.Alias, bestQueryIndexes.ToList())
+		candidates.AddSet(bestQueryIndexes)
 	}
 	return candidates, nil
 }
 
 // potentialIndexesForQuery returns best recommended indexes of this workload from these candidates.
-func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
-	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), aa.maxIndexes)
+func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo,
+	candidateIndexes utils.Set[utils.Index],
+	maxNumberIndexes int) (utils.Set[utils.Index], error) {
+	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), maxNumberIndexes)
 	currentIndexes, cost, err := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 	if err != nil {
 		return nil, err
 	}
 
-	numberIndexes := utils.Min(aa.maxIndexes, candidateIndexes.Size())
+	numberIndexes := utils.Min(maxNumberIndexes, candidateIndexes.Size())
 	indexes, cost, err := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes, err
 }
