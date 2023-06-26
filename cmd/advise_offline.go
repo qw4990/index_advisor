@@ -56,9 +56,18 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				queries = utils.FilterBySQLAlias(queries, qs)
 			}
 
+			tableNames, err := utils.CollectTableNamesFromQueries(dbName, queries)
+			if err != nil {
+				return err
+			}
+			tableSchemas, err := getTableSchemas(db, tableNames)
+			if err != nil {
+				return err
+			}
+
 			workload := utils.WorkloadInfo{
-				Queries: queries,
-				// TODO: TableSchemas : nil,
+				Queries:      queries,
+				TableSchemas: tableSchemas,
 			}
 
 			// set cost-model-version
@@ -217,4 +226,32 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 		return planChanges[i].OptPlan.PlanCost()/planChanges[i].OriPlan.PlanCost() < planChanges[j].OptPlan.PlanCost()/planChanges[j].OriPlan.PlanCost()
 	})
 	return planChanges, nil
+}
+
+func getTableSchemas(db optimizer.WhatIfOptimizer, tableNames utils.Set[utils.TableName]) (utils.Set[utils.TableSchema], error) {
+	s := utils.NewSet[utils.TableSchema]()
+	for _, t := range tableNames.ToList() {
+		schema, err := getTableSchema(db, t.SchemaName, t.TableName)
+		if err != nil {
+			return nil, err
+		}
+		s.Add(schema)
+	}
+	return s, nil
+}
+
+func getTableSchema(db optimizer.WhatIfOptimizer, schemaName, tableName string) (utils.TableSchema, error) {
+	r, err := db.Query(fmt.Sprintf("show create table %v.%v", schemaName, tableName))
+	if err != nil {
+		return utils.TableSchema{}, err
+	}
+	defer r.Close()
+	if !r.Next() {
+		return utils.TableSchema{}, fmt.Errorf("table %v.%v does not exist", schemaName, tableName)
+	}
+	var tmp, createTableStmt string
+	if err := r.Scan(&tmp, &createTableStmt); err != nil {
+		return utils.TableSchema{}, err
+	}
+	return utils.ParseCreateTableStmt(schemaName, createTableStmt)
 }

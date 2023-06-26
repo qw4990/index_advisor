@@ -101,6 +101,19 @@ func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) (Set[TableName]
 	return c.tableNames, nil
 }
 
+// CollectTableNamesFromQueries returns all referenced table names in the given queries.
+func CollectTableNamesFromQueries(defaultSchemaName string, queries Set[Query]) (Set[TableName], error) {
+	tableNames := NewSet[TableName]()
+	for _, q := range queries.ToList() {
+		names, err := CollectTableNamesFromSQL(defaultSchemaName, q.Text)
+		if err != nil {
+			return nil, err
+		}
+		tableNames.AddSet(names)
+	}
+	return tableNames, nil
+}
+
 // IsTiDBSystemTableName returns whether the given table name is a TiDB system table name.
 func IsTiDBSystemTableName(t TableName) bool {
 	schemaName := strings.ToLower(t.SchemaName)
