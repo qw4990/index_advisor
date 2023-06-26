@@ -28,14 +28,14 @@ func NewExecWorkloadCmd() *cobra.Command {
 		Short: "exec all queries in the specified workload",
 		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			info, err := utils.LoadWorkloadInfo(opt.schemaName, opt.workloadPath)
+			queries, err := utils.LoadQueries(opt.schemaName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
+				queries = utils.FilterBySQLAlias(queries, qs)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -46,14 +46,14 @@ func NewExecWorkloadCmd() *cobra.Command {
 				return err
 			}
 
-			sqls := info.Queries.ToList()
+			sqls := queries.ToList()
 			sort.Slice(sqls, func(i, j int) bool {
 				return sqls[i].Alias < sqls[j].Alias
 			})
 
 			savePath := path.Join(opt.workloadPath, "exec-workload-result-"+opt.prefix)
 
-			execWorkload(db, info, savePath)
+			execWorkload(db, queries, savePath)
 			return nil
 		},
 	}
@@ -66,8 +66,8 @@ func NewExecWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func execWorkload(db optimizer.WhatIfOptimizer, info utils.WorkloadInfo, savePath string) error {
-	sqls := info.Queries.ToList()
+func execWorkload(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], savePath string) error {
+	sqls := queries.ToList()
 	sort.Slice(sqls, func(i, j int) bool {
 		return sqls[i].Alias < sqls[j].Alias
 	})

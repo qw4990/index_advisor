@@ -47,14 +47,18 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return err
 			}
 
-			info, err := utils.LoadWorkloadInfo(dbName, opt.workloadPath)
+			queries, err := utils.LoadQueries(dbName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
-
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				info.Queries = utils.FilterBySQLAlias(info.Queries, qs)
+				queries = utils.FilterBySQLAlias(queries, qs)
+			}
+
+			workload := utils.WorkloadInfo{
+				Queries: queries,
+				// TODO: TableSchemas : nil,
 			}
 
 			// set cost-model-version
@@ -62,14 +66,14 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return nil
 			}
 
-			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
+			indexes, err := advisor.IndexAdvise(db, workload, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})
 			if err != nil {
 				return err
 			}
-			return outputAdviseResult(indexes, info, db, opt.output)
+			return outputAdviseResult(indexes, workload, db, opt.output)
 		},
 	}
 
