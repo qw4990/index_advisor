@@ -78,6 +78,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		}
 	}
 
+	utils.Debugf("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
 	limit := 0
 	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
 	if err != nil {
@@ -261,7 +262,7 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 			}
 		}
 
-		utils.Debugf("auto-admin algorithm: current best index for %s is %s", query.Alias, bestQueryIndexes.ToList())
+		utils.Debugf("auto-admin algorithm: current best index for %s is %s", query.Alias, bestQueryIndexes.ToKeyList())
 		candidates.AddSet(bestQueryIndexes)
 	}
 	return candidates, nil

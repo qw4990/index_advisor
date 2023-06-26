@@ -19,6 +19,7 @@ type Set[T SetKey] interface {
 	Find(k SetKey) (T, bool)
 	Remove(item T)
 	ToList() []T
+	ToKeyList() []string
 	Size() int
 	Clone() Set[T]
 	String() string
@@ -75,6 +76,19 @@ func (s *setImpl[T]) ToList() []T {
 		return list[i].Key() < list[j].Key()
 	}) // to make the result stable
 	return list
+}
+
+func (s *setImpl[T]) ToKeyList() []string {
+	if s == nil {
+		return nil
+	}
+
+	keys := make([]string, 0, s.Size())
+	for _, v := range s.s {
+		keys = append(keys, v.Key())
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func (s *setImpl[T]) AddList(items ...T) {
