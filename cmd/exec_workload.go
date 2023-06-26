@@ -14,9 +14,7 @@ import (
 
 type execWorkloadCmdOpt struct {
 	dsn          string
-	schemaName   string
 	workloadPath string
-	prefix       string
 	queries      string
 	output       string
 }
@@ -28,7 +26,12 @@ func NewExecWorkloadCmd() *cobra.Command {
 		Short: "exec all queries in the specified workload",
 		Long:  `exec all queries in the specified workload and collect their plans and execution times`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			queries, err := utils.LoadQueries(opt.schemaName, opt.workloadPath)
+			_, dbName := utils.GetDBNameFromDSN(opt.dsn)
+			if dbName == "" {
+				return fmt.Errorf("invalid dsn: %s, no database name", opt.dsn)
+			}
+
+			queries, err := utils.LoadQueries(dbName, opt.workloadPath)
 			if err != nil {
 				return err
 			}
@@ -42,9 +45,6 @@ func NewExecWorkloadCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := db.Execute(`use ` + opt.schemaName); err != nil {
-				return err
-			}
 
 			sqls := queries.ToList()
 			sort.Slice(sqls, func(i, j int) bool {
@@ -56,9 +56,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringVar(&opt.schemaName, "schema-name", "test", "the schema(database) name to run all queries on the workload")
-	cmd.Flags().StringVar(&opt.workloadPath, "workload-info-path", "", "workload info path")
-	cmd.Flags().StringVar(&opt.prefix, "prefix", "exec", "prefix")
+	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload info path")
 	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	return cmd
