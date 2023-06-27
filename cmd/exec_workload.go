@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -24,8 +25,8 @@ func NewExecWorkloadCmd() *cobra.Command {
 	var opt execWorkloadCmdOpt
 	cmd := &cobra.Command{
 		Use:    "exec-workload",
-		Short:  "exec all queries in the specified workload",
-		Long:   `exec all queries in the specified workload and collect their plans and execution times`,
+		Short:  "exec all queries in the specified workload (only for test)",
+		Long:   `exec all queries in the specified workload and collect their plans and execution times (only for test)`,
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, dbName := utils.GetDBNameFromDSN(opt.dsn)
@@ -53,7 +54,25 @@ func NewExecWorkloadCmd() *cobra.Command {
 				return sqls[i].Alias < sqls[j].Alias
 			})
 
-			return execWorkload(db, queries, opt.output)
+			if opt.indexDirPath == "" {
+				return executeQueries(db, queries, opt.output)
+			}
+
+			indexFiles, err := os.ReadDir(opt.indexDirPath)
+			if err != nil {
+				return err
+			}
+			for _, indexFile := range indexFiles {
+				if !strings.HasSuffix(indexFile.Name(), ".sql") {
+					continue
+				}
+				utils.Infof("executing queries with index %s", indexFile.Name())
+				indexConfPath := path.Join(opt.indexDirPath, indexFile.Name())
+				if err := executeQueriesWithIndexes(db, queries, indexConfPath, opt.output); err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 
@@ -65,7 +84,46 @@ func NewExecWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func execWorkload(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], savePath string) error {
+func executeQueriesWithIndexes(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], indexConfPath, savePath string) error {
+	// load indexes from indexConfPath into the cluster
+	stmts, err := utils.ParseRawSQLsFromFile(indexConfPath)
+	if err != nil {
+		return err
+	}
+	indexes := utils.NewSet[utils.Index]()
+	for _, stmt := range stmts {
+		index, err := utils.ParseCreateIndexStmt(stmt)
+		if err != nil {
+			return err
+		}
+		indexes.Add(index)
+	}
+	for _, index := range indexes.ToList() {
+		utils.Infof("execute: %s", index.DDL())
+		if err := db.Execute(index.DDL()); err != nil {
+			return err
+		}
+	}
+
+	// run queries
+	baseName := path.Base(indexConfPath)
+	baseName = strings.TrimSuffix(baseName, path.Ext(baseName))
+	if err := executeQueries(db, queries, path.Join(savePath, baseName)); err != nil {
+		return err
+	}
+
+	// remove indexes in indexConfPath
+	for _, index := range indexes.ToList() {
+		dropStmt := fmt.Sprintf("DROP INDEX %s ON %s.%s", index.IndexName, index.SchemaName, index.TableName)
+		utils.Infof("execute: %s", dropStmt)
+		if err := db.Execute(dropStmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func executeQueries(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], savePath string) error {
 	queryList := queries.ToList()
 	sort.Slice(queryList, func(i, j int) bool {
 		return queryList[i].Alias < queryList[j].Alias

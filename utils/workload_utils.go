@@ -106,3 +106,29 @@ func ParseCreateTableStmt(schemaName, createTableStmt string) (TableSchema, erro
 	// TODO: parse indexes
 	return t, nil
 }
+
+// ParseCreateIndexStmt parses a create index statement and returns an Index.
+func ParseCreateIndexStmt(createIndexStmt string) (Index, error) {
+	stmt, err := ParseOneSQL(createIndexStmt)
+	if err != nil {
+		return Index{}, err
+	}
+	createIndex := stmt.(*ast.CreateIndexStmt)
+	schemaName, tableName := createIndex.Table.Schema.O, createIndex.Table.Name.O
+	if schemaName == "" {
+		return Index{}, fmt.Errorf("schema name is empty")
+	}
+	index := Index{
+		SchemaName: schemaName,
+		TableName:  tableName,
+		IndexName:  createIndex.IndexName,
+	}
+	for _, col := range createIndex.IndexPartSpecifications {
+		index.Columns = append(index.Columns, Column{
+			SchemaName: schemaName,
+			TableName:  tableName,
+			ColumnName: col.Column.Name.O,
+		})
+	}
+	return index, nil
+}
