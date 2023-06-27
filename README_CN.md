@@ -83,11 +83,11 @@ Q2 plan cost: 1000 -> 100, improvement: 90.00%
 
 创建索引后，全部查询的执行时间从 32.86s 下降为了 26.61s，执行时间降低接近 20%：
 
-![tpch_total](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_total.png)
+![tpch_total](doc/evaluation_tpch_1g_total.png)
 
 下面是几个提升比较显著的查询：
 
-![tpch_query](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_query.png)
+![tpch_query](doc/evaluation_tpch_1g_query.png)
 
 ### JOB
 
