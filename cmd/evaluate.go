@@ -92,19 +92,23 @@ func executeQueriesWithIndexes(db optimizer.WhatIfOptimizer, queries utils.Set[u
 		return err
 	}
 	indexes := utils.NewSet[utils.Index]()
+	tableNames := utils.NewSet[utils.TableName]()
 	for _, stmt := range stmts {
 		index, err := utils.ParseCreateIndexStmt(stmt)
 		if err != nil {
 			return err
 		}
 		indexes.Add(index)
+		tableNames.Add(utils.TableName{SchemaName: index.SchemaName, TableName: index.TableName})
 	}
 	for _, index := range indexes.ToList() {
 		utils.Infof("execute: %s", index.DDL())
 		if err := db.Execute(index.DDL()); err != nil {
 			return err
 		}
-		analyzeStmt := fmt.Sprintf("ANALYZE TABLE %s.%s", index.SchemaName, index.TableName)
+	}
+	for _, t := range tableNames.ToList() {
+		analyzeStmt := fmt.Sprintf("ANALYZE TABLE %s.%s", t.SchemaName, t.TableName)
 		utils.Infof("execute: %s", analyzeStmt)
 		if err := db.Execute(analyzeStmt); err != nil {
 			return err
