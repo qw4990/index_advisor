@@ -43,7 +43,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := loadWorkload(db, opt.workloadPath); err != nil { // load workload automatically
+			if err := loadWorkloadIntoCluster(db, opt.workloadPath); err != nil { // load workload automatically
 				return err
 			}
 			if err := db.Execute(`use ` + dbName); err != nil {
@@ -135,7 +135,7 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 	}
 	summaryContent += fmt.Sprintf("Total original workload cost: %.2E\n", originalWorkloadCost)
 	summaryContent += fmt.Sprintf("Total optimized workload cost: %.2E\n", optimizerWorkloadCost)
-	summaryContent += fmt.Sprintf("Total cost reduction ratio: %.2f\n", optimizerWorkloadCost/originalWorkloadCost)
+	summaryContent += fmt.Sprintf("Total cost reduction ratio: %.2f%%\n", 100*(1-optimizerWorkloadCost/originalWorkloadCost))
 	summaryContent += fmt.Sprintf("Top %d queries with the most cost reduction:\n", utils.Min(len(planChanges), 5))
 	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
 		change := planChanges[i]

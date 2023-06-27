@@ -32,7 +32,7 @@ func NewLoadWorkloadCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return loadWorkload(db, opt.workloadPath)
+			return loadWorkloadIntoCluster(db, opt.workloadPath)
 		},
 	}
 
@@ -41,7 +41,7 @@ func NewLoadWorkloadCmd() *cobra.Command {
 	return cmd
 }
 
-func loadWorkload(db optimizer.WhatIfOptimizer, workloadPath string) error {
+func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) error {
 	utils.Infof("load workload info from %s into the TiDB instance", workloadPath)
 	schemaSQLPath := path.Join(workloadPath, "schema.sql")
 	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)

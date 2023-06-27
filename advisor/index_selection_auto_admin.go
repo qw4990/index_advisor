@@ -23,7 +23,7 @@ func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimiz
 		// TODO: make these 2 variables configurable.
 		maxIndexesNative: 2,
 	}
-	utils.Debugf("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
+	utils.Infof("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
 
 	optimizer.ResetStats()
 	bestIndexes, err := aa.calculateBestIndexes(workload)
@@ -54,19 +54,19 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 
 	currentBestIndexes := utils.NewSet[utils.Index]()
 	for currentMaxIndexWidth := 1; currentMaxIndexWidth <= aa.maxIndexWidth; currentMaxIndexWidth++ {
-		utils.Debugf("auto-admin algorithm: current index width is %d", currentMaxIndexWidth)
+		utils.Infof("auto-admin algorithm: current index width is %d", currentMaxIndexWidth)
 		candidates, err := aa.selectIndexCandidates(workload, potentialIndexes)
 		if err != nil {
 			return nil, err
 		}
 
 		maxIndexes := aa.maxIndexes * (aa.maxIndexWidth - currentMaxIndexWidth + 1)
-		utils.Debugf("auto-admin algorithm: select best %v candidate indexes from %v candidates", maxIndexes, candidates.Size())
+		utils.Infof("auto-admin algorithm: select best %v candidate indexes from %v candidates", maxIndexes, candidates.Size())
 		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates, maxIndexes)
 		if err != nil {
 			return nil, err
 		}
-		utils.Debugf("auto-admin algorithm: select %v best candidate indexes", currentBestIndexes.Size())
+		utils.Infof("auto-admin algorithm: select %v best candidate indexes", currentBestIndexes.Size())
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
@@ -76,11 +76,11 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			if err != nil {
 				return nil, err
 			}
-			utils.Debugf("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
+			utils.Infof("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
 		}
 	}
 
-	utils.Debugf("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
+	utils.Infof("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
 	limit := 0
 	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
 	if err != nil {
