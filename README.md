@@ -84,11 +84,11 @@ We use TPC-H 1G for evaluation, which contains 8 tables and 21 queries (excludin
 
 After creating these 5 recommended indexes, the total execution time is reduced from 32.86s to 26.61s, a decrease of nearly 20%:
 
-![tpch_total](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_total.png)
+![tpch_total](doc/evaluation_tpch_1g_total.png)
 
 Below are queries that can gain significant performance improvements:
 
-![tpch_query](/Users/zhangyuanjia/Workspace/go/src/github.com/qw4990/index_advisor/doc/evaluation_tpch_1g_query.png)
+![tpch_query](doc/evaluation_tpch_1g_query.png)
 
 ### JOB
 
