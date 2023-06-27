@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type execWorkloadCmdOpt struct {
+type evaluateCmdOpt struct {
 	dsn          string
 	queries      string
 	queryPath    string
@@ -21,10 +21,10 @@ type execWorkloadCmdOpt struct {
 	output       string
 }
 
-func NewExecWorkloadCmd() *cobra.Command {
-	var opt execWorkloadCmdOpt
+func NewEvaluateCmd() *cobra.Command {
+	var opt evaluateCmdOpt
 	cmd := &cobra.Command{
-		Use:    "exec-workload",
+		Use:    "evaluate",
 		Short:  "exec all queries in the specified workload (only for test)",
 		Long:   `exec all queries in the specified workload and collect their plans and execution times (only for test)`,
 		Hidden: true,
