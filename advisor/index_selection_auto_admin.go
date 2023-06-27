@@ -61,11 +61,12 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		}
 
 		maxIndexes := aa.maxIndexes * (aa.maxIndexWidth - currentMaxIndexWidth + 1)
-		utils.Debugf("auto-admin algorithm: select best %v indexes from %v candidates", maxIndexes, candidates.Size())
+		utils.Debugf("auto-admin algorithm: select best %v candidate indexes from %v candidates", maxIndexes, candidates.Size())
 		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates, maxIndexes)
 		if err != nil {
 			return nil, err
 		}
+		utils.Debugf("auto-admin algorithm: select %v best candidate indexes", currentBestIndexes.Size())
 
 		if currentMaxIndexWidth < aa.maxIndexWidth {
 			// Update potential indexes for the next iteration
@@ -75,6 +76,7 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			if err != nil {
 				return nil, err
 			}
+			utils.Debugf("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
 		}
 	}
 
