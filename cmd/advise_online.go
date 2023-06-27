@@ -15,9 +15,10 @@ type adviseOnlineCmdOpt struct {
 	maxNumIndexes int
 	maxIndexWidth int
 
-	dsn     string
-	schemas []string
-	output  string
+	dsn      string
+	schemas  []string
+	output   string
+	logLevel string
 }
 
 func NewAdviseOnlineCmd() *cobra.Command {
@@ -27,6 +28,8 @@ func NewAdviseOnlineCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.SetLogLevel(opt.logLevel)
+
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 			if err != nil {
 				return err
@@ -66,6 +69,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringSliceVar(&opt.schemas, "schemas", []string{}, "the schema(database) name to consider, e.g. 'test1, test2'")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
+	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
 }
 

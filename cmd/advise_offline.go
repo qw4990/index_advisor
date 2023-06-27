@@ -22,6 +22,7 @@ type adviseOfflineCmdOpt struct {
 	output       string
 	costModelVer string
 	queries      string
+	logLevel     string
 }
 
 func NewAdviseOfflineCmd() *cobra.Command {
@@ -31,6 +32,8 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		Short: "advise some indexes for the specified workload",
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.SetLogLevel(opt.logLevel)
+
 			dsnWithoutDB, dbName := utils.GetDBNameFromDSN(opt.dsn)
 			if dbName == "" {
 				return fmt.Errorf("invalid dsn: %s, no database specified", opt.dsn)
@@ -94,6 +97,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
 	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
 }
 

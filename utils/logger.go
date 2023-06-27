@@ -9,7 +9,7 @@ import (
 
 var (
 	// 0 for debug, 1 for info, 2 for warning, 3 for error
-	logLevel = 0
+	logLevel = 1
 	logger   *l.Logger
 )
 
@@ -17,6 +17,7 @@ func init() {
 	logger = l.New(os.Stdout, "", l.Ltime|l.Lshortfile)
 }
 
+// SetLogLevel sets the log level.
 func SetLogLevel(level string) {
 	if level == "" {
 		return // use default
