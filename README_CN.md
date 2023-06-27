@@ -20,15 +20,7 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 
 ## 使用
 
-使用上我们提供了两种方式，在线模式和离线模式：
-1. 在线模式下 Index Advisor 会直接访问你的 TiDB 实例，然后进行索引分析和推荐。
-2. 离线模式下 Index Advisor 不会访问 TiDB 实例，需要手动将 Index Advisor 需要的信息准备好，Index Advisor 会在本地拉起一个 TiDB 实例，然后进行索引分析和推荐。
-
-在线模式更加方便易用，离线模式更加灵活。
-
-### 离线模式使用
-
-离线模式要将 Index Advisor 需要的数据提前准备好，需要的数据包括：
+为了安全，Index Advisor 不会直接访问你的在线集群，而是以离线的形式进行索引推荐；因此，需要提前将 Index Advisor 需要的数据准备好，包括：
 
 - 查询文件（或文件夹）：可以以单个文件的方式，也可以以文件夹的形式。
   - 文件夹方式：如 `examples/tpch_example1/queries`，一个文件夹，内部每个文件为一条查询。
@@ -36,7 +28,7 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 - schema 信息文件（可选）：如 `examples/tpch_example1/schema.sql`，里面包含 `create-table` 语句原文，用分号隔开。
 - 统计信息文件夹（可选）：如 `examples/tpch_example1/stats`，一个文件夹，内部存放相关表的统计信息文件，每个统计信息文件应该为 JSON 格式，可以通过 TiDB 统计信息 dump 下载。
 
-准备好上述文件后，则直接使用 Index Advisor 进行索引推荐，如 `index_advisor --offline --query-path=examples/tpch_example1/queries --max-num-indexes=5`，其中参数的含义为：
+准备好上述文件后，则直接使用 Index Advisor 进行索引推荐，如 `index_advisor advise-offline --query-path=examples/tpch_example1/queries --max-num-indexes=5`，其中参数的含义为：
 - `offline`：表示使用离线模式。
 - `query-path`：查询文件的路径，可以是单个文件，也可以是文件夹。
 - `schema-path`：schema 信息文件的路径，可选；如果指定则会使用此文件创建表。
@@ -44,18 +36,6 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 - `max-num-indexes`：最多推荐的索引数量。
 - `cost-model-version`：TiDB 使用的代价模型版本，见 [TiDB 代价模型版本](https://docs.pingcap.com/zh/tidb/dev/system-variables#tidb_cost_model_version-%E4%BB%8E-v620-%E7%89%88%E6%9C%AC%E5%BC%80%E5%A7%8B%E5%BC%95%E5%85%A5)。
 - `output`：输出结果的保存路径，可选；如果为空则直接打印在终端上。
-
-### 在线模式使用
-
-- 请确保你的 TiDB 小版本高于 v6.5.x 或 v7.1.x，或大版本高于 v7.2，以使用 Hypo Index 的功能。 
-- 请确保你的 TiDB 上默认打开了 `Statement Summary` 功能，Index Advisor 需要从此系统表获取负载的查询信息。
-- 需要关闭 `tidb_redact_log` 功能，否则 Index Advisor 无法从 `Statement Summary` 中拿到查询原文。
-- 使用 Index Advisor 进行索引推荐，如 `index_advisor --online --dsn='user1:@tcp(127.0.0.1:4000)' --max-num-indexes=5 --query-exec-time-threshold=300ms`，其中参数的含义为：
-   - `online`：表示使用在线模式。
-   - `dsn`：访问你 TiDB 实例的 DSN。
-   - `max-num-indexes`：最多推荐的索引数量。
-   - `query-exec-time-threshold`：只对执行时间超过此阈值的查询进行索引推荐。
-- Index Advisor 会输出推荐的索引，以及对应查询的受益，你可以根据输出结果创建新的索引。
 
 ### 输出说明
 
