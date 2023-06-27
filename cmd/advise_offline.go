@@ -18,7 +18,9 @@ type adviseOfflineCmdOpt struct {
 	maxIndexWidth int
 
 	dsn          string
-	workloadPath string
+	queryPath    string
+	schemaPath   string
+	statsPath    string
 	output       string
 	costModelVer string
 	queries      string
@@ -43,14 +45,18 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := loadWorkloadIntoCluster(db, opt.workloadPath); err != nil { // load workload automatically
+			skip, err := loadSchemaIntoCluster(db, opt.schemaPath)
+			if err != nil {
+				return err
+			}
+			if err := loadStatsIntoCluster(db, opt.statsPath, skip); err != nil {
 				return err
 			}
 			if err := db.Execute(`use ` + dbName); err != nil {
 				return err
 			}
 
-			queries, err := utils.LoadQueries(dbName, opt.workloadPath)
+			queries, err := utils.LoadQueries(dbName, opt.queryPath)
 			if err != nil {
 				return err
 			}
@@ -93,7 +99,9 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
+	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path")
+	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path")
+	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
 	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")

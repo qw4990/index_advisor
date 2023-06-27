@@ -11,46 +11,20 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
-	"github.com/spf13/cobra"
 )
 
-type loadWorkloadCmdOpt struct {
-	dsn          string
-	schemaName   string
-	workloadPath string
-}
-
-func NewLoadWorkloadCmd() *cobra.Command {
-	var opt loadWorkloadCmdOpt
-	cmd := &cobra.Command{
-		Use:   "load-workload",
-		Short: "load tables and related statistics of the specified workload into your cluster",
-		Long:  `load tables and related statistics of the specified workload into your cluster`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// create a connection
-			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
-			if err != nil {
-				return err
-			}
-			return loadWorkloadIntoCluster(db, opt.workloadPath)
-		},
+// loadWorkloadIntoCluster loads the schema the TiDB cluster
+func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) (skippedTables utils.Set[utils.TableName], err error) {
+	if schemaFilePath == "" {
+		return nil, nil
 	}
-
-	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)", "dsn")
-	cmd.Flags().StringVar(&opt.workloadPath, "workload-path", "", "workload dictionary path")
-	return cmd
-}
-
-func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) error {
-	utils.Infof("load workload info from %s into the TiDB instance", workloadPath)
-	schemaSQLPath := path.Join(workloadPath, "schema.sql")
-	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaSQLPath)
+	utils.Infof("load schema info from %v into the TiDB instance", schemaFilePath)
+	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaFilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	utils.Infof("load %d DDL statements from %s", len(rawSQLs), schemaSQLPath)
 	if len(rawSQLs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	currentDB := ""
@@ -63,22 +37,22 @@ func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) 
 			dbName := utils.GetDBNameFromCreateDBStmt(stmt)
 			exist, err := dbExists(dbName, db)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if exist {
 				continue
 			}
 		case utils.StmtCreateTable:
 			if currentDB == "" {
-				return fmt.Errorf("no database specified before create table statement, please check %v to add `use {database}` before `create table ...`", schemaSQLPath)
+				return nil, fmt.Errorf("no database specified before create table statement, please check %v to add `use {database}` before `create table ...`", schemaFilePath)
 			}
 			table, err := utils.ParseCreateTableStmt(currentDB, stmt)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			exist, err := tableExists(table.SchemaName, table.TableName, db)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if exist {
 				utils.Infof("table %s.%s already exists, skip creating it", table.SchemaName, table.TableName)
@@ -89,12 +63,18 @@ func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) 
 			}
 		}
 		if err := db.Execute(stmt); err != nil {
-			return err
+			return nil, err
 		}
 	}
+	return existingTables, nil
+}
 
-	// load statistics
-	statsDirPath := path.Join(workloadPath, "stats")
+// loadStatsIntoCluster loads the stats into the TiDB cluster
+func loadStatsIntoCluster(db optimizer.WhatIfOptimizer, statsDirPath string, skip utils.Set[utils.TableName]) error {
+	if statsDirPath == "" {
+		return nil
+	}
+	utils.Infof("load stats info from %v into the TiDB instance", statsDirPath)
 	exist, _ := utils.FileExists(statsDirPath)
 	if !exist {
 		utils.Infof("no stats directory %s, skip loading stats", statsDirPath)
@@ -106,7 +86,7 @@ func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) 
 		return err
 	}
 	for _, statsFile := range statsFiles {
-		statsPath := path.Join(workloadPath, "stats", statsFile.Name())
+		statsPath := path.Join(statsDirPath, statsFile.Name())
 		absStatsPath, err := filepath.Abs(statsPath)
 		if err != nil {
 			return err
@@ -115,7 +95,7 @@ func loadWorkloadIntoCluster(db optimizer.WhatIfOptimizer, workloadPath string) 
 		if err != nil {
 			return err
 		}
-		if existingTables.Contains(tableName) {
+		if skip.Contains(tableName) {
 			continue
 		}
 

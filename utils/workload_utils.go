@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"github.com/pingcap/parser/ast"
-	"path"
 	"strings"
 )
 
@@ -48,11 +47,10 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 }
 
 // LoadQueries loads queries from the given path.
-func LoadQueries(schemaName, queryDirPath string) (Set[Query], error) {
+func LoadQueries(schemaName, queryPath string) (Set[Query], error) {
 	queries := NewSet[Query]()
-	if exist, isDir := FileExists(path.Join(queryDirPath, "queries")); exist || isDir {
-		queryDirPath := path.Join(queryDirPath, "queries")
-		rawSQLs, names, err := ParseRawSQLsFromDir(queryDirPath)
+	if exist, isDir := FileExists(queryPath); exist || isDir {
+		rawSQLs, names, err := ParseRawSQLsFromDir(queryPath)
 		if err != nil {
 			return nil, err
 		}
@@ -64,10 +62,9 @@ func LoadQueries(schemaName, queryDirPath string) (Set[Query], error) {
 				Frequency:  1,
 			})
 		}
-		Infof("load %d queries from dir %s", len(rawSQLs), queryDirPath)
-	} else if exist, isDir := FileExists(path.Join(queryDirPath, "queries.sql")); exist || !isDir {
-		queryFilePath := path.Join(queryDirPath, "queries.sql")
-		rawSQLs, err := ParseRawSQLsFromFile(queryFilePath)
+		Infof("load %d queries from dir %s", len(rawSQLs), queryPath)
+	} else if exist, isDir := FileExists(queryPath); exist || !isDir {
+		rawSQLs, err := ParseRawSQLsFromFile(queryPath)
 		if err != nil {
 			return nil, err
 		}
@@ -79,9 +76,9 @@ func LoadQueries(schemaName, queryDirPath string) (Set[Query], error) {
 				Frequency:  1,
 			})
 		}
-		Infof("load %d queries from %s", len(rawSQLs), queryFilePath)
+		Infof("load %d queries from %s", len(rawSQLs), queryPath)
 	} else {
-		return nil, fmt.Errorf("can not find queries directory or queries.sql file under %s", queryDirPath)
+		return nil, fmt.Errorf("can not find queries directory or queries.sql file under %s", queryPath)
 	}
 	return queries, nil
 }
