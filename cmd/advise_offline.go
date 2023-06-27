@@ -98,13 +98,13 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 5, "max number of indexes to recommend, 0 means no limit")
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
-	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path")
-	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path")
-	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path")
-	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
+	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn to connect to your testing cluster")
+	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path, e.g. './examples/tpch_example1/queries' or 'examples/tpch_example2/query.sql'")
+	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path, e.g. './examples/tpch_example1/schema.sql'")
+	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats''")
+	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result, e.g. './output'")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
-	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1,q2,q6'")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
 }
