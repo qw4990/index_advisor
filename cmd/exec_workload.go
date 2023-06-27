@@ -66,11 +66,12 @@ func NewExecWorkloadCmd() *cobra.Command {
 				if !strings.HasSuffix(indexFile.Name(), ".sql") {
 					continue
 				}
-				utils.Infof("executing queries with index %s", indexFile.Name())
+				utils.Infof("execute queries with index %s", indexFile.Name())
 				indexConfPath := path.Join(opt.indexDirPath, indexFile.Name())
 				if err := executeQueriesWithIndexes(db, queries, indexConfPath, opt.output); err != nil {
 					return err
 				}
+				utils.Infof("finish executing queries with index %s", indexFile.Name())
 			}
 			return nil
 		},
