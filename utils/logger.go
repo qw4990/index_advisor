@@ -2,13 +2,20 @@ package utils
 
 import (
 	"fmt"
+	l "log"
+	"os"
 	"strings"
 )
 
 var (
 	// 0 for debug, 1 for info, 2 for warning, 3 for error
 	logLevel = 0
+	logger   *l.Logger
 )
+
+func init() {
+	logger = l.New(os.Stdout, "", l.Ltime|l.Lshortfile)
+}
 
 func SetLogLevel(level string) {
 	if level == "" {
@@ -54,5 +61,5 @@ func Errorf(format string, args ...interface{}) {
 }
 
 func log(level, format string, args ...interface{}) {
-	fmt.Printf("[%v] %v\n", level, fmt.Sprintf(format, args...))
+	logger.Output(4, fmt.Sprintf("[%v] %v\n", level, fmt.Sprintf(format, args...)))
 }
