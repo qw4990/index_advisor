@@ -87,7 +87,7 @@ func NewExecWorkloadCmd() *cobra.Command {
 
 func executeQueriesWithIndexes(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query], indexConfPath, savePath string) error {
 	// load indexes from indexConfPath into the cluster
-	stmts, err := utils.ParseRawSQLsFromFile(indexConfPath)
+	stmts, err := utils.ParseStmtsFromFile(indexConfPath)
 	if err != nil {
 		return err
 	}

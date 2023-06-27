@@ -50,7 +50,7 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 func LoadQueries(schemaName, queryPath string) (Set[Query], error) {
 	queries := NewSet[Query]()
 	if exist, isDir := FileExists(queryPath); exist || isDir {
-		rawSQLs, names, err := ParseRawSQLsFromDir(queryPath)
+		rawSQLs, names, err := ParseStmtsFromDir(queryPath)
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +64,7 @@ func LoadQueries(schemaName, queryPath string) (Set[Query], error) {
 		}
 		Infof("load %d queries from dir %s", len(rawSQLs), queryPath)
 	} else if exist, isDir := FileExists(queryPath); exist || !isDir {
-		rawSQLs, err := ParseRawSQLsFromFile(queryPath)
+		rawSQLs, err := ParseStmtsFromFile(queryPath)
 		if err != nil {
 			return nil, err
 		}

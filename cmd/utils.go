@@ -19,7 +19,7 @@ func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) 
 		return nil, nil
 	}
 	utils.Infof("load schema info from %v into the TiDB instance", schemaFilePath)
-	rawSQLs, err := utils.ParseRawSQLsFromFile(schemaFilePath)
+	rawSQLs, err := utils.ParseStmtsFromFile(schemaFilePath)
 	if err != nil {
 		return nil, err
 	}

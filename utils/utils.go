@@ -29,9 +29,9 @@ func GetDBNameFromDSN(dsn string) (dsnWithoutDB, dbName string) {
 	return dsn[:idx+1], strings.TrimSpace(dsn[idx+1:])
 }
 
-// ParseRawSQLsFromDir parses raw Queries from the given directory.
+// ParseStmtsFromDir parses raw Queries from the given directory.
 // Each *.sql in this directory is parsed as a single Query.
-func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
+func ParseStmtsFromDir(dirPath string) (sqls, fileNames []string, err error) {
 	des, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, nil, err
@@ -52,9 +52,9 @@ func ParseRawSQLsFromDir(dirPath string) (sqls, fileNames []string, err error) {
 	return
 }
 
-// ParseRawSQLsFromFile parses raw Queries from the given file.
+// ParseStmtsFromFile parses raw Queries from the given file.
 // It ignore all comments, and assume all Queries are separated by ';'.
-func ParseRawSQLsFromFile(fpath string) ([]string, error) {
+func ParseStmtsFromFile(fpath string) ([]string, error) {
 	data, err := os.ReadFile(fpath)
 	if err != nil {
 		return nil, err
