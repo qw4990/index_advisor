@@ -105,6 +105,7 @@ func executeQueriesWithIndexes(db optimizer.WhatIfOptimizer, queries utils.Set[u
 			return err
 		}
 		analyzeStmt := fmt.Sprintf("ANALYZE TABLE %s.%s", index.SchemaName, index.TableName)
+		utils.Infof("execute: %s", analyzeStmt)
 		if err := db.Execute(analyzeStmt); err != nil {
 			return err
 		}
