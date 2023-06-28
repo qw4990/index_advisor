@@ -20,6 +20,14 @@ The mechanism of Index Advisor is as follows, which can be roughly divided into 
 
 ## How to use it
 
+Index Advisor provides two ways to use it, online mode and offline mode:
+
+In online mode, Index Advisor will directly access your TiDB instance for index analysis and recommendation.
+In offline mode, Index Advisor will not access the TiDB instance. You need to manually prepare the information required by Index Advisor. Index Advisor will start a TiDB instance locally and then perform index analysis and recommendation.
+The online mode is more convenient to use, and the offline mode is more flexible.
+
+### Offline Mode
+
 For safety, Index Advisor does not directly access your online cluster, but performs index recommendation in offline mode; therefore, you need to prepare the data required by it in advance, including:
 - A query file (or a folder): can be in the form of a single file or a folder.
     - A folder: such as `examples/tpch_example1/queries`, a folder, each file inside is a query.
@@ -35,6 +43,10 @@ After preparing the above files, you can directly use Index Advisor for index re
 - `max-num-indexes`: the maximum number of indexes recommended.
 - `cost-model-version`: the cost model version used by TiDB, see [TiDB Cost Model Version](https://docs.pingcap.com/tidb/dev/system-variables#tidb_cost_model_version-starting-from-v620-version).
 - `output`: the path to save the output results, optional; if empty, the results will be printed directly on the terminal.
+
+### Online Mode
+
+
 
 ## Output
 
