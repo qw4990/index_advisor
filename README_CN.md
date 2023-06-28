@@ -61,7 +61,7 @@ Q2 plan cost: 1000 -> 100, improvement: 90.00%
 
 我们使用 TPC-H 1G 来进行测试，其包含 8 张表，21 个查询（不包含 q15），让 Index Advisor 为这些查询推荐 5 个索引。
 
-创建索引后，全部查询的执行时间从 32.86s 下降为了 26.61s，执行时间降低接近 20%：
+创建索引后，全部查询的执行时间从 17.143s 下降为了 14.373s，执行时间降低 -16%：
 
 ![tpch_total](doc/evaluation_tpch_1g_total.png)
 
@@ -73,6 +73,10 @@ Q2 plan cost: 1000 -> 100, improvement: 90.00%
 
 TODO
 
+
+![job_total](doc/evaluation_job_total.png)
+
+![job_query](doc/evaluation_job_query.png)
 ### TPC-DS
 
 TODO
