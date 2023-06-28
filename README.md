@@ -35,8 +35,7 @@ For safety, Index Advisor does not directly access your online cluster, but perf
 - Schema information file (optional): such as `examples/tpch_example1/schema.sql`, which contains the original `create-table` statements separated by semicolons.
 - Statistics information folder (optional): such as `examples/tpch_example1/stats`, a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through the TiDB statistics information dump.
 
-After preparing the above files, you can directly use Index Advisor for index recommendation, such as `index_advisor --offline --query-path=examples/tpch_example1/queries --max-num-indexes=5`, where the parameters are:
-- `offline`: indicates offline mode.
+After preparing the above files, you can directly use Index Advisor for index recommendation, such as `index_advisor advise-offline --query-path=examples/tpch_example1/queries --max-num-indexes=5`, where the parameters are:
 - `query-path`: the path of the query file, which can be a single file or a folder.
 - `schema-path`: the path of the schema information file, optional; if specified, the table will be created using this file.
 - `stats-path`: the path of the statistics information folder, optional; if specified, the statistics information in the folder will be imported.
@@ -44,9 +43,18 @@ After preparing the above files, you can directly use Index Advisor for index re
 - `cost-model-version`: the cost model version used by TiDB, see [TiDB Cost Model Version](https://docs.pingcap.com/tidb/dev/system-variables#tidb_cost_model_version-starting-from-v620-version).
 - `output`: the path to save the output results, optional; if empty, the results will be printed directly on the terminal.
 
-### Online Mode
+### Online mode
 
+In online mode, you need to ensure that the following conditions are met:
+- Please make sure that your TiDB version is higher than v6.5.x or v7.1.x, or higher than v7.2, to use the `Hypo Index feature`.
+- Please make sure that the `Statement Summary` feature is enabled on your TiDB by default. Index Advisor needs to obtain query information from this system table.
+- You need to turn off the `tidb_redact_log` feature, otherwise Index Advisor cannot get the original text of the query from `Statement Summary`.
+- Use Index Advisor for index recommendation, such as `index_advisor advise-online --dsn='user1:@tcp(127.0.0.1:4000)' --max-num-indexes=5 --query-exec-time-threshold=300ms`:
+  - `dsn`: the DSN to access your TiDB instance.
+  - `max-num-indexes`: the maximum number of indexes recommended.
+  - `query-exec-time-threshold`: only recommend indexes for queries whose execution time exceeds this threshold.
 
+Index Advisor will output the recommended indexes and the benefits of the corresponding queries. You can create new indexes based on the output results.
 
 ## Output
 
