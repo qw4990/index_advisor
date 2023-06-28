@@ -22,8 +22,9 @@ The mechanism of Index Advisor is as follows, which can be roughly divided into 
 
 Index Advisor provides two ways to use it, online mode and offline mode:
 
-In online mode, Index Advisor will directly access your TiDB instance for index analysis and recommendation.
-In offline mode, Index Advisor will not access the TiDB instance. You need to manually prepare the information required by Index Advisor. Index Advisor will start a TiDB instance locally and then perform index analysis and recommendation.
+- In online mode, Index Advisor will directly access your TiDB instance for index analysis and recommendation.
+- In offline mode, Index Advisor will not access the TiDB instance. You need to manually prepare the information required by Index Advisor. Index Advisor will start a TiDB instance locally and then perform index analysis and recommendation.
+
 The online mode is more convenient to use, and the offline mode is more flexible.
 
 ### Offline Mode
