@@ -16,7 +16,7 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 
 1. Index Advisor 会从 TiDB 实例的系统表中搜集工作负载相关的表结构、统计信息、相关查询等信息。
 2. Index Advisor 根据搜集到的信息，生成一些列候选的索引，并使用 Hypo Index 创建这些索引。
-3. Index Advisor 使用 `Explain` 评估这些索引的价值，并进行推荐。
+3. Index Advisor 使用 `Explain` 评估这些索引的价值（这些索引能否降低某些查询的执行计划代价），并进行推荐。
 
 ## 使用
 

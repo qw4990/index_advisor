@@ -16,7 +16,7 @@ The working principle of Index Advisor is as follows, which can be roughly divid
 
 1. Index Advisor collects workload-related table structures, statistics, and related queries from the system tables of the TiDB instance.
 2. Index Advisor generates a series of candidate indexes based on the collected information, and uses Hypo Index to create these indexes.
-3. Index Advisor uses `Explain` to evaluate the value of these indexes and make recommendations.
+3. Index Advisor uses `Explain` to evaluate the value of these indexes (whether they can reduce some queries' plan costs) and make recommendations.
 
 ## How to use it
 
