@@ -1,0 +1,16 @@
+Total Queries in the workload: 21
+Total number of indexes: 5
+  CREATE INDEX idx_l_partkey_l_quantity_l_shipmode ON tpch.lineitem (l_partkey, l_quantity, l_shipmode);
+  CREATE INDEX idx_l_partkey_l_shipdate ON tpch.lineitem (l_partkey, l_shipdate);
+  CREATE INDEX idx_l_suppkey_l_shipdate ON tpch.lineitem (l_suppkey, l_shipdate);
+  CREATE INDEX idx_o_custkey_o_orderdate_o_totalprice ON tpch.orders (o_custkey, o_orderdate, o_totalprice);
+  CREATE INDEX idx_ps_suppkey_ps_supplycost ON tpch.partsupp (ps_suppkey, ps_supplycost);
+Total original workload cost: 1.37E+10
+Total optimized workload cost: 1.02E+10
+Total cost reduction ratio: 25.22%
+Top 5 queries with the most cost reduction:
+  Alias: q22, Cost Reduction Ratio: 1.97E+08->4.30E+06(0.02)
+  Alias: q19, Cost Reduction Ratio: 2.89E+08->1.20E+07(0.04)
+  Alias: q20, Cost Reduction Ratio: 3.40E+08->4.39E+07(0.13)
+  Alias: q17, Cost Reduction Ratio: 8.36E+08->2.00E+08(0.24)
+  Alias: q2, Cost Reduction Ratio: 1.35E+08->3.76E+07(0.28)
