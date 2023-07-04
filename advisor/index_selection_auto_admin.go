@@ -19,11 +19,8 @@ func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimiz
 		optimizer:     optimizer,
 		maxIndexes:    parameter.MaxNumberIndexes,
 		maxIndexWidth: parameter.MaxIndexWidth,
-
-		// TODO: make these 2 variables configurable.
-		maxIndexesNative: 2,
 	}
-	utils.Infof("starting auto-admin algorithm with max-indexes %d, max index-width %d, max index-naive %d", aa.maxIndexes, aa.maxIndexWidth, aa.maxIndexesNative)
+	utils.Infof("starting auto-admin algorithm with max-indexes %d, max index-width %d", aa.maxIndexes, aa.maxIndexWidth)
 
 	optimizer.ResetStats()
 	bestIndexes, err := aa.calculateBestIndexes(workload)
@@ -37,9 +34,8 @@ func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimiz
 type autoAdmin struct {
 	optimizer optimizer.WhatIfOptimizer
 
-	maxIndexes       int // The algorithm stops as soon as it has selected #max_indexes indexes
-	maxIndexesNative int // The number of indexes selected by a native enumeration.
-	maxIndexWidth    int // The number of columns an index can contain at maximum.
+	maxIndexes    int // The algorithm stops as soon as it has selected #max_indexes indexes
+	maxIndexWidth int // The number of columns an index can contain at maximum.
 }
 
 func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Set[utils.Index], error) {
@@ -289,15 +285,17 @@ func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentia
 func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo,
 	candidateIndexes utils.Set[utils.Index],
 	maxNumberIndexes int) (utils.Set[utils.Index], error) {
-	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), maxNumberIndexes)
-	utils.Infof("auto-admin algorithm: naive enumerate %v candidates", candidateIndexes.Size())
+	maxIndexesNative := 2
+	if candidateIndexes.Size() > 50 {
+		maxIndexesNative = 1
+	}
+	numberIndexesNaive := utils.Min(maxIndexesNative, candidateIndexes.Size(), maxNumberIndexes)
 	currentIndexes, cost, err := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 	if err != nil {
 		return nil, err
 	}
 
 	numberIndexes := utils.Min(maxNumberIndexes, candidateIndexes.Size())
-	utils.Infof("auto-admin algorithm: greedy enumerate %v candidates", candidateIndexes.Size())
 	indexes, cost, err := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes, err
 }
