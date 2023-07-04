@@ -72,11 +72,11 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			potentialIndexes, err = aa.mergeCandidates(workload, potentialIndexes)
-			if err != nil {
-				return nil, err
-			}
-			utils.Infof("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
+			//potentialIndexes, err = aa.mergeCandidates(workload, potentialIndexes)
+			//if err != nil {
+			//	return nil, err
+			//}
+			//utils.Infof("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
 		}
 	}
 
