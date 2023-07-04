@@ -32,12 +32,12 @@ func GetStmtType(stmt string) StmtType {
 
 	if containAll(stmt, "create", "database") {
 		return StmtCreateDB
-	} else if containAll(stmt, "use") {
-		return StmtUseDB
 	} else if containAll(stmt, "create", "table") {
 		return StmtCreateTable
 	} else if containAll(stmt, "create", "index") {
 		return StmtCreateIndex
+	} else if containAll(stmt, "use") {
+		return StmtUseDB
 	}
 	return StmtUnknown
 }
