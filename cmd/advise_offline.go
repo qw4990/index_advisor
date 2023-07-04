@@ -245,7 +245,8 @@ func getTableSchemas(db optimizer.WhatIfOptimizer, tableNames utils.Set[utils.Ta
 	for _, t := range tableNames.ToList() {
 		schema, err := getTableSchema(db, t.SchemaName, t.TableName)
 		if err != nil {
-			return nil, err
+			utils.Warningf("failed to get schema of table %v.%v: %v", t.SchemaName, t.TableName, err)
+			continue
 		}
 		s.Add(schema)
 	}
