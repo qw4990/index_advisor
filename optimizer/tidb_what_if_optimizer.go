@@ -96,6 +96,7 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 
 // Explain returns the execution plan of the specified query.
 func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
+	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)
 	result, err := o.Query("explain format = 'verbose' " + query)
 	if err != nil {
 		return utils.Plan{}, err

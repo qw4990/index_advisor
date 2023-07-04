@@ -144,7 +144,33 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 	summaryContent += fmt.Sprintf("Total original workload cost: %.2E\n", originalWorkloadCost)
 	summaryContent += fmt.Sprintf("Total optimized workload cost: %.2E\n", optimizerWorkloadCost)
 	summaryContent += fmt.Sprintf("Total cost reduction ratio: %.2f%%\n", 100*(1-optimizerWorkloadCost/originalWorkloadCost))
-	summaryContent += fmt.Sprintf("Top %d queries with the most cost reduction:\n", utils.Min(len(planChanges), 5))
+
+	summaryContent += fmt.Sprintf("Top %d queries with the most cost reduction ratio:\n", utils.Min(len(planChanges), 5))
+	sort.Slice(planChanges, func(i, j int) bool {
+		return planChanges[i].OptPlan.PlanCost()/planChanges[i].OriPlan.PlanCost() < planChanges[j].OptPlan.PlanCost()/planChanges[j].OriPlan.PlanCost()
+	})
+	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
+		change := planChanges[i]
+		summaryContent += fmt.Sprintf("  Alias: %s, Cost Reduction Ratio: %.2E->%.2E(%.2f)\n", change.SQL.Alias,
+			change.OriPlan.PlanCost(), change.OptPlan.PlanCost(), change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
+	}
+
+	summaryContent += fmt.Sprintf("Top %d queries with the most cost reduction number:\n", utils.Min(len(planChanges), 5))
+	sort.Slice(planChanges, func(i, j int) bool {
+		return (planChanges[i].OriPlan.PlanCost() - planChanges[i].OptPlan.PlanCost()) >
+			(planChanges[j].OriPlan.PlanCost() - planChanges[j].OptPlan.PlanCost())
+	})
+	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
+		change := planChanges[i]
+		summaryContent += fmt.Sprintf("  Alias: %s, Cost Reduction Ratio: %.2E->%.2E(%.2f)\n", change.SQL.Alias,
+			change.OriPlan.PlanCost(), change.OptPlan.PlanCost(), change.OptPlan.PlanCost()/change.OriPlan.PlanCost())
+	}
+
+	summaryContent += fmt.Sprintf("Top %d queries with the most cost:\n", utils.Min(len(planChanges), 5))
+	sort.Slice(planChanges, func(i, j int) bool {
+		return (planChanges[i].OriPlan.PlanCost() + planChanges[i].OptPlan.PlanCost()) >
+			(planChanges[j].OriPlan.PlanCost() + planChanges[j].OptPlan.PlanCost())
+	})
 	for i := 0; i < utils.Min(len(planChanges), 5); i++ {
 		change := planChanges[i]
 		summaryContent += fmt.Sprintf("  Alias: %s, Cost Reduction Ratio: %.2E->%.2E(%.2f)\n", change.SQL.Alias,
@@ -234,9 +260,6 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 			OptPlan: optPlans[i],
 		})
 	}
-	sort.Slice(planChanges, func(i, j int) bool {
-		return planChanges[i].OptPlan.PlanCost()/planChanges[i].OriPlan.PlanCost() < planChanges[j].OptPlan.PlanCost()/planChanges[j].OriPlan.PlanCost()
-	})
 	return planChanges, nil
 }
 
