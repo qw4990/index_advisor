@@ -30,7 +30,7 @@ func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimiz
 	if err != nil {
 		return nil, err
 	}
-	utils.Debugf("what-if optimizer stats: %v", optimizer.Stats().Format())
+	utils.Infof("what-if optimizer stats: %v", optimizer.Stats().Format())
 	return bestIndexes, nil
 }
 
