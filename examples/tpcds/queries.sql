@@ -1178,10 +1178,10 @@ order by i_category
 select  *
 from(select w_warehouse_name
           ,i_item_id
-          ,sum(case when (cast(d_date as date) < cast ('1999-06-22' as date))
+          ,sum(case when (cast(d_date as date) < cast('1999-06-22' as date))
                         then inv_quantity_on_hand
                     else 0 end) as inv_before
-          ,sum(case when (cast(d_date as date) >= cast ('1999-06-22' as date))
+          ,sum(case when (cast(d_date as date) >= cast('1999-06-22' as date))
                         then inv_quantity_on_hand
                     else 0 end) as inv_after
      from inventory
@@ -1192,8 +1192,8 @@ from(select w_warehouse_name
        and i_item_sk          = inv_item_sk
        and inv_warehouse_sk   = w_warehouse_sk
        and inv_date_sk    = d_date_sk
-       and d_date between date_sub(cast ('1999-06-22' as date), interval 30 day)
-         and date_add(cast ('1999-06-22' as date), interval 30 day)
+       and d_date between date_sub(cast('1999-06-22' as date), interval 30 day)
+         and date_add(cast('1999-06-22' as date), interval 30 day)
      group by w_warehouse_name, i_item_id) x
 where (case when inv_before > 0
                 then inv_after / inv_before
@@ -2033,9 +2033,9 @@ order by inv1.w_warehouse_sk,inv1.i_item_sk,inv1.d_moy,inv1.mean,inv1.cov
 select
     w_state
      ,i_item_id
-     ,sum(case when (cast(d_date as date) < cast ('2001-05-02' as date))
+     ,sum(case when (cast(d_date as date) < cast('2001-05-02' as date))
                    then cs_sales_price - coalesce(cr_refunded_cash,0) else 0 end) as sales_before
-     ,sum(case when (cast(d_date as date) >= cast ('2001-05-02' as date))
+     ,sum(case when (cast(d_date as date) >= cast('2001-05-02' as date))
                    then cs_sales_price - coalesce(cr_refunded_cash,0) else 0 end) as sales_after
 from
     catalog_sales left outer join catalog_returns on
@@ -2049,8 +2049,8 @@ where
   and i_item_sk          = cs_item_sk
   and cs_warehouse_sk    = w_warehouse_sk
   and cs_sold_date_sk    = d_date_sk
-  and d_date between date_sub(cast ('2001-05-02' as date), interval 30 day)
-    and date_add(cast ('2001-05-02' as date), interval 30 day)
+  and d_date between date_sub(cast('2001-05-02' as date), interval 30 day)
+    and date_add(cast('2001-05-02' as date), interval 30 day)
 group by
     w_state,i_item_id
 order by w_state,i_item_id
@@ -2292,7 +2292,7 @@ order by sum_sales - avg_monthly_sales, nsum
 
 -- end query 47 in stream 0 using template query47.tpl
 -- start query 48 in stream 0 using template query48.tpl
-select sum (ss_quantity)
+select sum(ss_quantity)
 from store_sales, store, customer_demographics, customer_address, date_dim
 where s_store_sk = ss_store_sk
   and  ss_sold_date_sk = d_date_sk and d_year = 2001
@@ -2686,7 +2686,7 @@ with my_customers as (
     group by c_customer_sk
 )
    , segments as
-    (select cast((revenue/50) as int) as segment
+    (select cast((revenue/50) as signed) as segment
      from   my_revenue
     )
 select  segment, count(*) as num_customers, segment*50 as segment_base
@@ -4770,28 +4770,26 @@ order by count(*)
 
 -- end query 96 in stream 0 using template query96.tpl
 -- start query 97 in stream 0 using template query97.tpl
-with ssci as (
-    select ss_customer_sk customer_sk
-         ,ss_item_sk item_sk
-    from store_sales,date_dim
-    where ss_sold_date_sk = d_date_sk
-      and d_month_seq between 1199 and 1199 + 11
-    group by ss_customer_sk
-           ,ss_item_sk),
-     csci as(
-         select cs_bill_customer_sk customer_sk
-              ,cs_item_sk item_sk
-         from catalog_sales,date_dim
-         where cs_sold_date_sk = d_date_sk
-           and d_month_seq between 1199 and 1199 + 11
-         group by cs_bill_customer_sk
-                ,cs_item_sk)
-select  sum(case when ssci.customer_sk is not null and csci.customer_sk is null then 1 else 0 end) store_only
-     ,sum(case when ssci.customer_sk is null and csci.customer_sk is not null then 1 else 0 end) catalog_only
-     ,sum(case when ssci.customer_sk is not null and csci.customer_sk is not null then 1 else 0 end) store_and_catalog
-from ssci full outer join csci on (ssci.customer_sk=csci.customer_sk
-    and ssci.item_sk = csci.item_sk)
-    limit 100;
+-- with ssci as (
+--     select ss_customer_sk customer_sk
+--          ,ss_item_sk item_sk
+--     from store_sales,date_dim
+--     where ss_sold_date_sk = d_date_sk
+--       and d_month_seq between 1199 and 1199 + 11
+--     group by ss_customer_sk
+--            ,ss_item_sk),
+--      csci as(
+--          select cs_bill_customer_sk customer_sk
+--               ,cs_item_sk item_sk
+--          from catalog_sales,date_dim
+--          where cs_sold_date_sk = d_date_sk
+--            and d_month_seq between 1199 and 1199 + 11
+--          group by cs_bill_customer_sk
+--                 ,cs_item_sk)
+-- select  sum(case when ssci.customer_sk is not null and csci.customer_sk is null then 1 else 0 end) store_only
+--      ,sum(case when ssci.customer_sk is null and csci.customer_sk is not null then 1 else 0 end) catalog_only
+--      ,sum(case when ssci.customer_sk is not null and csci.customer_sk is not null then 1 else 0 end) store_and_catalog
+-- from ssci full outer join csci on (ssci.customer_sk=csci.customer_sk and ssci.item_sk = csci.item_sk) limit 100;
 
 -- end query 97 in stream 0 using template query97.tpl
 -- start query 98 in stream 0 using template query98.tpl
