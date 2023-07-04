@@ -49,7 +49,7 @@ func CreateWorkloadFromRawStmt(schemaName string, createTableStmts, rawSQLs []st
 // LoadQueries loads queries from the given path.
 func LoadQueries(schemaName, queryPath string) (Set[Query], error) {
 	queries := NewSet[Query]()
-	if exist, isDir := FileExists(queryPath); exist || isDir {
+	if exist, isDir := FileExists(queryPath); exist && isDir {
 		rawSQLs, names, err := ParseStmtsFromDir(queryPath)
 		if err != nil {
 			return nil, err
