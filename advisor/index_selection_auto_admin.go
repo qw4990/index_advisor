@@ -290,12 +290,14 @@ func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo,
 	candidateIndexes utils.Set[utils.Index],
 	maxNumberIndexes int) (utils.Set[utils.Index], error) {
 	numberIndexesNaive := utils.Min(aa.maxIndexesNative, candidateIndexes.Size(), maxNumberIndexes)
+	utils.Infof("auto-admin algorithm: naive enumerate %v candidates", candidateIndexes.Size())
 	currentIndexes, cost, err := aa.enumerateNaive(workload, candidateIndexes, numberIndexesNaive)
 	if err != nil {
 		return nil, err
 	}
 
 	numberIndexes := utils.Min(maxNumberIndexes, candidateIndexes.Size())
+	utils.Infof("auto-admin algorithm: greedy enumerate %v candidates", candidateIndexes.Size())
 	indexes, cost, err := aa.enumerateGreedy(workload, currentIndexes, cost, candidateIndexes, numberIndexes)
 	return indexes, err
 }
