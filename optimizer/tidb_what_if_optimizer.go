@@ -89,7 +89,7 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 
 // Explain returns the execution plan of the specified query.
 func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
-	result, err := o.query("explain format = 'verbose' " + query)
+	result, err := o.Query("explain format = 'verbose' " + query)
 	if err != nil {
 		return utils.Plan{}, err
 	}
@@ -108,7 +108,7 @@ func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error)
 
 // ExplainAnalyze returns the execution plan of the specified query.
 func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err error) {
-	result, err := o.query("explain analyze format = 'verbose' " + query)
+	result, err := o.Query("explain analyze format = 'verbose' " + query)
 	if err != nil {
 		return utils.Plan{}, err
 	}
@@ -128,11 +128,4 @@ func (o *TiDBWhatIfOptimizer) ExplainAnalyze(query string) (plan utils.Plan, err
 // SetDebug sets the debug flag.
 func (o *TiDBWhatIfOptimizer) SetDebug(flag bool) {
 	o.debugFlag = flag
-}
-
-func (o *TiDBWhatIfOptimizer) query(query string) (*sql.Rows, error) {
-	if o.debugFlag {
-		fmt.Println(query)
-	}
-	return o.db.Query(query)
 }
