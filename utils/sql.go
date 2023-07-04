@@ -71,15 +71,24 @@ func NormalizeDigest(sqlText string) (string, string) {
 type tableNameCollector struct {
 	defaultSchemaName string
 	tableNames        Set[TableName]
+	cteNames          Set[TableName]
 }
 
 func (c *tableNameCollector) Enter(n ast.Node) (out ast.Node, skipChildren bool) {
 	switch x := n.(type) {
+	case *ast.WithClause:
+		for _, cte := range x.CTEs {
+			c.cteNames.Add(TableName{SchemaName: c.defaultSchemaName, TableName: cte.Name.String()})
+		}
 	case *ast.TableName:
+		var t TableName
 		if x.Schema.L == "" {
-			c.tableNames.Add(TableName{SchemaName: c.defaultSchemaName, TableName: x.Name.String()})
+			t = TableName{SchemaName: c.defaultSchemaName, TableName: x.Name.String()}
 		} else {
-			c.tableNames.Add(TableName{SchemaName: x.Schema.O, TableName: x.Name.String()})
+			t = TableName{SchemaName: x.Schema.O, TableName: x.Name.String()}
+		}
+		if !c.cteNames.Contains(t) {
+			c.tableNames.Add(t)
 		}
 	}
 	return n, false
@@ -91,12 +100,16 @@ func (c *tableNameCollector) Leave(n ast.Node) (out ast.Node, ok bool) {
 
 // CollectTableNamesFromSQL returns all referenced table names in the given Query text.
 // The returned format is `schemaName.tableName`.
+// TODO: handle views and CTEs.
 func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) (Set[TableName], error) {
 	node, err := ParseOneSQL(sqlText)
 	if err != nil {
 		return nil, err
 	}
-	c := &tableNameCollector{defaultSchemaName: defaultSchemaName, tableNames: NewSet[TableName]()}
+	c := &tableNameCollector{
+		defaultSchemaName: defaultSchemaName,
+		tableNames:        NewSet[TableName](),
+		cteNames:          NewSet[TableName]()}
 	node.Accept(c)
 	return c.tableNames, nil
 }
