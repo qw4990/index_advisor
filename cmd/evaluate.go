@@ -41,7 +41,7 @@ func NewEvaluateCmd() *cobra.Command {
 
 			if opt.queries != "" {
 				qs := strings.Split(opt.queries, ",")
-				queries = utils.FilterBySQLAlias(queries, qs)
+				queries = utils.FilterQueries(queries, qs, nil)
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)

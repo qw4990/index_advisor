@@ -6,18 +6,24 @@ import (
 	"strings"
 )
 
-// FilterBySQLAlias filters Queries by their alias.
-func FilterBySQLAlias(sqls Set[Query], alias []string) Set[Query] {
-	aliasMap := make(map[string]struct{})
-	for _, a := range alias {
-		aliasMap[strings.TrimSpace(a)] = struct{}{}
+// FilterQueries filters Queries by their alias.
+func FilterQueries(sqls Set[Query], whiteList, blackList []string) Set[Query] {
+	whiteMap := make(map[string]bool)
+	for _, a := range whiteList {
+		whiteMap[strings.TrimSpace(a)] = true
+	}
+	blackMap := make(map[string]bool)
+	for _, a := range blackList {
+		blackMap[strings.TrimSpace(a)] = true
 	}
 
 	filtered := NewSet[Query]()
 	for _, sql := range sqls.ToList() {
-		if _, ok := aliasMap[sql.Alias]; ok {
-			filtered.Add(sql)
+		if (len(whiteMap) > 0 && !whiteMap[sql.Alias]) ||
+			(len(blackMap) > 0 && blackMap[sql.Alias]) {
+			continue
 		}
+		filtered.Add(sql)
 	}
 	return filtered
 }

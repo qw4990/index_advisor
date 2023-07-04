@@ -23,7 +23,8 @@ type adviseOfflineCmdOpt struct {
 	statsPath    string
 	output       string
 	costModelVer string
-	queries      string
+	qWhiteList   string
+	qBlackList   string
 	logLevel     string
 }
 
@@ -60,9 +61,8 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if opt.queries != "" {
-				qs := strings.Split(opt.queries, ",")
-				queries = utils.FilterBySQLAlias(queries, qs)
+			if opt.qWhiteList != "" || opt.qBlackList != "" {
+				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
 			}
 
 			tableNames, err := utils.CollectTableNamesFromQueries(dbName, queries)
@@ -104,7 +104,8 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats''")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result, e.g. './output'")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
-	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1,q2,q6'")
+	cmd.Flags().StringVar(&opt.qWhiteList, "query-white-list", "", "queries to consider, e.g. 'q1,q2,q6'")
+	cmd.Flags().StringVar(&opt.qBlackList, "query-black-list", "", "queries to ignore, e.g. 'q5,q12'")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
 }
