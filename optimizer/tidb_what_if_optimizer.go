@@ -52,7 +52,11 @@ func (o *TiDBWhatIfOptimizer) Query(sql string) (*sql.Rows, error) {
 	if o.debugFlag {
 		fmt.Println(sql)
 	}
-	return o.db.Query(sql)
+	ret, err := o.db.Query(sql)
+	if err != nil {
+		utils.Errorf("error %v when running query %v", err, sql)
+	}
+	return ret, err
 }
 
 // Execute executes the specified Query statement.
@@ -62,6 +66,9 @@ func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 		fmt.Println(sql)
 	}
 	_, err := o.db.Exec(sql)
+	if err != nil {
+		utils.Errorf("error %v when executing query %v", err, sql)
+	}
 	return err
 }
 
