@@ -150,11 +150,29 @@ func (p Plan) IsExecuted() bool {
 
 // PlanCost returns the cost of the plan.
 func (p Plan) PlanCost() float64 {
-	v, err := strconv.ParseFloat(p[0][2], 64)
+	rootCost, err := strconv.ParseFloat(p[0][2], 64)
 	if err != nil {
 		// TODO: log or return the error?
 	}
-	return v
+
+	/* handle CTE costs: currently
+	| HashJoin_37                      | 100.00  | 8255.40  | root      |                      | CARTESIAN inner join                                                                                            |
+	...
+	| CTE_0                            | 10.00   | 14.97    | root      |                      | Non-Recursive CTE                                                                                               |
+	| └─IndexLookUp_31(Seed Part)      | 10.00   | 19530.45 | root      |                      |                                                                                                                 |
+	*/
+	cteTotCost := 0.0
+	for i, row := range p {
+		if strings.Contains(row[0], "CTE_") {
+			cost, err := strconv.ParseFloat(p[i+1][2], 64)
+			if err != nil {
+				// TODO: log or return the error?
+			}
+			cteTotCost += cost
+		}
+	}
+
+	return rootCost + cteTotCost
 }
 
 // ExecTime returns the execution time of the plan.

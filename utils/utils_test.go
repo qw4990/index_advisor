@@ -40,3 +40,17 @@ func TestCombSet(t *testing.T) {
 		}
 	}
 }
+
+func TestPlanCost(t *testing.T) {
+	plan := [][]string{
+		{"HashJoin_37", "100", "8225.40"},
+		{"├─IndexHashJoin_45(Build)", "1.000", "6096.63"},
+		{"└─CTEFullScan_39(Probe)", "10.00", "14.97"},
+		{"CTE_0", "10.00", "14.97"},
+		{"└─IndexLookUp_31(Seed Part)", "10.00", "19530.45"},
+	}
+	p := Plan(plan)
+	if p.PlanCost() != 8225.40+19530.45 {
+		t.Error("plan cost error")
+	}
+}
