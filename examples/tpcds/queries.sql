@@ -1,5 +1,4 @@
--- ues `query-black-list='q5,q14,q18,q22,q27,q77,q80,q36,q86,q23,q51,q97,q67,q70,q78,q64,q41'` to filter these queries since they are not supported by TiDB
--- q78, q64, q41 are too large that can dominate the workload cost. 
+-- ues `--query-black-list='q5,q14,q18,q22,q27,q77,q80,q36,q86,q23,q51,q97,q67,q70,q78,q64,q41,q38,q81,q1,q30,q39,q54,q83,q31,q60,q33,q56,q58,q24,q57,q47,q95,q2,q59,q4,q11,q74'` to filter these queries since they are not supported by TiDB
 
 -- start query 1 in stream 0 using template query1.tpl
 with customer_total_return as
