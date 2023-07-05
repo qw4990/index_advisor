@@ -49,7 +49,13 @@ func tempIndexName(cols ...utils.Column) string {
 	for _, col := range cols {
 		names = append(names, col.ColumnName)
 	}
-	return fmt.Sprintf("idx_%v", strings.Join(names, "_"))
+	for i := len(names); i > 0; i-- {
+		idxName := fmt.Sprintf("idx_%v", strings.Join(names[:i], "_"))
+		if len(idxName) <= 64 {
+			return idxName
+		}
+	}
+	return "idx"
 }
 
 func checkWorkloadInfo(w utils.WorkloadInfo) {

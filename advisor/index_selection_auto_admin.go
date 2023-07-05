@@ -56,7 +56,8 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			return nil, err
 		}
 
-		maxIndexes := aa.maxIndexes * (aa.maxIndexWidth - currentMaxIndexWidth + 1)
+		//maxIndexes := aa.maxIndexes * (aa.maxIndexWidth - currentMaxIndexWidth + 1)
+		maxIndexes := aa.maxIndexes
 		utils.Infof("auto-admin algorithm: select best %v candidate indexes from %v candidates", maxIndexes, candidates.Size())
 		currentBestIndexes, err = aa.enumerateCombinations(workload, candidates, maxIndexes)
 		if err != nil {

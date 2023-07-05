@@ -44,9 +44,9 @@ func validateParameter(p Parameter) Parameter {
 		utils.Warningf("max number of indexes should be at least 1, set from %v to 1", p.MaxNumberIndexes)
 		p.MaxNumberIndexes = 1
 	}
-	if p.MaxNumberIndexes > 10 {
-		utils.Warningf("max number of indexes should be at most 10, set from %v to 10", p.MaxNumberIndexes)
-		p.MaxNumberIndexes = 10
+	if p.MaxNumberIndexes > 20 {
+		utils.Warningf("max number of indexes should be at most 20, set from %v to 20", p.MaxNumberIndexes)
+		p.MaxNumberIndexes = 20
 	}
 	if p.MaxIndexWidth < 1 {
 		utils.Warningf("max index width should be at least 1, set from %v to 1", p.MaxIndexWidth)
