@@ -15,7 +15,8 @@ import (
 
 type evaluateCmdOpt struct {
 	dsn          string
-	queries      string
+	qWhiteList   string
+	qBlackList   string
 	queryPath    string
 	indexDirPath string
 	output       string
@@ -39,9 +40,8 @@ func NewEvaluateCmd() *cobra.Command {
 				return err
 			}
 
-			if opt.queries != "" {
-				qs := strings.Split(opt.queries, ",")
-				queries = utils.FilterQueries(queries, qs, nil)
+			if opt.qWhiteList != "" || opt.qBlackList != "" {
+				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
 			}
 
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
@@ -80,7 +80,8 @@ func NewEvaluateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "")
 	cmd.Flags().StringVar(&opt.indexDirPath, "index-dir", "", "")
-	cmd.Flags().StringVar(&opt.queries, "queries", "", "queries to consider, e.g. 'q1, q2'")
+	cmd.Flags().StringVar(&opt.qWhiteList, "query-white-list", "", "queries to consider, e.g. 'q1,q2,q6'")
+	cmd.Flags().StringVar(&opt.qBlackList, "query-black-list", "", "queries to ignore, e.g. 'q5,q12'")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	return cmd
 }
