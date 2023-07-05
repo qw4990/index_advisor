@@ -15,6 +15,7 @@ import (
 
 type evaluateCmdOpt struct {
 	dsn          string
+	analyze      bool
 	qWhiteList   string
 	qBlackList   string
 	queryPath    string
@@ -55,7 +56,11 @@ func NewEvaluateCmd() *cobra.Command {
 			})
 
 			if opt.indexDirPath == "" {
-				return executeQueries(db, queries, opt.output)
+				if opt.analyze {
+					return explainQueries(db, queries)
+				} else {
+					return executeQueries(db, queries, opt.output)
+				}
 			}
 
 			indexFiles, err := os.ReadDir(opt.indexDirPath)
@@ -78,6 +83,7 @@ func NewEvaluateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().BoolVar(&opt.analyze, "analyze", true, "whether to use `explain analyze`")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "")
 	cmd.Flags().StringVar(&opt.indexDirPath, "index-dir", "", "")
 	cmd.Flags().StringVar(&opt.qWhiteList, "query-white-list", "", "queries to consider, e.g. 'q1,q2,q6'")
@@ -130,6 +136,31 @@ func executeQueriesWithIndexes(db optimizer.WhatIfOptimizer, queries utils.Set[u
 		if err := db.Execute(dropStmt); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func explainQueries(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query]) error {
+	queryList := queries.ToList()
+	var totCost float64
+	type qCost struct {
+		Alias string
+		Cost  float64
+	}
+	var costs []qCost
+	for _, sql := range queryList {
+		p, err := db.Explain(sql.Text)
+		if err != nil {
+			return err
+		}
+		totCost += p.PlanCost()
+		costs = append(costs, qCost{Alias: sql.Alias, Cost: p.PlanCost()})
+	}
+	sort.Slice(costs, func(i, j int) bool {
+		return costs[i].Cost > costs[j].Cost
+	})
+	for _, c := range costs {
+		fmt.Printf("%v %.2f %.2f\n", c.Alias, c.Cost/totCost*100, c.Cost)
 	}
 	return nil
 }
