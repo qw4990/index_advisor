@@ -165,9 +165,30 @@ CREATE INDEX idx_movie_id_keyword_id ON imdbload.movie_keyword (movie_id, keywor
 
 ### TPC-DS
 
-TODO
+在 TPC-DS 1G 的测试中，我们使用了 61 个查询（剔除了 TiDB 支持不完善的查询），让 Index Advisor 推荐了 10 个索引：
 
-### TODO
+```sql
+CREATE INDEX idx_cs_call_center_sk ON tpcds.catalog_sales (cs_call_center_sk);
+CREATE INDEX idx_cs_sold_date_sk ON tpcds.catalog_sales (cs_sold_date_sk);
+CREATE INDEX idx_ca_city ON tpcds.customer_address (ca_city);
+CREATE INDEX idx_ca_state_ca_country_ca_city ON tpcds.customer_address (ca_state, ca_country, ca_city);
+CREATE INDEX idx_d_year_d_moy_d_qoy ON tpcds.date_dim (d_year, d_moy, d_qoy);
+CREATE INDEX idx_i_category_i_brand_i_class ON tpcds.item (i_category, i_brand, i_class);
+CREATE INDEX idx_ss_sold_date_sk_ss_net_profit ON tpcds.store_sales (ss_sold_date_sk, ss_net_profit);
+CREATE INDEX idx_ss_sold_time_sk ON tpcds.store_sales (ss_sold_time_sk);
+CREATE INDEX idx_t_hour ON tpcds.time_dim (t_hour);
+CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_sk, ws_net_profit)
+```
+
+创建索引后，整体执行时间降低了 10%：
+
+![tpcds_total](doc/evaluation_tpcds_1g_total.png)
+
+下面是几个提升比较显著的查询：
+
+![tpcds_query](doc/evaluation_tpcds_1g_query.png)
+
+### Web3Bench (TODO)
 
 ## 用例
 

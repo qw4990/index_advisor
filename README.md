@@ -165,9 +165,31 @@ In some queries, through using `IndexJoin` to access the large table `cast_info`
 
 ### TPC-DS
 
-TODO
+In TPC-DS 1G test, we use 61 queries (excluding queries that TiDB does not support well), and let Index Advisor recommend 10 indexes:
 
-### TODO
+```sql
+CREATE INDEX idx_cs_call_center_sk ON tpcds.catalog_sales (cs_call_center_sk);
+CREATE INDEX idx_cs_sold_date_sk ON tpcds.catalog_sales (cs_sold_date_sk);
+CREATE INDEX idx_ca_city ON tpcds.customer_address (ca_city);
+CREATE INDEX idx_ca_state_ca_country_ca_city ON tpcds.customer_address (ca_state, ca_country, ca_city);
+CREATE INDEX idx_d_year_d_moy_d_qoy ON tpcds.date_dim (d_year, d_moy, d_qoy);
+CREATE INDEX idx_i_category_i_brand_i_class ON tpcds.item (i_category, i_brand, i_class);
+CREATE INDEX idx_ss_sold_date_sk_ss_net_profit ON tpcds.store_sales (ss_sold_date_sk, ss_net_profit);
+CREATE INDEX idx_ss_sold_time_sk ON tpcds.store_sales (ss_sold_time_sk);
+CREATE INDEX idx_t_hour ON tpcds.time_dim (t_hour);
+CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_sk, ws_net_profit)
+```
+
+After creating these indexes, the execution time is reduced by `-10%`:
+
+![tpcds_total](doc/evaluation_tpcds_1g_total.png)
+
+
+Below are several queries with significant improvement:
+
+![tpcds_query](doc/evaluation_tpcds_1g_query.png)
+
+### Web3Bench(TODO)
 
 ## Usages
 
