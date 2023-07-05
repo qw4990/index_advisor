@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
@@ -43,19 +44,19 @@ func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOp
 	return utils.IndexConfCost{workloadCost, totCols, strings.Join(keys, ",")}, nil
 }
 
+var indexID atomic.Int64
+
 // tempIndexName returns a temp index name for the given columns.
 func tempIndexName(cols ...utils.Column) string {
 	var names []string
 	for _, col := range cols {
 		names = append(names, col.ColumnName)
 	}
-	for i := len(names); i > 0; i-- {
-		idxName := fmt.Sprintf("idx_%v", strings.Join(names[:i], "_"))
-		if len(idxName) <= 64 {
-			return idxName
-		}
+	idxName := fmt.Sprintf("idx_%v", strings.Join(names, "_"))
+	if len(idxName) <= 64 {
+		return idxName
 	}
-	return "idx"
+	return fmt.Sprintf("idx_%v", indexID.Add(1))
 }
 
 func checkWorkloadInfo(w utils.WorkloadInfo) {
