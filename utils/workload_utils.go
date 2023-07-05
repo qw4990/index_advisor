@@ -10,11 +10,15 @@ import (
 func FilterQueries(sqls Set[Query], whiteList, blackList []string) Set[Query] {
 	whiteMap := make(map[string]bool)
 	for _, a := range whiteList {
-		whiteMap[strings.TrimSpace(a)] = true
+		if strings.TrimSpace(a) != "" {
+			whiteMap[strings.TrimSpace(a)] = true
+		}
 	}
 	blackMap := make(map[string]bool)
 	for _, a := range blackList {
-		blackMap[strings.TrimSpace(a)] = true
+		if strings.TrimSpace(a) != "" {
+			blackMap[strings.TrimSpace(a)] = true
+		}
 	}
 
 	filtered := NewSet[Query]()

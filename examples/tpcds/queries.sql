@@ -1,3 +1,5 @@
+-- ues `query-black-list='q5,q14,q18,q22,q27,q77,q80,q36,q86,q23,q51,q97,q67,q70'` to filter these queries since they are not supported by TiDB
+
 -- start query 1 in stream 0 using template query1.tpl
 with customer_total_return as
          (select sr_customer_sk as ctr_customer_sk
