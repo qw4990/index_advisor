@@ -177,18 +177,19 @@ func executeQueries(db optimizer.WhatIfOptimizer, queries utils.Set[utils.Query]
 	for _, sql := range queryList {
 		var execTimes []time.Duration
 		var plans []utils.Plan
-		for k := 0; k < 5; k++ {
+		for k := 0; k < 3; k++ {
 			p, err := db.ExplainAnalyze(sql.Text)
 			if err != nil {
 				return err
 			}
 			plans = append(plans, p)
 			execTimes = append(execTimes, p.ExecTime())
+			fmt.Println(">> ", k, sql.Alias, p.ExecTime())
 		}
 		sort.Slice(execTimes, func(i, j int) bool {
 			return execTimes[i] < execTimes[j]
 		})
-		avgTime := (execTimes[1] + execTimes[2] + execTimes[3]) / 3
+		avgTime := execTimes[1]
 		totExecTime += avgTime
 
 		content := fmt.Sprintf("Alias: %s\n", sql.Alias)
