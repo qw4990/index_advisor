@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -30,13 +31,15 @@ func NewAdviseOnlineCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
-			// TODO: test tidb version
-			// TODO: test redact log
-
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 			if err != nil {
 				return err
 			}
+
+			if !supportHypoIndex(db) {
+				return errors.New("your TiDB version does not support hypothetical indexes")
+			}
+			// TODO: test redact log
 
 			sqls, err := readQueriesFromStatementSummary(db, opt.schemas)
 			if err != nil {

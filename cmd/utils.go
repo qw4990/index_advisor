@@ -160,3 +160,13 @@ func dbExists(schemaName string, db optimizer.WhatIfOptimizer) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+// supportHypoIndex tests whether this TiDB version supports hypothetical indexes.
+func supportHypoIndex(db optimizer.WhatIfOptimizer) bool {
+	err := db.Execute(`drop hypo index hypo_index_test_name on test`)
+	if strings.Contains(err.Error(), "You have an error in your SQL syntax") {
+		return false
+	}
+	// if it's not a syntax error, we assume it supports Hypo Indexes.
+	return true
+}
