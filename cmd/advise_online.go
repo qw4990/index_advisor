@@ -25,7 +25,7 @@ type adviseOnlineCmdOpt struct {
 	queryExecCountThreshold int
 	queryBeginTime          string
 	queryEndTime            string
-	queryFile               string
+	queryPath               string
 }
 
 func NewAdviseOnlineCmd() *cobra.Command {
@@ -49,20 +49,33 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				utils.Warningf("redact log is enabled, the Advisor probably cannot get the full SQL text")
 			}
 
-			sqls, err := readQueriesFromStatementSummary(db, opt.querySchemas)
+			var queries utils.Set[utils.Query]
+			_, dbName := utils.GetDBNameFromDSN(opt.dsn)
+			if opt.queryPath != "" {
+				queries, err = readQueriesFromStatementSummary(db, opt.querySchemas)
+				if err != nil {
+					return err
+				}
+			} else {
+				queries, err = utils.LoadQueries(dbName, opt.queryPath)
+				if err != nil {
+					return err
+				}
+			}
+			queries, err = filterSQLAccessingSystemTables(queries)
 			if err != nil {
 				return err
 			}
-			sqls, err = filterSQLAccessingSystemTables(sqls)
+			tableNames, err := utils.CollectTableNamesFromQueries(dbName, queries)
 			if err != nil {
 				return err
 			}
-			tables, err := readTableSchemas(db, opt.querySchemas)
+			tables, err := getTableSchemas(db, tableNames)
 			if err != nil {
 				return err
 			}
 			info := utils.WorkloadInfo{
-				Queries:      sqls,
+				Queries:      queries,
 				TableSchemas: tables,
 			}
 
@@ -89,7 +102,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.queryExecCountThreshold, "query-exec-count-threshold", 0, "the threshold of query execution count, e.g. '20', queries that are executed more than this threshold will be considered")
 	cmd.Flags().StringVar(&opt.queryBeginTime, "query-begin-time", "", "the begin time of queries, e.g. '2020-01-01 00:00:00', queries that are executed after this time will be considered")
 	cmd.Flags().StringVar(&opt.queryEndTime, "query-end-time", "", "the end time of queries, e.g. '2020-01-05 23:00:00', queries that are executed before this time will be considered")
-	cmd.Flags().StringVar(&opt.queryFile, "query-file", "", "the file that contains queries, e.g. 'queries.sql', if this variable is specified, the above variables like 'query-*' will be ignored")
+	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "the path that contains queries, e.g. 'queries.sql', if this variable is specified, the above variables like 'query-*' will be ignored")
 	return cmd
 }
 
