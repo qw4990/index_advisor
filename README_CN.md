@@ -151,7 +151,12 @@ Sort_37                            1.00         4303914.83     root             
 
 ### 限制
 
-TODO
+- 支持的索引宽度最大为 3；
+- 一次最多支持推荐 20 个索引；
+- 根据负载的不同，可能不一定能推荐出 `max-num-indexes` 个数的索引；比如负载特别简单，只能发现少数的有效索引；
+- 在线模式的限制
+  - 对 TiDB 版本有要求（TODO 验证）
+  - redact_log 的要求（TODO）
 
 ## 评估
 
@@ -231,8 +236,10 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 
 ![tpcds_query](doc/evaluation_tpcds_1g_query.png)
 
-### Web3Bench (TODO)
-
 ## 用例
 
-TODO
+### 在线模式
+
+### 在线模式 + 指定 query-file
+
+### 离线模式
