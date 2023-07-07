@@ -23,8 +23,6 @@ type adviseOnlineCmdOpt struct {
 	querySchemas            []string
 	queryExecTimeThreshold  int
 	queryExecCountThreshold int
-	queryBeginTime          string
-	queryEndTime            string
 	queryPath               string
 }
 
@@ -52,7 +50,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			var queries utils.Set[utils.Query]
 			_, dbName := utils.GetDBNameFromDSN(opt.dsn)
 			if opt.queryPath != "" {
-				queries, err = readQueriesFromStatementSummary(db, opt.querySchemas)
+				queries, err = readQueriesFromStatementSummary(db, opt)
 				if err != nil {
 					return err
 				}
@@ -100,21 +98,32 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&opt.querySchemas, "query-schemas", []string{}, "a list of schema(database), e.g. 'test1, test2', queries that are running under these schemas will be considered")
 	cmd.Flags().IntVar(&opt.queryExecTimeThreshold, "query-exec-time-threshold", 0, "the threshold of query execution time(in milliseconds), e.g. '300', queries that are running longer than this threshold will be considered")
 	cmd.Flags().IntVar(&opt.queryExecCountThreshold, "query-exec-count-threshold", 0, "the threshold of query execution count, e.g. '20', queries that are executed more than this threshold will be considered")
-	cmd.Flags().StringVar(&opt.queryBeginTime, "query-begin-time", "", "the begin time of queries, e.g. '2020-01-01 00:00:00', queries that are executed after this time will be considered")
-	cmd.Flags().StringVar(&opt.queryEndTime, "query-end-time", "", "the end time of queries, e.g. '2020-01-05 23:00:00', queries that are executed before this time will be considered")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "the path that contains queries, e.g. 'queries.sql', if this variable is specified, the above variables like 'query-*' will be ignored")
 	return cmd
 }
 
-func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, schemas []string) (utils.Set[utils.Query], error) {
+func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, opt adviseOnlineCmdOpt) (utils.Set[utils.Query], error) {
+	var condition []string
+	condition = append(condition, "stmt_type='Select'")
+	if len(opt.querySchemas) == 0 {
+		return nil, errors.New("query-schemas is required")
+	}
+	condition = append(condition, fmt.Sprintf("SCHEMA_NAME in ('%s')", strings.Join(opt.querySchemas, "', '")))
+	if opt.queryExecTimeThreshold > 0 {
+		condition = append(condition, fmt.Sprintf("AVG_LATENCY > %v", opt.queryExecTimeThreshold*1000))
+	}
+	if opt.queryExecCountThreshold > 0 {
+		condition = append(condition, fmt.Sprintf("EXEC_COUNT > %v", opt.queryExecCountThreshold))
+	}
+
 	s := utils.NewSet[utils.Query]()
 	for _, table := range []string{
 		`information_schema.statements_summary`,
 		`information_schema.statements_summary_history`,
 	} {
 		// TODO: consider Execute statements
-		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, QUERY_SAMPLE_TEXT, EXEC_COUNT, AVG_LATENCY from %v `+
-			`where SCHEMA_NAME in ('%s') and stmt_type='Select'`, table, strings.Join(schemas, "', '"))
+		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, QUERY_SAMPLE_TEXT, EXEC_COUNT, AVG_LATENCY from %v where %v`,
+			table, strings.Join(condition, " AND "))
 		rows, err := db.Query(q)
 		if err != nil {
 			return nil, err
