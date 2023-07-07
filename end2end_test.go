@@ -12,25 +12,31 @@ import (
 	"github.com/qw4990/index_advisor/utils"
 )
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func prepareTable(db optimizer.WhatIfOptimizer, schema, createStmt string, nRows int) {
 	t, err := utils.ParseCreateTableStmt(schema, createStmt)
-	utils.Must(err)
+	must(err)
 
-	utils.Must(db.Execute(createStmt))
+	must(db.Execute(createStmt))
 	for i := 0; i < nRows; i++ {
 		var values []string
 		for j := 0; j < len(t.Columns); j++ {
 			values = append(values, fmt.Sprintf("%v", i*100+rand.Intn(100)))
 		}
-		utils.Must(db.Execute(fmt.Sprintf("insert into %v values (%v)", t.TableName, strings.Join(values, ","))))
+		must(db.Execute(fmt.Sprintf("insert into %v values (%v)", t.TableName, strings.Join(values, ","))))
 	}
 	db.Execute(`analyze table ` + t.TableName)
 }
 
 func prepareTestIndexSelectionAAEnd2End(db optimizer.WhatIfOptimizer, schema string, createStmts []string, rows int) {
-	utils.Must(db.Execute(`drop database if exists ` + schema))
-	utils.Must(db.Execute(`create database ` + schema))
-	utils.Must(db.Execute(`use ` + schema))
+	must(db.Execute(`drop database if exists ` + schema))
+	must(db.Execute(`create database ` + schema))
+	must(db.Execute(`use ` + schema))
 
 	for _, createStmt := range createStmts {
 		prepareTable(db, schema, createStmt, rows)
@@ -40,7 +46,7 @@ func prepareTestIndexSelectionAAEnd2End(db optimizer.WhatIfOptimizer, schema str
 func TestIndexSelectionEnd2End(t *testing.T) {
 	dsn := "root:@tcp(127.0.0.1:4000)/"
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
-	utils.Must(err)
+	must(err)
 
 	prepareData := false
 	schema := "test_aa"
@@ -109,9 +115,10 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		workload := utils.CreateWorkloadFromRawStmt(schema, createTableStmts, c.queries)
+		workload, err := utils.CreateWorkloadFromRawStmt(schema, createTableStmts, c.queries)
+		must(err)
 		result, err := advisor.IndexAdvise(db, workload, c.param)
-		utils.Must(err)
+		must(err)
 
 		var resultKeys []string
 		for _, r := range result.ToList() {

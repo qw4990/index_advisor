@@ -110,6 +110,12 @@ Top 5 queries with the most cost reduction:
 
 上面包含了推荐的索引信息，预期对整个工作负载的收益，优化前后的总代价，以及收益最高的几个查询收益情况。
 
+TODO: plan
+
+### 限制
+
+TODO
+
 ## 评估
 
 在内部我们用了多个数据集来进行评估。

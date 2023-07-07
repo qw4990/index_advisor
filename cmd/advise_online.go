@@ -30,6 +30,9 @@ func NewAdviseOnlineCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
+			// TODO: test tidb version
+			// TODO: test redact log
+
 			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 			if err != nil {
 				return err
@@ -63,7 +66,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 5, "max number of indexes to recommend, 0 means no limit")
+	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 5, "max number of indexes to recommend, 1~20")
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
