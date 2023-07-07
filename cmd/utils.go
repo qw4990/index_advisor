@@ -170,3 +170,23 @@ func supportHypoIndex(db optimizer.WhatIfOptimizer) bool {
 	// if it's not a syntax error, we assume it supports Hypo Indexes.
 	return true
 }
+
+func redactLogEnabled(db optimizer.WhatIfOptimizer) bool {
+	rows, err := db.Query(`select @@global.tidb_redact_log`)
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return false
+	}
+	var redactLog string
+	if err := rows.Scan(&redactLog); err != nil {
+		return false
+	}
+	redactLog = strings.ToLower(redactLog)
+	if redactLog == "1" || redactLog == "on" {
+		return true
+	}
+	return false
+}
