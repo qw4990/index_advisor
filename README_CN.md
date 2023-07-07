@@ -93,24 +93,61 @@ index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
 Total Queries in the workload: 21
 Total number of indexes: 5
   CREATE INDEX idx_l_partkey_l_quantity_l_shipmode ON tpch.lineitem (l_partkey, l_quantity, l_shipmode);
-  CREATE INDEX idx_l_partkey_l_shipdate ON tpch.lineitem (l_partkey, l_shipdate);
+  CREATE INDEX idx_l_partkey_l_shipdate_l_shipmode ON tpch.lineitem (l_partkey, l_shipdate, l_shipmode);
   CREATE INDEX idx_l_suppkey_l_shipdate ON tpch.lineitem (l_suppkey, l_shipdate);
   CREATE INDEX idx_o_custkey_o_orderdate_o_totalprice ON tpch.orders (o_custkey, o_orderdate, o_totalprice);
   CREATE INDEX idx_ps_suppkey_ps_supplycost ON tpch.partsupp (ps_suppkey, ps_supplycost);
 Total original workload cost: 1.37E+10
 Total optimized workload cost: 1.02E+10
 Total cost reduction ratio: 25.22%
-Top 5 queries with the most cost reduction:
+Top 10 queries with the most cost reduction ratio:
   Alias: q22, Cost Reduction Ratio: 1.97E+08->4.30E+06(0.02)
   Alias: q19, Cost Reduction Ratio: 2.89E+08->1.20E+07(0.04)
   Alias: q20, Cost Reduction Ratio: 3.40E+08->4.39E+07(0.13)
   Alias: q17, Cost Reduction Ratio: 8.36E+08->2.00E+08(0.24)
   Alias: q2, Cost Reduction Ratio: 1.35E+08->3.76E+07(0.28)
+  Alias: q5, Cost Reduction Ratio: 7.79E+08->2.51E+08(0.32)
+  Alias: q11, Cost Reduction Ratio: 7.62E+07->2.54E+07(0.33)
+  Alias: q7, Cost Reduction Ratio: 5.99E+08->2.46E+08(0.41)
+  Alias: q14, Cost Reduction Ratio: 2.76E+08->1.17E+08(0.43)
+  Alias: q21, Cost Reduction Ratio: 8.62E+08->4.30E+08(0.50)
+...
 ```
 
 上面包含了推荐的索引信息，预期对整个工作负载的收益，优化前后的总代价，以及收益最高的几个查询收益情况。
 
-TODO: plan
+同时会输出每个查询的优化前后的执行计划，以及对应的代价，如 `examples/tpch_example1/output/q22.txt`：
+
+```
+Alias: q22
+Original Cost: 1.97E+08
+Optimized Cost: 4.30E+06
+Cost Reduction Ratio: 0.02
+
+===================== original plan =====================
+Sort_37                            1.00          197070568.96    root                           Column#31                                                                                                                                   
+└─Projection_39                    1.00          197070556.36    root                           Column#31, Column#32, Column#33                                                                                                             
+  └─HashAgg_40                     1.00          197070556.06    root                           group by:Column#37, funcs:count(1)->Column#32, funcs:sum(Column#35)->Column#33, funcs:firstrow(Column#36)->Column#31                        
+    └─Projection_48                0.00          197068996.76    root                           tpch.customer.c_acctbal->Column#35, substring(tpch.customer.c_phone, 1, 2)->Column#36, substring(tpch.customer.c_phone, 1, 2)->Column#37    
+      └─HashJoin_41                0.00          197068976.70    root                           anti semi join, equal:[eq(tpch.customer.c_custkey, tpch.orders.o_custkey)]                                                                  
+        ├─TableReader_46(Build)    1500000.00    38267144.51     root                           data:TableFullScan_45                                                                                                                       
+        │ └─TableFullScan_45       1500000.00    478967167.61    cop[tikv]    table:orders      keep order:false                                                                                                                            
+        └─TableReader_44(Probe)    0.00          4300315.24      root                           data:Selection_43                                                                                                                           
+          └─Selection_43           0.00          64504395.92     cop[tikv]                      gt(tpch.customer.c_acctbal, NULL), in(substring(tpch.customer.c_phone, 1, 2), "24", "33", "31", "10", "15", "28", "23")                     
+            └─TableFullScan_42     150000.00     49534395.92     cop[tikv]    table:customer    keep order:false                                                                                                                            
+
+===================== optimized plan =====================
+Sort_37                            1.00         4303914.83     root                                                                                                             Column#31                                                                                                                                                                  
+└─Projection_39                    1.00         4303902.23     root                                                                                                             Column#31, Column#32, Column#33                                                                                                                                            
+  └─HashAgg_40                     1.00         4303901.93     root                                                                                                             group by:Column#45, funcs:count(1)->Column#32, funcs:sum(Column#43)->Column#33, funcs:firstrow(Column#44)->Column#31                                                       
+    └─Projection_65                0.00         4302342.63     root                                                                                                             tpch.customer.c_acctbal->Column#43, substring(tpch.customer.c_phone, 1, 2)->Column#44, substring(tpch.customer.c_phone, 1, 2)->Column#45                                   
+      └─IndexJoin_44               0.00         4302322.57     root                                                                                                             anti semi join, inner:IndexReader_43, outer key:tpch.customer.c_custkey, inner key:tpch.orders.o_custkey, equal cond:eq(tpch.customer.c_custkey, tpch.orders.o_custkey)    
+        ├─TableReader_59(Build)    0.00         4300315.24     root                                                                                                             data:Selection_58                                                                                                                                                          
+        │ └─Selection_58           0.00         64504395.92    cop[tikv]                                                                                                        gt(tpch.customer.c_acctbal, NULL), in(substring(tpch.customer.c_phone, 1, 2), "24", "33", "31", "10", "15", "28", "23")                                                    
+        │   └─TableFullScan_57     150000.00    49534395.92    cop[tikv]    table:customer                                                                                      keep order:false                                                                                                                                                           
+        └─IndexReader_43(Probe)    0.00         21.38          root                                                                                                             index:IndexRangeScan_42                                                                                                                                                    
+          └─IndexRangeScan_42      0.00         257.30         cop[tikv]    table:orders, index:idx_o_custkey_o_orderdate_o_totalprice(O_CUSTKEY, O_ORDERDATE, O_TOTALPRICE)    range: decided by [eq(tpch.orders.o_custkey, tpch.customer.c_custkey)], keep order:false                                                                                   
+```
 
 ### 限制
 
