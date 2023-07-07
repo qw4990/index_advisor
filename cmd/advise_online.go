@@ -17,9 +17,15 @@ type adviseOnlineCmdOpt struct {
 	maxIndexWidth int
 
 	dsn      string
-	schemas  []string
 	output   string
 	logLevel string
+
+	querySchemas            []string
+	queryExecTimeThreshold  int
+	queryExecCountThreshold int
+	queryBeginTime          string
+	queryEndTime            string
+	queryFile               string
 }
 
 func NewAdviseOnlineCmd() *cobra.Command {
@@ -43,7 +49,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 				utils.Warningf("redact log is enabled, the Advisor probably cannot get the full SQL text")
 			}
 
-			sqls, err := readQueriesFromStatementSummary(db, opt.schemas)
+			sqls, err := readQueriesFromStatementSummary(db, opt.querySchemas)
 			if err != nil {
 				return err
 			}
@@ -51,7 +57,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			tables, err := readTableSchemas(db, opt.schemas)
+			tables, err := readTableSchemas(db, opt.querySchemas)
 			if err != nil {
 				return err
 			}
@@ -75,9 +81,15 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
-	cmd.Flags().StringSliceVar(&opt.schemas, "schemas", []string{}, "the schema(database) name to consider, e.g. 'test1, test2'")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
+
+	cmd.Flags().StringSliceVar(&opt.querySchemas, "query-schemas", []string{}, "a list of schema(database), e.g. 'test1, test2', queries that are running under these schemas will be considered")
+	cmd.Flags().IntVar(&opt.queryExecTimeThreshold, "query-exec-time-threshold", 0, "the threshold of query execution time(in milliseconds), e.g. '300', queries that are running longer than this threshold will be considered")
+	cmd.Flags().IntVar(&opt.queryExecCountThreshold, "query-exec-count-threshold", 0, "the threshold of query execution count, e.g. '20', queries that are executed more than this threshold will be considered")
+	cmd.Flags().StringVar(&opt.queryBeginTime, "query-begin-time", "", "the begin time of queries, e.g. '2020-01-01 00:00:00', queries that are executed after this time will be considered")
+	cmd.Flags().StringVar(&opt.queryEndTime, "query-end-time", "", "the end time of queries, e.g. '2020-01-05 23:00:00', queries that are executed before this time will be considered")
+	cmd.Flags().StringVar(&opt.queryFile, "query-file", "", "the file that contains queries, e.g. 'queries.sql', if this variable is specified, the above variables like 'query-*' will be ignored")
 	return cmd
 }
 
