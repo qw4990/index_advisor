@@ -137,6 +137,7 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, opt adviseOnl
 			if err != nil {
 				return nil, err
 			}
+			// TODO: skip this query if it has '?' when redact log is enabled.
 			s.Add(utils.Query{
 				Alias:      digest,
 				SchemaName: schemaName,
