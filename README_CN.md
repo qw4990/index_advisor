@@ -50,7 +50,7 @@ index_advisor advise-offline --tidb-version=v7.2.0\
 
 下面是各个参数的含义：
 
-- `tidb-version`：使用的 TiDB 版本，Index Advisor 会在本地启动这个版本的 TiDB 实例。
+- `tidb-version`：使用的 TiDB 版本，Index Advisor 会自动在本地启动这个版本的 TiDB 实例。
 - `query-path`：查询文件的路径，可以是单个文件（如 `examples/tpch_example2/queries.sql`），也可以是文件夹（如 `examples/tpch_example1/queries`）。
 - `schema-path`：schema 信息文件的路径（如 `examples/tpch_example1/schema.sql`）。
 - `stats-path`：统计信息文件夹的路径（如 `examples/tpch_example1/stats`）。
@@ -246,4 +246,13 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 
 ## 常见问题
 
-### Table `xxx` doesn't exist
+### 离线模式报错 `table 'db.t' doesn't exist`
+
+通常是由于 `schema-path` 中没有指定数据库名导致的，可以在 schema 文件中手动添加 `Use DB` 和 `Create DB` 语句：
+
+```sql
+CREATE DATABASE tpch;
+USE tpch;
+CREATE TABLE `customer` (...);
+...
+```
