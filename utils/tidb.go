@@ -2,15 +2,47 @@ package utils
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-// StartTiDB starts a TiDB server with the given version.
-func StartTiDB(ver string) (*exec.Cmd, error) {
+type LocalTiDBServer struct {
+	cmd    *exec.Cmd
+	port   int
+	tmpDir string
+}
+
+func (s *LocalTiDBServer) Release() error {
+	err := s.cmd.Process.Kill()
+	if err != nil {
+		return err
+	}
+
+	//Infof("wait for TiDB to close")
+	//for i := 0; i < 10; i++ {
+	//	if !PingLocalTiDB(s.DSN()) {
+	//		break
+	//	}
+	//	time.Sleep(time.Second * 2)
+	//	Infof("wait for TiDB to close")
+	//}
+
+	os.RemoveAll(s.tmpDir)
+	return nil
+}
+
+func (s *LocalTiDBServer) DSN() string {
+	return fmt.Sprintf("root:@tcp(127.0.0.1:%v)/test", s.port)
+}
+
+// StartLocalTiDBServer starts a TiDB server with the given version.
+func StartLocalTiDBServer(ver string) (*LocalTiDBServer, error) {
 	if ver == "" {
 		ver = "nightly"
 	}
@@ -28,7 +60,7 @@ func StartTiDB(ver string) (*exec.Cmd, error) {
 		return nil, fmt.Errorf("failed to get a temp dir: %v", err)
 	}
 
-	cmd := exec.Command(tiupPath, fmt.Sprintf("tidb:%v", ver), fmt.Sprintf("-P=%v", port), fmt.Sprintf("--store-path=%v", tmpDir))
+	cmd := exec.Command(tiupPath, fmt.Sprintf("tidb:%v", ver), fmt.Sprintf("-P=%v", port), fmt.Sprintf("--path=%v", tmpDir))
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
 
@@ -39,9 +71,13 @@ func StartTiDB(ver string) (*exec.Cmd, error) {
 
 	Infof("Wait for TiDB to start, pid: %v", cmd.Process.Pid)
 	ok := false
-	for i := 0; i < 20; i++ {
-		// TODO:
-		time.Sleep(time.Second)
+	dsn := fmt.Sprintf("root:@tcp(127.0.0.1:%v)/test", port)
+	for i := 0; i < 10; i++ {
+		if PingLocalTiDB(dsn) {
+			ok = true
+			break
+		}
+		time.Sleep(time.Second * 2)
 		Infof("Wait for TiDB to start, pid: %v", cmd.Process.Pid)
 	}
 	if !ok {
@@ -49,7 +85,11 @@ func StartTiDB(ver string) (*exec.Cmd, error) {
 		return nil, fmt.Errorf("failed to start TiDB, stderr: %v", stdErr.String())
 	}
 
-	return cmd, nil
+	return &LocalTiDBServer{
+		cmd:    cmd,
+		port:   port,
+		tmpDir: tmpDir,
+	}, nil
 }
 
 // GetTempDir returns an temporary directory path
@@ -70,4 +110,13 @@ func GetFreePort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func PingLocalTiDB(dsn string) bool {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return false
+	}
+	defer db.Close()
+	return db.Ping() == nil
 }
