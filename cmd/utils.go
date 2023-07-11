@@ -14,21 +14,20 @@ import (
 )
 
 // loadWorkloadIntoCluster loads the schema the TiDB cluster
-func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) (skippedTables utils.Set[utils.TableName], dbName string, err error) {
+func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) (dbName string, err error) {
 	if schemaFilePath == "" {
-		return nil, "", nil
+		return "", nil
 	}
 	utils.Infof("load schema info from %v into the TiDB instance", schemaFilePath)
 	rawSQLs, err := utils.ParseStmtsFromFile(schemaFilePath)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 	if len(rawSQLs) == 0 {
-		return nil, "", nil
+		return "", nil
 	}
 
 	currentDB := "test" // the default DB `test`
-	existingTables := utils.NewSet[utils.TableName]()
 	for _, stmt := range rawSQLs {
 		switch utils.GetStmtType(stmt) {
 		case utils.StmtUseDB:
@@ -37,7 +36,7 @@ func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) 
 			dbName := utils.GetDBNameFromCreateDBStmt(stmt)
 			exist, err := dbExists(dbName, db)
 			if err != nil {
-				return nil, "", err
+				return "", err
 			}
 			if exist {
 				continue
@@ -45,29 +44,19 @@ func loadSchemaIntoCluster(db optimizer.WhatIfOptimizer, schemaFilePath string) 
 		case utils.StmtCreateTable:
 			table, err := utils.ParseCreateTableStmt(currentDB, stmt)
 			if err != nil {
-				return nil, "", err
+				return "", err
 			}
-			exist, err := tableExists(table.SchemaName, table.TableName, db)
-			if err != nil {
-				return nil, "", err
-			}
-			if exist {
-				utils.Infof("table %s.%s already exists, skip creating it", table.SchemaName, table.TableName)
-				existingTables.Add(utils.TableName{table.SchemaName, table.TableName})
-				continue
-			} else {
-				utils.Infof("create table %s.%s", table.SchemaName, table.TableName)
-			}
+			utils.Infof("create table %s.%s", table.SchemaName, table.TableName)
 		}
 		if err := db.Execute(stmt); err != nil {
-			return nil, "", err
+			return "", err
 		}
 	}
-	return existingTables, currentDB, nil
+	return currentDB, nil
 }
 
 // loadStatsIntoCluster loads the stats into the TiDB cluster
-func loadStatsIntoCluster(db optimizer.WhatIfOptimizer, statsDirPath string, skip utils.Set[utils.TableName]) error {
+func loadStatsIntoCluster(db optimizer.WhatIfOptimizer, statsDirPath string) error {
 	if statsDirPath == "" {
 		return nil
 	}
@@ -91,9 +80,6 @@ func loadStatsIntoCluster(db optimizer.WhatIfOptimizer, statsDirPath string, ski
 		tableName, err := getStatsFileTableName(absStatsPath)
 		if err != nil {
 			return err
-		}
-		if skip.Contains(tableName) {
-			continue
 		}
 
 		utils.Infof("load stats for table %s from %s", tableName, statsPath)

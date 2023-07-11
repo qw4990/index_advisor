@@ -53,11 +53,11 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
 			}
 
-			skip, dbName, err := loadSchemaIntoCluster(db, opt.schemaPath)
+			dbName, err := loadSchemaIntoCluster(db, opt.schemaPath)
 			if err != nil {
 				return err
 			}
-			if err := loadStatsIntoCluster(db, opt.statsPath, skip); err != nil {
+			if err := loadStatsIntoCluster(db, opt.statsPath); err != nil {
 				return err
 			}
 			if err := db.Execute(`use ` + dbName); err != nil {
