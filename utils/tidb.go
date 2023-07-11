@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -65,11 +66,15 @@ func StartLocalTiDBServer(ver string) (*LocalTiDBServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a temp dir: %v", err)
 	}
+	logFilePath := path.Join(tmpDir, "tidb.log")
+	slowLogFilePath := path.Join(tmpDir, "tidb_slow.log")
 
 	cmd := exec.Command(tiupPath, fmt.Sprintf("tidb:%v", ver),
 		fmt.Sprintf("--status=%v", statusPort),
 		fmt.Sprintf("-P=%v", port),
-		fmt.Sprintf("--path=%v", tmpDir))
+		fmt.Sprintf("--path=%v", tmpDir),
+		fmt.Sprintf("--log-file=%v", logFilePath),
+		fmt.Sprintf("--log-slow-query=%v", slowLogFilePath))
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
 
