@@ -250,7 +250,7 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 
 报错的原因是你的 TiDB 版本不支持 Index Advisor 需要的 `Hypo Index` 功能，需要大于等于 `v7.2` 版本的 TiDB。
 
-一个简单的解决方案是用离线模式选择最新的 TiDB 版本来进行索引推荐，得到的结果也有比较高的参考价值。
+一个简单的解决方案是用离线模式选择最新的 TiDB 版本 `-tidb-version='nightly'` 来进行索引推荐，得到的结果也有比较高的参考价值。
 
 ### 离线模式报错 `table 'db.t' doesn't exist`
 
