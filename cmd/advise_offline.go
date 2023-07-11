@@ -43,13 +43,12 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			}
 			defer s.Release()
 
-			dsnWithoutDB, dbName := utils.GetDBNameFromDSN(s.DSN())
 			utils.Infof("connect to %s", s.DSN())
-			db, err := optimizer.NewTiDBWhatIfOptimizer(dsnWithoutDB) // the DB may not exist yet
+			db, err := optimizer.NewTiDBWhatIfOptimizer(s.DSN()) // the DB may not exist yet
 			if err != nil {
 				return err
 			}
-			skip, err := loadSchemaIntoCluster(db, opt.schemaPath)
+			skip, dbName, err := loadSchemaIntoCluster(db, opt.schemaPath)
 			if err != nil {
 				return err
 			}

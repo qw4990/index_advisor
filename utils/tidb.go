@@ -39,7 +39,7 @@ func (s *LocalTiDBServer) Release() error {
 }
 
 func (s *LocalTiDBServer) DSN() string {
-	return fmt.Sprintf("root:@tcp(127.0.0.1:%v)/test", s.port)
+	return fmt.Sprintf("root:@tcp(127.0.0.1:%v)/", s.port)
 }
 
 // StartLocalTiDBServer starts a TiDB server with the given version.
@@ -56,12 +56,19 @@ func StartLocalTiDBServer(ver string) (*LocalTiDBServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a free port: %v", err)
 	}
+	statusPort, err := GetFreePort()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get a free port: %v", err)
+	}
 	tmpDir, err := GetTempDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get a temp dir: %v", err)
 	}
 
-	cmd := exec.Command(tiupPath, fmt.Sprintf("tidb:%v", ver), fmt.Sprintf("-P=%v", port), fmt.Sprintf("--path=%v", tmpDir))
+	cmd := exec.Command(tiupPath, fmt.Sprintf("tidb:%v", ver),
+		fmt.Sprintf("--status=%v", statusPort),
+		fmt.Sprintf("-P=%v", port),
+		fmt.Sprintf("--path=%v", tmpDir))
 	var stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
 
