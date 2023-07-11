@@ -33,6 +33,7 @@ func (s *LocalTiDBServer) Release() error {
 	//	Infof("wait for TiDB to close")
 	//}
 
+	Infof("Clean tmpDir: %v", s.tmpDir)
 	os.RemoveAll(s.tmpDir)
 	return nil
 }
