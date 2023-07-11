@@ -17,7 +17,7 @@ type adviseOfflineCmdOpt struct {
 	maxNumIndexes int
 	maxIndexWidth int
 
-	dsn          string
+	tidbVersion  string
 	queryPath    string
 	schemaPath   string
 	statsPath    string
@@ -37,11 +37,14 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
-			dsnWithoutDB, dbName := utils.GetDBNameFromDSN(opt.dsn)
-			if dbName == "" {
-				return fmt.Errorf("invalid dsn: %s, no database specified", opt.dsn)
+			s, err := utils.StartLocalTiDBServer(opt.tidbVersion)
+			if err != nil {
+				return err
 			}
-			utils.Infof("connect to %s", opt.dsn)
+			defer s.Release()
+
+			dsnWithoutDB, dbName := utils.GetDBNameFromDSN(s.DSN())
+			utils.Infof("connect to %s", s.DSN())
 			db, err := optimizer.NewTiDBWhatIfOptimizer(dsnWithoutDB) // the DB may not exist yet
 			if err != nil {
 				return err
@@ -98,12 +101,13 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 5, "max number of indexes to recommend, 1~20")
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
-	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn to connect to your testing cluster")
+	cmd.Flags().StringVar(&opt.tidbVersion, "tidb-version", "nightly", "tidb version, one of 'nightly', 'v7.1.0', 'v6.5.1'")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path, e.g. './examples/tpch_example1/queries' or 'examples/tpch_example2/query.sql'")
 	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path, e.g. './examples/tpch_example1/schema.sql'")
 	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats''")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result, e.g. './output'")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
+
 	cmd.Flags().StringVar(&opt.qWhiteList, "query-white-list", "", "queries to consider, e.g. 'q1,q2,q6'")
 	cmd.Flags().StringVar(&opt.qBlackList, "query-black-list", "", "queries to ignore, e.g. 'q5,q12'")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")

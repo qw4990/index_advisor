@@ -74,6 +74,7 @@ func StartLocalTiDBServer(ver string) (*LocalTiDBServer, error) {
 	dsn := fmt.Sprintf("root:@tcp(127.0.0.1:%v)/test", port)
 	for i := 0; i < 10; i++ {
 		if PingLocalTiDB(dsn) {
+			Infof("TiDB started, port: %v, tmpDir: %v", port, tmpDir)
 			ok = true
 			break
 		}
