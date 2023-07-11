@@ -243,3 +243,7 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 ### 在线模式 + 指定 query-file
 
 ### 离线模式
+
+## 常见问题
+
+### Table `xxx` doesn't exist
