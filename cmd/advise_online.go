@@ -41,7 +41,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			}
 
 			if !supportHypoIndex(db) {
-				return errors.New("your TiDB version does not support hypothetical indexes")
+				return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
 			}
 			if redactLogEnabled(db) {
 				utils.Warningf("redact log is enabled, the Advisor probably cannot get the full SQL text")

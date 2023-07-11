@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -48,6 +49,10 @@ func NewAdviseOfflineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if !supportHypoIndex(db) {
+				return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
+			}
+
 			skip, dbName, err := loadSchemaIntoCluster(db, opt.schemaPath)
 			if err != nil {
 				return err

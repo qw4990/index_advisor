@@ -19,6 +19,7 @@ type LocalTiDBServer struct {
 }
 
 func (s *LocalTiDBServer) Release() error {
+	Infof("Kill TiDB process pid: %v", s.cmd.Process.Pid)
 	err := s.cmd.Process.Kill()
 	if err != nil {
 		return err
