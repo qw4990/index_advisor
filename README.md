@@ -98,9 +98,15 @@ index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
 The meaning of each parameter is as follows:
 
 - `dsn`: the DSN of the TiDB instance.
-- `query-path`: the path of the query file (optional, if it is specified, the advisor will not read queries from `Statement Summary`), which can be a single file (such as `examples/tpch_example2/queries.sql`) or a folder (such as `examples/tpch_example1/queries`).
 - `max-num-indexes`: the maximum number of recommended indexes.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
+
+There are some parameters can help you filter queries:
+
+- `query-schemas`: the schema names of queries to be analyzed, separated by commas, optional, e.g. `db1,db2`.
+- `query-exec-time-threshold`: the threshold of query execution time(in milliseconds), e.g. `300`, queries that are running longer than this threshold will be considered.
+- `query-exec-count-threshold`: the threshold of query execution count, e.g. `20`, queries that are executed more than this threshold will be considered.
+- `query-path`: use this parameter to specify queries manually, it's the path of the query file (optional, if it is specified, the advisor will not read queries from `Statement Summary`), which can be a single file (such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries)).
 
 ### Output
 
@@ -219,6 +225,8 @@ Below are several queries with significant improvement:
 ![tpcds_query](doc/evaluation_tpcds_1g_query.png)
 
 ### Web3Bench(TODO)
+
+## Usages (TODO)
 
 ## FAQs
 
