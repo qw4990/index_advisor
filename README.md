@@ -84,7 +84,7 @@ The meaning of each parameter is as follows:
 
 In online mode, Index Advisor will directly access your TiDB instance, so you need to ensure the following conditions:
 
-- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used. (See workaround on FAQs if you are using a lower version of TiDB)
+- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used. (See workaround on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature) if you are using a lower version of TiDB)
 - Index Advisor will read the query information from `Statement Summary` (if the query file is not manually specified), so you need to ensure that the `Statement Summary` feature has been enabled and the `tidb_redact_log` feature has been disabled, otherwise the query cannot be obtained from it.
 
 The following is an example of using online mode:
@@ -220,7 +220,7 @@ Below are several queries with significant improvement:
 
 ### Web3Bench(TODO)
 
-## F&Q
+## FAQs
 
 ### Error `your TiDB version does not support hypothetical index feature`
 
