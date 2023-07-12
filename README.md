@@ -10,6 +10,27 @@ Index Advisor is a tool that can automatically recommend indexes based on the wo
 
 Index Advisor is based on the Hypo Index feature of TiDB. This feature allows users to create and maintain a series of hypothetical indexes in the optimizer. These indexes are only maintained in the optimizer and will not be actually created, so the overhead is very low. Combined with the `Explain` statement, you can evaluate the impact of an index on the query plan, and then determine whether the index is valuable.
 
+```
+mysql> create table t (a int);
+mysql> explain format='verbose' select * from t where a=1;
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+| id                      | estRows  | estCost    | task      | access object | operator info                  |
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+| TableReader_7           | 10.00    | 168975.57  | root      |               | data:Selection_6               |
+| └─Selection_6           | 10.00    | 2534000.00 | cop[tikv] |               | eq(test.t.a, 1)                |
+|   └─TableFullScan_5     | 10000.00 | 2035000.00 | cop[tikv] | table:t       | keep order:false, stats:pseudo |
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+
+mysql> create index idx_a type hypo on t (a); -- add a hypo index and see the cost change
+mysql> explain format='verbose' select * from t where a=1;
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+| id                     | estRows | estCost | task      | access object           | operator info                               |
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+| IndexReader_6          | 10.00   | 150.77  | root      |                         | index:IndexRangeScan_5                      |
+| └─IndexRangeScan_5     | 10.00   | 1628.00 | cop[tikv] | table:t, index:idx_a(a) | range:[1,1], keep order:false, stats:pseudo |
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+```
+
 The working principle of Index Advisor is as follows, which can be roughly divided into three steps:
 
 ![overview.png](doc/overview.png)
@@ -26,6 +47,8 @@ Index Advisor provides two ways to use it, which is convenient for offline mode 
 - In offline mode, Index Advisor will not directly access your TiDB instance. It will start a TiDB instance locally, import the data you provide, and then perform index analysis and recommendation.
 
 Generally speaking, online mode is easier to use, but it will directly access your TiDB instance; offline mode is more flexible, but you need to prepare some data in advance.
+
+![online_offline_mode.png](doc/online_offline_mode.png)
 
 ### Offline Mode
 
@@ -61,7 +84,7 @@ The meaning of each parameter is as follows:
 
 In online mode, Index Advisor will directly access your TiDB instance, so you need to ensure the following conditions:
 
-- The TiDB version needs to be higher than v6.5.x or v7.1.x or v7.2, so that the `Hypo Index` feature can be used.
+- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used.
 - Index Advisor will read the query information from `Statement Summary` (if the query file is not manually specified), so you need to ensure that the `Statement Summary` feature has been enabled and the `tidb_redact_log` feature has been disabled, otherwise the query cannot be obtained from it.
 
 The following is an example of using online mode:
@@ -93,19 +116,25 @@ Below is an example of `examples/tpch_example1/output/summary.txt`:
 Total Queries in the workload: 21
 Total number of indexes: 5
   CREATE INDEX idx_l_partkey_l_quantity_l_shipmode ON tpch.lineitem (l_partkey, l_quantity, l_shipmode);
-  CREATE INDEX idx_l_partkey_l_shipdate ON tpch.lineitem (l_partkey, l_shipdate);
+  CREATE INDEX idx_l_partkey_l_shipdate_l_shipmode ON tpch.lineitem (l_partkey, l_shipdate, l_shipmode);
   CREATE INDEX idx_l_suppkey_l_shipdate ON tpch.lineitem (l_suppkey, l_shipdate);
   CREATE INDEX idx_o_custkey_o_orderdate_o_totalprice ON tpch.orders (o_custkey, o_orderdate, o_totalprice);
   CREATE INDEX idx_ps_suppkey_ps_supplycost ON tpch.partsupp (ps_suppkey, ps_supplycost);
 Total original workload cost: 1.37E+10
 Total optimized workload cost: 1.02E+10
 Total cost reduction ratio: 25.22%
-Top 5 queries with the most cost reduction:
+Top 10 queries with the most cost reduction ratio:
   Alias: q22, Cost Reduction Ratio: 1.97E+08->4.30E+06(0.02)
   Alias: q19, Cost Reduction Ratio: 2.89E+08->1.20E+07(0.04)
   Alias: q20, Cost Reduction Ratio: 3.40E+08->4.39E+07(0.13)
   Alias: q17, Cost Reduction Ratio: 8.36E+08->2.00E+08(0.24)
   Alias: q2, Cost Reduction Ratio: 1.35E+08->3.76E+07(0.28)
+  Alias: q5, Cost Reduction Ratio: 7.79E+08->2.51E+08(0.32)
+  Alias: q11, Cost Reduction Ratio: 7.62E+07->2.54E+07(0.33)
+  Alias: q7, Cost Reduction Ratio: 5.99E+08->2.46E+08(0.41)
+  Alias: q14, Cost Reduction Ratio: 2.76E+08->1.17E+08(0.43)
+  Alias: q21, Cost Reduction Ratio: 8.62E+08->4.30E+08(0.50)
+...
 ```
 
 Above is the summary of the recommendation, which contains the recommended indexes, the expected benefits to the entire workload, and the expected benefits of the top 5 queries.
@@ -191,6 +220,21 @@ Below are several queries with significant improvement:
 
 ### Web3Bench(TODO)
 
-## Usages
+## F&Q
 
-TODO
+### Error `your TiDB version does not support hypothetical index feature`
+
+This error occurs when the TiDB version is too low, and the hypothetical index feature is not supported. Please make sure your TiDB version is large or equal to `v7.2`.
+
+A workaround is to use offline-mode with the latest version of TiDB(`-tidb-version='nightly'`), the result is also of high reference value.
+
+### Error `table 'db.t' doesn't exist` on offline-mode
+
+This error is usually caused by the lack of database name in `schema-path`, you can manually add `Use DB` and `Create DB` statements in the schema file:
+
+```sql
+CREATE DATABASE tpch;
+USE tpch;
+CREATE TABLE `customer` (...);
+...
+```

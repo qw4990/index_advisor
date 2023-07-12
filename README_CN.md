@@ -50,7 +50,6 @@ Index Advisor 提供两种使用方式，方便为离线模式和在线模式：
 
 ![online_offline_mode.png](doc/online_offline_mode.png)
 
-
 ### Offline Mode
 
 离线模式需要数据包括：
@@ -260,13 +259,8 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 
 ![tpcds_query](doc/evaluation_tpcds_1g_query.png)
 
-## 用例 (TODO)
 
-### 在线模式
-
-### 在线模式 + 指定 query-file
-
-### 离线模式
+### Web3Bench (TODO)
 
 ## 常见问题
 
