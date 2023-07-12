@@ -58,7 +58,7 @@ Offline mode requires the following data:
   - Folder: such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries), a folder, each file inside is a query.
   - Single file: such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql), which contains multiple query statements separated by semicolons.
 - Schema information file: such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql), which contains the original `create-table` statement separated by semicolons.
-- Statistics information folder: such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats), a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through the TiDB statistics information dump.
+- Statistics information folder: such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats), a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through [the TiDB statistics information dump](https://docs.pingcap.com/tidb/stable/statistics#export-statistics).
 
 After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
 
@@ -74,9 +74,9 @@ index_advisor advise-offline --tidb-version=v7.2.0\
 The meaning of each parameter is as follows:
 
 - `tidb-version`: the TiDB version used. Index Advisor will start an instance of this version of TiDB locally.
-- `query-path`: the path of the query file, which can be a single file (such as `examples/tpch_example2/queries.sql`) or a folder (such as `examples/tpch_example1/queries`).
-- `schema-path`: the path of the schema information file (such as `examples/tpch_example1/schema.sql`).
-- `stats-path`: the path of the statistics information folder (such as `examples/tpch_example1/stats`).
+- `query-path`: the path of the query file, which can be a single file (such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries)).
+- `schema-path`: the path of the schema information file (such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql)).
+- `stats-path`: the path of the statistics information folder (such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats)).
 - `max-num-indexes`: the maximum number of recommended indexes.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
@@ -84,7 +84,7 @@ The meaning of each parameter is as follows:
 
 In online mode, Index Advisor will directly access your TiDB instance, so you need to ensure the following conditions:
 
-- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used.
+- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used. (See workaround on FAQs if you are using a lower version of TiDB)
 - Index Advisor will read the query information from `Statement Summary` (if the query file is not manually specified), so you need to ensure that the `Statement Summary` feature has been enabled and the `tidb_redact_log` feature has been disabled, otherwise the query cannot be obtained from it.
 
 The following is an example of using online mode:
@@ -104,13 +104,13 @@ The meaning of each parameter is as follows:
 
 ### Output
 
-The output of Index Advisor is a folder (such as `examples/tpch_example1/output`), which contains the following files:
+The output of Index Advisor is a folder (such as [`examples/tpch_example1/output`](examples/tpch_example1/output)), which contains the following files:
 
 - `summary.txt`: the summary result, which contains recommended indexes and expected benefits.
 - `ddl.sql`: DDL of all recommended indexes.
 - `q*.txt`: expected benefit of each query in your workload, which contains the plan and plan cost before and after creating these recommended indexes.
 
-Below is an example of `examples/tpch_example1/output/summary.txt`:
+Below is an example of [`examples/tpch_example1/output/summary.txt`](examples/tpch_example1/output/summary.txt):
 
 ```
 Total Queries in the workload: 21
