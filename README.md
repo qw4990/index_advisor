@@ -10,6 +10,8 @@ Index Advisor is a tool that can automatically recommend indexes based on the wo
 
 Index Advisor is based on the Hypo Index feature of TiDB. This feature allows users to create and maintain a series of hypothetical indexes in the optimizer. These indexes are only maintained in the optimizer and will not be actually created, so the overhead is very low. Combined with the `Explain` statement, you can evaluate the impact of an index on the query plan, and then determine whether the index is valuable.
 
+![overview.png](doc/overview.png)
+
 ```
 mysql> create table t (a int);
 mysql> explain format='verbose' select * from t where a=1;
@@ -32,8 +34,6 @@ mysql> explain format='verbose' select * from t where a=1;
 ```
 
 The working principle of Index Advisor is as follows, which can be roughly divided into three steps:
-
-![overview.png](doc/overview.png)
 
 1. Index Advisor collects workload-related table structures, statistics, and related queries from the system tables of the TiDB instance.
 2. Index Advisor generates a series of candidate indexes based on the collected information, and uses Hypo Index to create these indexes.

@@ -10,6 +10,8 @@ Index Advisor 则是一款能根据 TiDB 中的工作负载、统计信息、执
 
 Index Advisor 基于 TiDB 的 Hypo Index 功能实现，此功能允许用户在优化器内创建维护一系列假设索引，这些索引仅仅维护在优化器内部，不会被实际创建，开销很低。再配合 `Explain` 语句，则可以评估某个索引对查询计划的影响，从而判断该索引是否有价值。
 
+![overview.png](doc/overview.png)
+
 ```
 mysql> create table t (a int);
 mysql> explain format='verbose' select * from t where a=1;
@@ -32,8 +34,6 @@ mysql> explain format='verbose' select * from t where a=1;
 ```
 
 Index Advisor 的工作原理如下图，大致可以分为三步：
-
-![overview.png](doc/overview.png)
 
 1. Index Advisor 会从 TiDB 实例的系统表中搜集工作负载相关的表结构、统计信息、相关查询等信息。
 2. Index Advisor 根据搜集到的信息，生成一些列候选的索引，并使用 Hypo Index 创建这些索引。
