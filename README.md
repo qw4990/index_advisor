@@ -41,12 +41,12 @@ The working principle of Index Advisor is as follows, which can be roughly divid
 
 ## How to use it
 
-Index Advisor provides two ways to use it, which is convenient for offline mode and online mode:
+Index Advisor provides two ways to use it, offline mode and online mode:
 
-- In online mode, you don’t need to prepare any data. Index Advisor will directly access your TiDB instance for index analysis and recommendation. During this period, it will read some system table information and create some Hypo Indexes, but it will not modify the data.
+- In online mode, you don’t need to prepare any data. Index Advisor will directly access your TiDB instance for index analysis and recommendation. **During this period, it will read some system table information and create some Hypo Indexes, but it will not modify the data**.
 - In offline mode, Index Advisor will not directly access your TiDB instance. It will start a TiDB instance locally, import the data you provide, and then perform index analysis and recommendation.
 
-Generally speaking, online mode is easier to use, but it will directly access your TiDB instance; offline mode is more flexible, but you need to prepare some data in advance.
+Generally speaking, online mode is easier to use, but it need the privilege to access your online cluster; offline mode is more flexible, but you need to prepare some data in advance.
 
 ![online_offline_mode.png](doc/online_offline_mode.png)
 
@@ -55,10 +55,10 @@ Generally speaking, online mode is easier to use, but it will directly access yo
 Offline mode requires the following data:
 
 - Query file (or folder): can be in the form of a single file or a folder.
-  - Folder: such as `examples/tpch_example1/queries`, a folder, each file inside is a query.
-  - Single file: such as `examples/tpch_example2/queries.sql`, which contains multiple query statements separated by semicolons.
-- Schema information file: such as `examples/tpch_example1/schema.sql`, which contains the original `create-table` statement separated by semicolons.
-- Statistics information folder: such as `examples/tpch_example1/stats`, a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through the TiDB statistics information dump.
+  - Folder: such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries), a folder, each file inside is a query.
+  - Single file: such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql), which contains multiple query statements separated by semicolons.
+- Schema information file: such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql), which contains the original `create-table` statement separated by semicolons.
+- Statistics information folder: such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats), a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through the TiDB statistics information dump.
 
 After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
 
