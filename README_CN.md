@@ -10,6 +10,27 @@ Index Advisor 则是一款能根据 TiDB 中的工作负载、统计信息、执
 
 Index Advisor 基于 TiDB 的 Hypo Index 功能实现，此功能允许用户在优化器内创建维护一系列假设索引，这些索引仅仅维护在优化器内部，不会被实际创建，开销很低。再配合 `Explain` 语句，则可以评估某个索引对查询计划的影响，从而判断该索引是否有价值。
 
+```
+mysql> create table t (a int);
+mysql> explain format='verbose' select * from t where a=1;
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+| id                      | estRows  | estCost    | task      | access object | operator info                  |
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+| TableReader_7           | 10.00    | 168975.57  | root      |               | data:Selection_6               |
+| └─Selection_6           | 10.00    | 2534000.00 | cop[tikv] |               | eq(test.t.a, 1)                |
+|   └─TableFullScan_5     | 10000.00 | 2035000.00 | cop[tikv] | table:t       | keep order:false, stats:pseudo |
++-------------------------+----------+------------+-----------+---------------+--------------------------------+
+
+mysql> create index idx_a type hypo on t (a); -- add a hypo index and see the cost change
+mysql> explain format='verbose' select * from t where a=1;
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+| id                     | estRows | estCost | task      | access object           | operator info                               |
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+| IndexReader_6          | 10.00   | 150.77  | root      |                         | index:IndexRangeScan_5                      |
+| └─IndexRangeScan_5     | 10.00   | 1628.00 | cop[tikv] | table:t, index:idx_a(a) | range:[1,1], keep order:false, stats:pseudo |
++------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
+```
+
 Index Advisor 的工作原理如下图，大致可以分为三步：
 
 ![overview.png](doc/overview.png)
@@ -22,10 +43,13 @@ Index Advisor 的工作原理如下图，大致可以分为三步：
 
 Index Advisor 提供两种使用方式，方便为离线模式和在线模式：
 
-- 在线模式几乎不用你准备任何数据，Index Advisor 会直接访问你的 TiDB 实例进行索引分析和推荐，期间会读取一些系统表信息、创建一些 Hypo Index，但不会对数据有修改。
+- 在线模式几乎你准备任何数据，Index Advisor 会直接访问你的 TiDB 实例进行索引分析和推荐，期间会读取一些系统表信息、创建一些 Hypo Index，但不会对数据有修改。
 - 离线模式 Index Advisor 不会直接访问你的 TiDB 实例，它会在本地启动一个 TiDB 实例，导入你提供的数据，然后进行索引分析和推荐。
 
 在线模式使用上更加简单，但是会直接访问你的 TiDB 实例；离线模式则更加灵活，但是需要你提前准备好一些数据。
+
+![online_offline_mode.png](doc/online_offline_mode.png)
+
 
 ### Offline Mode
 
@@ -61,7 +85,7 @@ index_advisor advise-offline --tidb-version=v7.2.0\
 
 在线模式会直接访问你的 TiDB 实例，需要确保以下条件：
 
-- TiDB 版本需要高于 v6.5.x 或者 v7.1.x 或者 v7.2，才能使用 `Hypo Index` 功能。
+- TiDB 版本需要高于 v7.2，才能使用 `Hypo Index` 功能。
 - Index Advisor 会从 `Statement Summary` 读取查询信息（如果不手动指定查询文件），需要确保 `Statement Summary` 功能已经开启并关闭 `tidb_redact_log` 功能，否则无法从中获取到查询原文。
 
 下面是在线模式的使用示例：
@@ -154,9 +178,9 @@ Sort_37                            1.00         4303914.83     root             
 - 支持的索引宽度最大为 3；
 - 一次最多支持推荐 20 个索引；
 - 根据负载的不同，可能不一定能推荐出 `max-num-indexes` 个数的索引；比如负载特别简单，只能发现少数的有效索引；
-- 在线模式的限制
-  - 对 TiDB 版本有要求（TODO 验证）
-  - redact_log 的要求（TODO）
+- 在线模式的限制：
+  - 对 TiDB 版本有要求，需要大于 v7.2；
+  - 需要关闭 redact_log 功能，否则无法拿到查询原文；
 
 ## 评估
 
@@ -236,7 +260,7 @@ CREATE INDEX idx_ws_sold_date_sk_ws_net_profit ON tpcds.web_sales (ws_sold_date_
 
 ![tpcds_query](doc/evaluation_tpcds_1g_query.png)
 
-## 用例
+## 用例 (TODO)
 
 ### 在线模式
 
