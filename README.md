@@ -183,9 +183,9 @@ This tool has the following restrictions:
 Some explanations:
 
 - We'll integrate this tool into our cloud platform in the future, so it will be more convenient to use.
-- There is another alternative tool for index recommendation in TiDB Clinic, here are their differences:
-  - the tool on Clinic is only for cloud, while this tool can work for both on-premise and cloud.
-  - the tool on Clinic can only recommend indexes for a single query, while this tool can recommend indexes for a
+- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) for index recommendation in TiDB Clinic, here are their differences:
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
     workload.
 
 ## Evaluation
