@@ -1,0 +1,97 @@
+{
+ "is_historical_stats": false,
+ "database_name": "ethereum",
+ "table_name": "token_transfers",
+ "columns": {
+  "block_number": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "from_address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "log_index": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "to_address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "token_address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "transaction_hash": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "value": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501304885258,
+   "correlation": 0,
+   "stats_ver": 0
+  }
+ },
+ "indices": {},
+ "ext_stats": null,
+ "count": 0,
+ "modify_count": 0,
+ "partitions": null,
+ "version": 442664501304885258
+}

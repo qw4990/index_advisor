@@ -1,0 +1,109 @@
+{
+ "is_historical_stats": false,
+ "database_name": "ethereum",
+ "table_name": "logs",
+ "columns": {
+  "address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "block_hash": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "block_number": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "data": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "log_index": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "topics": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "transaction_hash": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "transaction_index": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501186920471,
+   "correlation": 0,
+   "stats_ver": 0
+  }
+ },
+ "indices": {},
+ "ext_stats": null,
+ "count": 0,
+ "modify_count": 0,
+ "partitions": null,
+ "version": 442664501186920471
+}

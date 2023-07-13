@@ -1,0 +1,193 @@
+{
+ "is_historical_stats": false,
+ "database_name": "ethereum",
+ "table_name": "transactions",
+ "columns": {
+  "block_hash": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "block_number": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "block_timestamp": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "from_address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "gas": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "gas_price": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "hash": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "input": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "max_fee_per_gas": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "max_priority_fee_per_gas": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "nonce": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "to_address": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "transaction_index": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "transaction_type": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  },
+  "value": {
+   "histogram": {
+    "ndv": 0
+   },
+   "cm_sketch": null,
+   "fm_sketch": null,
+   "null_count": 0,
+   "tot_col_size": 0,
+   "last_update_version": 442664501383528451,
+   "correlation": 0,
+   "stats_ver": 0
+  }
+ },
+ "indices": {},
+ "ext_stats": null,
+ "count": 0,
+ "modify_count": 0,
+ "partitions": null,
+ "version": 442664501383528451
+}
