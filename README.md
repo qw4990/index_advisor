@@ -27,7 +27,7 @@ The working principle of Index Advisor is as follows, which can be roughly divid
 3. Index Advisor uses `Explain` to evaluate the value of these indexes (whether they can reduce some queries' plan
    costs) and make recommendations.
 
-In our evaluation, it can bring significant performance improvement on these workloads (see [evaluation](#evaluation)):
+In our experiments, it can bring significant performance improvement on these workloads (see [Evaluation](#evaluation)):
 
 ![evaluation_overview.png](doc/evaluation_overview.png)
 
