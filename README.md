@@ -184,7 +184,9 @@ Top 10 queries with the most cost reduction ratio:
 Above is the summary of the recommendation, which contains the recommended indexes, the expected benefits to the entire
 workload, and the expected benefits of the top 5 queries.
 
-### Restrictions
+### Restrictions and Explanations
+
+This tool has the following restrictions:
 
 - It now only recommends secondary indexes, primary keys are not considered.
 - The maximum index width is `3`, so it won't recommend indexes with more than 3 columns.
@@ -194,6 +196,14 @@ workload, and the expected benefits of the top 5 queries.
     - The TiDB Version must be equal or larger than `v7.2`. (see workaround
       on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature)
     - The `tidb_redact_log` must be set to `false`.
+
+Some explanations:
+
+- We'll integrate this tool into our cloud platform in the future, so it will be more convenient to use.
+- There is another alternative tool for index recommendation in TiDB Clinic, here are their differences:
+  - the tool on Clinic is only for cloud, while this tool can work for both on-premise and cloud.
+  - the tool on Clinic can only recommend indexes for a single query, while this tool can recommend indexes for a
+    workload.
 
 ## Evaluation
 
