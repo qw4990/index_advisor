@@ -50,36 +50,6 @@ Generally speaking, online mode is easier to use, but it need the privilege to a
 
 ![online_offline_mode.png](doc/online_offline_mode.png)
 
-### Offline Mode
-
-Offline mode requires the following data:
-
-- Query file (or folder): can be in the form of a single file or a folder.
-  - Folder: such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries), a folder, each file inside is a query.
-  - Single file: such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql), which contains multiple query statements separated by semicolons.
-- Schema information file: such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql), which contains the original `create-table` statement separated by semicolons.
-- Statistics information folder: such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats), a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through [the TiDB statistics information dump](https://docs.pingcap.com/tidb/stable/statistics#export-statistics).
-
-After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
-
-```shell
-index_advisor advise-offline --tidb-version=v7.2.0 \
---query-path=examples/tpch_example1/queries \
---schema-path=examples/tpch_example1/schema.sql \
---stats-path=examples/tpch_example1/stats \
---max-num-indexes=5 \
---output='./data/advise_output'
-```
-
-The meaning of each parameter is as follows:
-
-- `tidb-version`: the TiDB version used. Index Advisor will start an instance of this version of TiDB locally.
-- `query-path`: the path of the query file, which can be a single file (such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries)).
-- `schema-path`: the path of the schema information file (such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql)).
-- `stats-path`: the path of the statistics information folder (such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats)).
-- `max-num-indexes`: the maximum number of recommended indexes.
-- `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
-
 ### Online Mode
 
 In online mode, Index Advisor will directly access your TiDB instance, so you need to ensure the following conditions:
@@ -109,6 +79,36 @@ Below are some optional parameters to help you filter queries:
 - `query-path`: use this parameter to specify queries manually, it's the path of the query file (optional, if it is specified, the advisor will not read queries from `Statement Summary`), which can be a single file (such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries)).
 
 See more examples on [Usages](#usages).
+
+### Offline Mode
+
+Offline mode requires the following data:
+
+- Query file (or folder): can be in the form of a single file or a folder.
+  - Folder: such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries), a folder, each file inside is a query.
+  - Single file: such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql), which contains multiple query statements separated by semicolons.
+- Schema information file: such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql), which contains the original `create-table` statement separated by semicolons.
+- Statistics information folder: such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats), a folder, which stores the statistics information files of related tables. Each statistics information file should be in JSON format and can be downloaded through [the TiDB statistics information dump](https://docs.pingcap.com/tidb/stable/statistics#export-statistics).
+
+After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
+
+```shell
+index_advisor advise-offline --tidb-version=v7.2.0 \
+--query-path=examples/tpch_example1/queries \
+--schema-path=examples/tpch_example1/schema.sql \
+--stats-path=examples/tpch_example1/stats \
+--max-num-indexes=5 \
+--output='./data/advise_output'
+```
+
+The meaning of each parameter is as follows:
+
+- `tidb-version`: the TiDB version used. Index Advisor will start an instance of this version of TiDB locally.
+- `query-path`: the path of the query file, which can be a single file (such as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such as [`examples/tpch_example1/queries`](examples/tpch_example1/queries)).
+- `schema-path`: the path of the schema information file (such as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql)).
+- `stats-path`: the path of the statistics information folder (such as [`examples/tpch_example1/stats`](examples/tpch_example1/stats)).
+- `max-num-indexes`: the maximum number of recommended indexes.
+- `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
 ### Output
 
