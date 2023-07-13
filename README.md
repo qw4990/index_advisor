@@ -18,27 +18,6 @@ the query plan, and then determine whether the index is valuable.
 
 ![overview.png](doc/overview.png)
 
-```
-mysql> create table t (a int);
-mysql> explain format='verbose' select * from t where a=1;
-+-------------------------+----------+------------+-----------+---------------+--------------------------------+
-| id                      | estRows  | estCost    | task      | access object | operator info                  |
-+-------------------------+----------+------------+-----------+---------------+--------------------------------+
-| TableReader_7           | 10.00    | 168975.57  | root      |               | data:Selection_6               |
-| └─Selection_6           | 10.00    | 2534000.00 | cop[tikv] |               | eq(test.t.a, 1)                |
-|   └─TableFullScan_5     | 10000.00 | 2035000.00 | cop[tikv] | table:t       | keep order:false, stats:pseudo |
-+-------------------------+----------+------------+-----------+---------------+--------------------------------+
-
-mysql> create index idx_a type hypo on t (a); -- add a hypo index and see the cost change
-mysql> explain format='verbose' select * from t where a=1;
-+------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
-| id                     | estRows | estCost | task      | access object           | operator info                               |
-+------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
-| IndexReader_6          | 10.00   | 150.77  | root      |                         | index:IndexRangeScan_5                      |
-| └─IndexRangeScan_5     | 10.00   | 1628.00 | cop[tikv] | table:t, index:idx_a(a) | range:[1,1], keep order:false, stats:pseudo |
-+------------------------+---------+---------+-----------+-------------------------+---------------------------------------------+
-```
-
 The working principle of Index Advisor is as follows, which can be roughly divided into three steps:
 
 1. Index Advisor collects workload-related table structures, statistics, and related queries from the system tables of
@@ -47,6 +26,10 @@ The working principle of Index Advisor is as follows, which can be roughly divid
    create these indexes.
 3. Index Advisor uses `Explain` to evaluate the value of these indexes (whether they can reduce some queries' plan
    costs) and make recommendations.
+
+In our evaluation, it can bring significant performance improvement on these workloads (see [evaluation](#evaluation)):
+
+![evaluation_overview.png](doc/evaluation_overview.png)
 
 ## How to use it
 
@@ -290,7 +273,23 @@ Below are several queries with significant improvement:
 
 ![tpcds_query](doc/evaluation_tpcds_1g_query.png)
 
-### Web3Bench(TODO)
+### Web3Bench
+
+The advisor recommends 7 indexes for this workload:
+
+```sql
+CREATE INDEX idx_block_number ON ethereum.receipts (block_number);
+CREATE INDEX idx_from_address_block_number_token_address ON ethereum.token_transfers (from_address, block_number, token_address);
+CREATE INDEX idx_token_address ON ethereum.token_transfers (token_address);
+CREATE INDEX idx_block_number ON ethereum.transactions (block_number);
+CREATE INDEX idx_from_address ON ethereum.transactions (from_address);
+CREATE INDEX idx_hash ON ethereum.transactions (hash);
+CREATE INDEX idx_to_address_block_timestamp_value ON ethereum.transactions (to_address, block_timestamp, `value`);
+```
+
+After creating these indexes, the total workload plan cost is reduced by `-75%`:
+
+![web3bench_total](doc/evaluation_web3bench_total.png)
 
 ## Usages
 
