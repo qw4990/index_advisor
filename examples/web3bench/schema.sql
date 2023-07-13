@@ -1,116 +1,118 @@
 create database ethereum;
 use ethereum;
 
-CREATE TABLE blocks (
-                        number BIGINT,
-                        hash CHAR(66),
-                        parent_hash CHAR(66),
-                        nonce CHAR(18),
-                        sha3_uncles CHAR(66),
-                        logs_bloom VARCHAR(514),
-                        transactions_root CHAR(66),
-                        state_root CHAR(66),
-                        receipts_root CHAR(66),
-                        miner CHAR(42),
-                        difficulty DECIMAL,
-                        total_difficulty DECIMAL,
-                        size BIGINT,
-                        extra_data VARCHAR(2050),
-                        gas_limit BIGINT,
-                        gas_used BIGINT,
-                        timestamp BIGINT,
-                        transaction_count BIGINT,
-                        base_fee_per_gas BIGINT
+CREATE TABLE `blocks` (
+                          `timestamp` bigint(20) DEFAULT NULL,
+                          `number` bigint(20) DEFAULT NULL,
+                          `hash` varchar(66) DEFAULT NULL,
+                          `parent_hash` varchar(66) DEFAULT NULL,
+                          `nonce` varchar(42) DEFAULT NULL,
+                          `sha3_uncles` varchar(66) DEFAULT NULL,
+                          `logs_bloom` text DEFAULT NULL,
+                          `transactions_root` varchar(66) DEFAULT NULL,
+                          `state_root` varchar(66) DEFAULT NULL,
+                          `receipts_root` varchar(66) DEFAULT NULL,
+                          `miner` varchar(42) DEFAULT NULL,
+                          `difficulty` decimal(38,0) DEFAULT NULL,
+                          `total_difficulty` decimal(38,0) DEFAULT NULL,
+                          `size` bigint(20) DEFAULT NULL,
+                          `extra_data` text DEFAULT NULL,
+                          `gas_limit` bigint(20) DEFAULT NULL,
+                          `gas_used` bigint(20) DEFAULT NULL,
+                          `transaction_count` bigint(20) DEFAULT NULL,
+                          `base_fee_per_gas` bigint(20) DEFAULT NULL
 );
 
-CREATE TABLE transactions (
-                              hash CHAR(66),
-                              nonce BIGINT,
-                              block_hash CHAR(66),
-                              block_number BIGINT,
-                              transaction_index BIGINT,
-                              from_address CHAR(42),
-                              to_address CHAR(42),
-                              value DECIMAL,
-                              gas BIGINT,
-                              gas_price BIGINT,
-                              input VARCHAR(2050),
-                              block_timestamp BIGINT,
-                              max_fee_per_gas BIGINT,
-                              max_priority_fee_per_gas BIGINT,
-                              transaction_type BIGINT
+CREATE TABLE `transactions` (
+                                `hash` varchar(66) DEFAULT NULL,
+                                `nonce` bigint(20) DEFAULT NULL,
+                                `block_hash` varchar(66) DEFAULT NULL,
+                                `block_number` bigint(20) DEFAULT NULL,
+                                `transaction_index` bigint(20) DEFAULT NULL,
+                                `from_address` varchar(42) DEFAULT NULL,
+                                `to_address` varchar(42) DEFAULT NULL,
+                                `value` decimal(38,0) DEFAULT NULL,
+                                `gas` bigint(20) DEFAULT NULL,
+                                `gas_price` bigint(20) DEFAULT NULL,
+                                `input` text DEFAULT NULL,
+                                `block_timestamp` bigint(20) DEFAULT NULL,
+                                `max_fee_per_gas` bigint(20) DEFAULT NULL,
+                                `max_priority_fee_per_gas` bigint(20) DEFAULT NULL,
+                                `transaction_type` bigint(20) DEFAULT NULL
 );
 
 
-CREATE TABLE token_transfers (
-                                 token_address CHAR(42),
-                                 from_address CHAR(42),
-                                 to_address CHAR(42),
-                                 value DECIMAL,
-                                 transaction_hash CHAR(66),
-                                 log_index BIGINT,
-                                 block_number BIGINT
+CREATE TABLE `token_transfers` (
+                                   `token_address` varchar(42) DEFAULT NULL,
+                                   `from_address` varchar(42) DEFAULT NULL,
+                                   `to_address` varchar(42) DEFAULT NULL,
+                                   `value` varchar(78) DEFAULT NULL COMMENT 'Postgresql use numeric(78), while the max_value of Decimal is decimal(65), thus use string here',
+                                   `transaction_hash` varchar(66) DEFAULT NULL,
+                                   `log_index` bigint(20) DEFAULT NULL,
+                                   `block_number` bigint(20) DEFAULT NULL
 );
 
-CREATE TABLE receipts (
-                          transaction_hash CHAR(66),
-                          transaction_index BIGINT,
-                          block_hash CHAR(66),
-                          block_number BIGINT,
-                          cumulative_gas_used BIGINT,
-                          gas_used BIGINT,
-                          contract_address CHAR(42),
-                          root CHAR(66),
-                          status BIGINT,
-                          effective_gas_price BIGINT
+
+CREATE TABLE `receipts` (
+                            `transaction_hash` varchar(66) DEFAULT NULL,
+                            `transaction_index` bigint(20) DEFAULT NULL,
+                            `block_hash` varchar(66) DEFAULT NULL,
+                            `block_number` bigint(20) DEFAULT NULL,
+                            `cumulative_gas_used` bigint(20) DEFAULT NULL,
+                            `gas_used` bigint(20) DEFAULT NULL,
+                            `contract_address` varchar(42) DEFAULT NULL,
+                            `root` varchar(66) DEFAULT NULL,
+                            `status` bigint(20) DEFAULT NULL,
+                            `effective_gas_price` bigint(20) DEFAULT NULL
 );
 
-CREATE TABLE logs (
-                      log_index BIGINT,
-                      transaction_hash CHAR(66),
-                      transaction_index BIGINT,
-                      block_hash CHAR(66),
-                      block_number BIGINT,
-                      address CHAR(42),
-                      data VARCHAR(2050),
-                      topics TEXT
+
+CREATE TABLE `logs` (
+                        `log_index` bigint(20) DEFAULT NULL,
+                        `transaction_hash` varchar(66) DEFAULT NULL,
+                        `transaction_index` bigint(20) DEFAULT NULL,
+                        `block_hash` varchar(66) DEFAULT NULL,
+                        `block_number` bigint(20) DEFAULT NULL,
+                        `address` varchar(42) DEFAULT NULL,
+                        `data` text DEFAULT NULL,
+                        `topics` text DEFAULT NULL
 );
 
-CREATE TABLE contracts (
-                           address CHAR(42),
-                           bytecode VARCHAR(2050),
-                           function_sighashes TEXT,
-                           is_erc20 BOOLEAN,
-                           is_erc721 BOOLEAN,
-                           block_number BIGINT
+CREATE TABLE `contracts` (
+                             `address` char(42) DEFAULT NULL,
+                             `bytecode` text DEFAULT NULL,
+                             `function_sighashes` text DEFAULT NULL,
+                             `is_erc20` tinyint(1) DEFAULT NULL,
+                             `is_erc721` tinyint(1) DEFAULT NULL,
+                             `block_number` bigint(20) DEFAULT NULL
 );
 
-CREATE TABLE tokens (
-                        address CHAR(42),
-                        symbol TEXT,
-                        name TEXT,
-                        decimals BIGINT,
-                        total_supply DECIMAL,
-                        block_number BIGINT
+CREATE TABLE `tokens` (
+                          `address` char(42) DEFAULT NULL,
+                          `symbol` text DEFAULT NULL,
+                          `name` text DEFAULT NULL,
+                          `decimals` bigint(20) DEFAULT NULL,
+                          `total_supply` decimal(10,0) DEFAULT NULL,
+                          `block_number` bigint(20) DEFAULT NULL
 );
 
-CREATE TABLE traces (
-                        block_number BIGINT,
-                        transaction_hash CHAR(66),
-                        transaction_index BIGINT,
-                        from_address CHAR(42),
-                        to_address CHAR(42),
-                        value DECIMAL,
-                        input VARCHAR(2050),
-                        output VARCHAR(2050),
-                        trace_type TEXT,
-                        call_type TEXT,
-                        reward_type TEXT,
-                        gas BIGINT,
-                        gas_used BIGINT,
-                        subtraces BIGINT,
-                        trace_address TEXT,
-                        error TEXT,
-                        status BIGINT,
-                        trace_id TEXT
+CREATE TABLE `traces` (
+                          `block_number` bigint(20) DEFAULT NULL,
+                          `transaction_hash` varchar(66) DEFAULT NULL,
+                          `transaction_index` bigint(20) DEFAULT NULL,
+                          `from_address` varchar(42) DEFAULT NULL,
+                          `to_address` varchar(42) DEFAULT NULL,
+                          `value` decimal(38,0) DEFAULT NULL,
+                          `input` text DEFAULT NULL,
+                          `output` text DEFAULT NULL,
+                          `trace_type` varchar(16) DEFAULT NULL,
+                          `call_type` varchar(16) DEFAULT NULL,
+                          `reward_type` varchar(16) DEFAULT NULL,
+                          `gas` bigint(20) DEFAULT NULL,
+                          `gas_used` bigint(20) DEFAULT NULL,
+                          `subtraces` bigint(20) DEFAULT NULL,
+                          `trace_address` text DEFAULT NULL,
+                          `error` text DEFAULT NULL,
+                          `status` bigint(20) DEFAULT NULL,
+                          `trace_id` text DEFAULT NULL
 );

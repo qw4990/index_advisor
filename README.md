@@ -63,7 +63,7 @@ Offline mode requires the following data:
 After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
 
 ```shell
-index_advisor advise-offline --tidb-version=v7.2.0\
+index_advisor advise-offline --tidb-version=v7.2.0 \
 --query-path=examples/tpch_example1/queries \
 --schema-path=examples/tpch_example1/schema.sql \
 --stats-path=examples/tpch_example1/stats \
