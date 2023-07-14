@@ -154,13 +154,6 @@ Top 10 queries with the most cost reduction ratio:
   Alias: q22, Cost Reduction Ratio: 1.97E+08->4.30E+06(0.02)
   Alias: q19, Cost Reduction Ratio: 2.89E+08->1.20E+07(0.04)
   Alias: q20, Cost Reduction Ratio: 3.40E+08->4.39E+07(0.13)
-  Alias: q17, Cost Reduction Ratio: 8.36E+08->2.00E+08(0.24)
-  Alias: q2, Cost Reduction Ratio: 1.35E+08->3.76E+07(0.28)
-  Alias: q5, Cost Reduction Ratio: 7.79E+08->2.51E+08(0.32)
-  Alias: q11, Cost Reduction Ratio: 7.62E+07->2.54E+07(0.33)
-  Alias: q7, Cost Reduction Ratio: 5.99E+08->2.46E+08(0.41)
-  Alias: q14, Cost Reduction Ratio: 2.76E+08->1.17E+08(0.43)
-  Alias: q21, Cost Reduction Ratio: 8.62E+08->4.30E+08(0.50)
 ...
 ```
 
@@ -169,7 +162,17 @@ workload, and the expected benefits of the top 5 queries.
 
 ### Restrictions and Explanations
 
-This tool has the following restrictions:
+Some explanations:
+
+- We'll integrate this tool into our cloud platform in the future to make it more convenient to use.
+- This tool can work for both a new system (no indexes) and an existing system.
+- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
+    workload.
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) works as a diagnostic tool triggered by slow queries, while this is a physical database design tool.
+
+Below are some restrictions:
 
 - It now only recommends secondary indexes, primary keys are not considered.
 - The maximum index width is `3`, so it won't recommend indexes with more than 3 columns.
@@ -179,15 +182,6 @@ This tool has the following restrictions:
     - The TiDB Version must be equal or larger than `v7.2`. (see workaround
       on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature)
     - The `tidb_redact_log` must be set to `false`.
-
-Some explanations:
-
-- We'll integrate this tool into our cloud platform in the future, so it will be more convenient to use.
-- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
-    workload.
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) works as a diagnostic tool triggered by slow queries, while this is a physical database design tool.
 
 ## Evaluation
 
