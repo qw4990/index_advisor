@@ -1,12 +1,12 @@
-# Index Advisor
+# TiDB Index Advisor (Beta)
 
-## Introcution
+## Introduction
 
 Index selection is an important part of database performance tuning. However, it is a complex and time-consuming task.
 Even experienced experts can hardly guarantee to find the best index scheme accurately and quickly when facing a complex
 workload containing dozens or even hundreds of tables and thousands of SQLs.
 
-Index Advisor is a tool that can automatically recommend indexes based on the workload, statistics, and execution plan
+TiDB Index Advisor (beta) is a tool that can automatically recommend indexes based on the workload, statistics, and execution plan
 cost in TiDB, which can greatly reduce the workload of index maintenance in performance tuning.
 
 ## How it works
@@ -183,10 +183,11 @@ This tool has the following restrictions:
 Some explanations:
 
 - We'll integrate this tool into our cloud platform in the future, so it will be more convenient to use.
-- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) for index recommendation in TiDB Clinic, here are their differences:
+- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
   - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
   - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
     workload.
+  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) works as a diagnostic tool triggered by slow queries, while this is a physical database design tool.
 
 ## Evaluation
 
