@@ -22,6 +22,7 @@ type adviseOfflineCmdOpt struct {
 	queryPath    string
 	schemaPath   string
 	statsPath    string
+	dirPath      string
 	output       string
 	costModelVer string
 	qWhiteList   string
@@ -37,6 +38,19 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
+
+			if opt.dirPath != "" {
+				opt.schemaPath = path.Join(opt.dirPath, "schema.sql")
+				opt.statsPath = path.Join(opt.dirPath, "stats")
+				opt.queryPath = path.Join(opt.dirPath, "queries")
+				if exist, isDir := utils.FileExists(opt.queryPath); exist && isDir {
+				} else {
+					opt.queryPath = path.Join(opt.dirPath, "queries.sql")
+				}
+				utils.Infof("use schema path: %s", opt.schemaPath)
+				utils.Infof("use stats path: %s", opt.statsPath)
+				utils.Infof("use query path: %s", opt.queryPath)
+			}
 
 			s, err := utils.StartLocalTiDBServer(opt.tidbVersion)
 			if err != nil {
@@ -108,7 +122,8 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.tidbVersion, "tidb-version", "nightly", "tidb version, one of 'nightly', 'v7.1.0', 'v6.5.1'")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path, e.g. './examples/tpch_example1/queries' or 'examples/tpch_example2/query.sql'")
 	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path, e.g. './examples/tpch_example1/schema.sql'")
-	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats''")
+	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats'")
+	cmd.Flags().StringVar(&opt.dirPath, "dir-path", "", "(optional) the dictionary path that contains queries, schema and stats, e.g. './examples/tpch_example1'")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result, e.g. './output'")
 	cmd.Flags().StringVar(&opt.costModelVer, "cost-model-ver", "2", "cost model version, 1 or 2")
 
