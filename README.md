@@ -59,10 +59,12 @@ In online mode, Index Advisor will directly access your TiDB instance, so you ne
   so you need to ensure that the `Statement Summary` feature has been enabled and the `tidb_redact_log` feature has been
   disabled, otherwise the query cannot be obtained from it.
 
+You can use `index_advisor precheck --dsn='root:@tcp(127.0.0.1:4000)'` to check whether your cluster can meet the above conditions.
+
 The following is an example of using online mode:
 
 ```
-index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
+index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)' \
 --max-num-indexes=5 \
 --output='./data/advise_output'
 ```
@@ -127,6 +129,8 @@ The meaning of each parameter is as follows:
 - `max-num-indexes`: the maximum number of recommended indexes, default `5`.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
+To simplify, you can also put all required files on the same directory, and then just use `--dir-path=examples/tpch_example1`.
+
 ### Output
 
 The output of Index Advisor is a folder (such as [`examples/tpch_example1/output`](examples/tpch_example1/output)),
@@ -164,8 +168,11 @@ workload, and the expected benefits of the top 5 queries.
 
 Some explanations:
 
-- We'll integrate this tool into our cloud platform in the future to make it more convenient to use.
-- This tool can work for both a new system (no indexes) and an existing system.
+- We'll integrate this tool into our cloud platform in the future to make it more convenient to use on cloud.
+- This tool considers secondary indexes with 1, 2 and 3 columns.
+- This tool can work for both new systems (no indexes) and existing systems. For existing systems, it will not recommend
+  indexes that already exist.
+- Usually, this tool takes a few minutes to finish the recommendation.
 - There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
   - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
   - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
@@ -174,8 +181,7 @@ Some explanations:
 
 Below are some restrictions:
 
-- It now only recommends secondary indexes, primary keys are not considered.
-- The maximum index width is `3`, so it won't recommend indexes with more than 3 columns.
+- It cannot recommend primary keys and indexes with more than 3 columns.
 - The maximum number of indexes to recommend at a time is `20`.
 - If the target workload is too simple, it may not recommend the `max-num-indexes` indexes.
 - Restrictions of Online Mode:
