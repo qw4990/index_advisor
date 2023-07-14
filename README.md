@@ -6,7 +6,7 @@ Index selection is an important part of database performance tuning. However, it
 Even experienced experts can hardly guarantee to find the best index scheme accurately and quickly when facing a complex
 workload containing dozens or even hundreds of tables and thousands of SQLs.
 
-TiDB Index Advisor (beta) is a tool that can automatically recommend indexes based on the workload, statistics, and execution plan
+TiDB Index Advisor (beta) is a command-line tool that can automatically recommend indexes based on the workload, statistics, and execution plan
 cost in TiDB, which can greatly reduce the workload of index maintenance in performance tuning.
 
 ## How it works
@@ -70,7 +70,7 @@ index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
 The meaning of each parameter is as follows:
 
 - `dsn`: the DSN of the TiDB instance.
-- `max-num-indexes`: the maximum number of recommended indexes.
+- `max-num-indexes`: the maximum number of recommended indexes, default `5`.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
 Below are some optional parameters to help you filter queries:
@@ -124,7 +124,7 @@ The meaning of each parameter is as follows:
   as [`examples/tpch_example1/schema.sql`](examples/tpch_example1/schema.sql)).
 - `stats-path`: the path of the statistics information folder (such
   as [`examples/tpch_example1/stats`](examples/tpch_example1/stats)).
-- `max-num-indexes`: the maximum number of recommended indexes.
+- `max-num-indexes`: the maximum number of recommended indexes, default `5`.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
 ### Output
