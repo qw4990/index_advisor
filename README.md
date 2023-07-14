@@ -33,7 +33,7 @@ In our experiments, it can bring significant performance improvement on these wo
 
 ## How to use it
 
-Index Advisor provides two ways to use it, offline mode and online mode:
+TiDB Index Advisor provides two ways to use it, offline mode and online mode:
 
 - In online mode, you don’t need to prepare any data. Index Advisor will directly access your TiDB instance for index
   analysis and recommendation. **During this period, it will read some system table information and create some Hypo
@@ -47,6 +47,16 @@ Generally speaking:
 - Offline mode is more flexible, but you need to prepare some data in advance.
 
 ![online_offline_mode.png](doc/online_offline_mode.png)
+
+### Installation
+
+If you are going to use the offline-mode, you need to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview) first. Please use the following command to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview):
+
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+```
+
+TODO:
 
 ### Online Mode
 
