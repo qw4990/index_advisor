@@ -115,10 +115,10 @@ func CollectTableNamesFromSQL(defaultSchemaName, sqlText string) (Set[TableName]
 }
 
 // CollectTableNamesFromQueries returns all referenced table names in the given queries.
-func CollectTableNamesFromQueries(defaultSchemaName string, queries Set[Query]) (Set[TableName], error) {
+func CollectTableNamesFromQueries(queries Set[Query]) (Set[TableName], error) {
 	tableNames := NewSet[TableName]()
 	for _, q := range queries.ToList() {
-		names, err := CollectTableNamesFromSQL(defaultSchemaName, q.Text)
+		names, err := CollectTableNamesFromSQL(q.SchemaName, q.Text)
 		if err != nil {
 			return nil, err
 		}

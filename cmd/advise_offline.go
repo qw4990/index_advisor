@@ -78,7 +78,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
 			}
 
-			tableNames, err := utils.CollectTableNamesFromQueries(dbName, queries)
+			tableNames, err := utils.CollectTableNamesFromQueries(queries)
 			if err != nil {
 				return err
 			}

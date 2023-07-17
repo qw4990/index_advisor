@@ -61,7 +61,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			tableNames, err := utils.CollectTableNamesFromQueries(dbName, queries)
+			tableNames, err := utils.CollectTableNamesFromQueries(queries)
 			if err != nil {
 				return err
 			}
