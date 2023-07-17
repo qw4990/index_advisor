@@ -92,7 +92,7 @@ CREATE TABLE `tokens` (
                           `symbol` text DEFAULT NULL,
                           `name` text DEFAULT NULL,
                           `decimals` bigint(20) DEFAULT NULL,
-                          `total_supply` decimal(10,0) DEFAULT NULL,
+                          `total_supply` decimal(38,0) DEFAULT NULL,
                           `block_number` bigint(20) DEFAULT NULL
 );
 
