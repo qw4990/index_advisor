@@ -38,6 +38,14 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
+			s, db, err := startTiDBAndPreCheck(opt.tidbVersion)
+			if s != nil {
+				defer s.Release()
+			}
+			if err != nil {
+				return err
+			}
+
 			if opt.dirPath != "" {
 				opt.schemaPath = path.Join(opt.dirPath, "schema.sql")
 				opt.statsPath = path.Join(opt.dirPath, "stats")
@@ -49,21 +57,6 @@ func NewAdviseOfflineCmd() *cobra.Command {
 				utils.Infof("use schema path: %s", opt.schemaPath)
 				utils.Infof("use stats path: %s", opt.statsPath)
 				utils.Infof("use query path: %s", opt.queryPath)
-			}
-
-			s, err := utils.StartLocalTiDBServer(opt.tidbVersion)
-			if err != nil {
-				return err
-			}
-			defer s.Release()
-
-			utils.Infof("connect to %s", s.DSN())
-			db, err := optimizer.NewTiDBWhatIfOptimizer(s.DSN()) // the DB may not exist yet
-			if err != nil {
-				return err
-			}
-			if err := PreCheck(db); err != nil {
-				return err
 			}
 
 			dbName, err := loadSchemaIntoCluster(db, opt.schemaPath)
@@ -130,6 +123,23 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opt.qBlackList, "query-black-list", "", "queries to ignore, e.g. 'q5,q12'")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
+}
+
+func startTiDBAndPreCheck(ver string) (*utils.LocalTiDBServer, optimizer.WhatIfOptimizer, error) {
+	s, err := utils.StartLocalTiDBServer(ver)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	utils.Infof("connect to %s", s.DSN())
+	db, err := optimizer.NewTiDBWhatIfOptimizer(s.DSN()) // the DB may not exist yet
+	if err != nil {
+		return s, nil, err
+	}
+	if err := PreCheck(db); err != nil {
+		return s, db, err
+	}
+	return s, db, nil
 }
 
 func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, savePath string) error {
