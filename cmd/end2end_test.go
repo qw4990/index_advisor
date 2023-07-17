@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -117,6 +118,21 @@ func TestOnlineModeCrossDBQuery(t *testing.T) {
 	})
 	must(err)
 	checkAdviseResult(result, []string{"CREATE INDEX idx_a_b ON db1.t1 (a, b)"})
+
+	result, _, _, err = adviseOnlineMode(adviseOnlineCmdOpt{
+		maxNumIndexes:           5,
+		maxIndexWidth:           3,
+		dsn:                     server.DSN(),
+		output:                  "",
+		logLevel:                "info",
+		querySchemas:            []string{"db1", "db2"},
+		queryExecTimeThreshold:  0,
+		queryExecCountThreshold: 0,
+		queryPath:               "",
+	})
+	must(err)
+	checkAdviseResult(result, []string{"CREATE INDEX idx_a_b ON db1.t1 (a, b)",
+		"CREATE INDEX idx_b ON db2.t2 (b)"})
 }
 
 func checkAdviseResult(result utils.Set[utils.Index], expected []string) {
@@ -128,5 +144,5 @@ func checkAdviseResult(result utils.Set[utils.Index], expected []string) {
 	sort.Strings(expected)
 	gotStr := strings.Join(got, "; ")
 	expStr := strings.Join(expected, "; ")
-	mustTrue(gotStr == expStr, gotStr, expStr)
+	mustTrue(gotStr == expStr, fmt.Sprintf("got %s, expected %s", gotStr, expStr))
 }
