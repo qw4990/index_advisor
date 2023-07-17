@@ -44,20 +44,20 @@ func prepareTestIndexSelectionAAEnd2End(db optimizer.WhatIfOptimizer, schema str
 }
 
 func TestIndexSelectionEnd2End(t *testing.T) {
-	dsn := "root:@tcp(127.0.0.1:4000)/"
+	server, err := utils.StartLocalTiDBServer("nightly")
+	must(err)
+	defer server.Release()
+	dsn := server.DSN()
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	must(err)
 
-	prepareData := false
-	schema := "test_aa"
+	schema := "test"
 	createTableStmts := []string{
 		`create table t1 (a int)`,
 		`create table t2 (a int, b int)`,
 		`create table t3 (a int, b int, c int)`,
 	}
-	if prepareData {
-		prepareTestIndexSelectionAAEnd2End(db, schema, createTableStmts, 3000)
-	}
+	prepareTestIndexSelectionAAEnd2End(db, schema, createTableStmts, 3000)
 
 	type aaCase struct {
 		queries []string
@@ -131,6 +131,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		actual := strings.Join(resultKeys, ",")
 		if expected != actual {
 			t.Errorf("case: %v, expected: %v, actual: %v, query: %v", i, expected, actual, c.queries)
+			break
 		}
 	}
 }
