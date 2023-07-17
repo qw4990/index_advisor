@@ -39,49 +39,23 @@ func NewAdviseOnlineCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
 			if err := PreCheck(db); err != nil {
 				return err
 			}
 
-			var queries utils.Set[utils.Query]
-			_, dbName := utils.GetDBNameFromDSN(opt.dsn)
-			if opt.queryPath != "" {
-				queries, err = readQueriesFromStatementSummary(db, opt)
-				if err != nil {
-					return err
-				}
-			} else {
-				queries, err = utils.LoadQueries(dbName, opt.queryPath)
-				if err != nil {
-					return err
-				}
-			}
-			queries, err = filterSQLAccessingSystemTables(queries)
+			info, err := prepareWorkloadOnlineMode(db, opt)
 			if err != nil {
 				return err
-			}
-			tableNames, err := utils.CollectTableNamesFromQueries(queries)
-			if err != nil {
-				return err
-			}
-			tables, err := getTableSchemas(db, tableNames)
-			if err != nil {
-				return err
-			}
-			info := utils.WorkloadInfo{
-				Queries:      queries,
-				TableSchemas: tables,
 			}
 
-			indexes, err := advisor.IndexAdvise(db, info, advisor.Parameter{
+			indexes, err := advisor.IndexAdvise(db, *info, advisor.Parameter{
 				MaxNumberIndexes: opt.maxNumIndexes,
 				MaxIndexWidth:    opt.maxIndexWidth,
 			})
 			if err != nil {
 				return err
 			}
-			return outputAdviseResult(indexes, info, db, opt.output)
+			return outputAdviseResult(indexes, *info, db, opt.output)
 		},
 	}
 
@@ -97,6 +71,42 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.queryExecCountThreshold, "query-exec-count-threshold", 0, "the threshold of query execution count, e.g. '20', queries that are executed more than this threshold will be considered")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "the path that contains queries, e.g. 'queries.sql', if this variable is specified, the above variables like 'query-*' will be ignored")
 	return cmd
+}
+
+func prepareWorkloadOnlineMode(db optimizer.WhatIfOptimizer, opt adviseOnlineCmdOpt) (*utils.WorkloadInfo, error) {
+	var err error
+	var queries utils.Set[utils.Query]
+	if opt.queryPath != "" {
+		queries, err = readQueriesFromStatementSummary(db, opt)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, dbName := utils.GetDBNameFromDSN(opt.dsn)
+		if dbName == "" {
+			return nil, errors.New("database name is not specified in DSN")
+		}
+		queries, err = utils.LoadQueries(dbName, opt.queryPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	queries, err = filterSQLAccessingSystemTables(queries)
+	if err != nil {
+		return nil, err
+	}
+	tableNames, err := utils.CollectTableNamesFromQueries(queries)
+	if err != nil {
+		return nil, err
+	}
+	tables, err := getTableSchemas(db, tableNames)
+	if err != nil {
+		return nil, err
+	}
+	return &utils.WorkloadInfo{
+		Queries:      queries,
+		TableSchemas: tables,
+	}, nil
 }
 
 func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, opt adviseOnlineCmdOpt) (utils.Set[utils.Query], error) {
