@@ -18,17 +18,21 @@ func NewPreCheckCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			if !supportHypoIndex(db) {
-				return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
-			}
-			if redactLogEnabled(db) {
-				return errors.New("redact log is enabled, the Advisor probably cannot get the full SQL text")
-			}
-			return nil
+			return PreCheck(db)
 		},
 	}
 
 	cmd.Flags().StringVar(&dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "the DSN of the TiDB cluster")
 	return cmd
+}
+
+// PreCheck checks whether this cluster is suitable for online-mode.
+func PreCheck(db optimizer.WhatIfOptimizer) error {
+	if !supportHypoIndex(db) {
+		return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
+	}
+	if redactLogEnabled(db) {
+		return errors.New("redact log is enabled, the Advisor probably cannot get the full SQL text")
+	}
+	return nil
 }
