@@ -95,9 +95,9 @@ Below are some optional parameters to help you filter queries:
 
 - `query-schemas`: the schema names of queries to be analyzed, separated by commas, optional, e.g. `db1,db2`.
 - `query-exec-time-threshold`: the threshold of query execution time(in milliseconds), e.g. `300`, queries that are
-  running longer than this threshold will be considered.
+  running longer than or equal to this threshold will be considered.
 - `query-exec-count-threshold`: the threshold of query execution count, e.g. `20`, queries that are executed more than
-  this threshold will be considered.
+  or equal to this threshold will be considered.
 - `query-path`: use this parameter to specify queries manually, it's the path of the query file (optional, if it is
   specified, the advisor will not read queries from `Statement Summary`), which can be a single file (such
   as [`examples/tpch_example2/queries.sql`](examples/tpch_example2/queries.sql)) or a folder (such

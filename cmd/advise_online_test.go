@@ -22,11 +22,21 @@ func TestReadQueries(t *testing.T) {
 	}()
 	must(db.Execute(`use read_queries_test`))
 	must(db.Execute(`create table t1 (a int)`))
+	must(db.Execute(`insert into t1 values (1)`))
 
 	queries := []string{
 		`select * from t1`,
 		`select * from t1 where a in (1, 2, 3)`,
 		`select * from t1 where a > 10`,
+
+		`select a+1 from t1`,
+		`select a+1 from t1`,
+
+		`select a from t1`,
+		`select a from t1`,
+		`select a from t1`,
+
+		`select a, sleep(1) from t1`,
 	}
 	for _, q := range queries {
 		must(db.Execute(q))
@@ -35,16 +45,28 @@ func TestReadQueries(t *testing.T) {
 	must(db.Execute(`select * from information_schema.statements_summary`))
 	must(db.Execute(`use mysql`))
 	must(db.Execute(`select * from bind_info`))
-	sqls, _ := readQueriesFromStatementSummary(db, adviseOnlineCmdOpt{querySchemas: []string{"read_queries_test"}})
-	sqls, _ = filterSQLAccessingSystemTables(sqls)
-	if sqls.Size() != len(queries) {
-		t.Fatalf("expect %+v, got %+v", queries, sqls)
-	}
-	for _, q := range queries {
-		if !sqls.Contains(utils.Query{Text: q}) {
-			t.Fatalf("expect %+v, got %+v", queries, sqls)
+
+	check := func(expected []string, opt adviseOnlineCmdOpt) {
+		sqls, _ := readQueriesFromStatementSummary(db, opt)
+		sqls, _ = filterSQLAccessingSystemTables(sqls)
+		if sqls.Size() != len(expected) {
+			t.Fatalf("expect %+v, got %+v", expected, sqls)
+		}
+		for _, q := range expected {
+			if !sqls.Contains(utils.Query{Text: q}) {
+				t.Fatalf("expect %+v, got %+v", expected, sqls)
+			}
 		}
 	}
+
+	check([]string{`select * from t1`, `select * from t1 where a in (1, 2, 3)`, `select a+1 from t1`,
+		`select * from t1 where a > 10`, `select a from t1`, `select a, sleep(1) from t1`},
+		adviseOnlineCmdOpt{querySchemas: []string{"read_queries_test"}})
+
+	check([]string{`select a+1 from t1`, `select a from t1`},
+		adviseOnlineCmdOpt{querySchemas: []string{"read_queries_test"}, queryExecCountThreshold: 2})
+	check([]string{`select a from t1`},
+		adviseOnlineCmdOpt{querySchemas: []string{"read_queries_test"}, queryExecCountThreshold: 3})
 }
 
 func TestReadTableSchemas(t *testing.T) {

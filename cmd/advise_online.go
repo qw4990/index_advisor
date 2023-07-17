@@ -107,10 +107,10 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, opt adviseOnl
 	}
 	condition = append(condition, fmt.Sprintf("SCHEMA_NAME in ('%s')", strings.Join(opt.querySchemas, "', '")))
 	if opt.queryExecTimeThreshold > 0 {
-		condition = append(condition, fmt.Sprintf("AVG_LATENCY > %v", opt.queryExecTimeThreshold*1000))
+		condition = append(condition, fmt.Sprintf("AVG_LATENCY >= %v", opt.queryExecTimeThreshold*1000))
 	}
 	if opt.queryExecCountThreshold > 0 {
-		condition = append(condition, fmt.Sprintf("EXEC_COUNT > %v", opt.queryExecCountThreshold))
+		condition = append(condition, fmt.Sprintf("EXEC_COUNT >= %v", opt.queryExecCountThreshold))
 	}
 
 	s := utils.NewSet[utils.Query]()
