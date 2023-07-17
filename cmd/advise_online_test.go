@@ -11,6 +11,7 @@ import (
 func TestReadQueries(t *testing.T) {
 	server, err := utils.StartLocalTiDBServer("nightly")
 	must(err)
+	defer server.Release()
 	dsn := server.DSN()
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	must(err)
@@ -70,7 +71,10 @@ func TestReadQueries(t *testing.T) {
 }
 
 func TestReadTableSchemas(t *testing.T) {
-	dsn := "root:@tcp(127.0.0.1:4000)/test"
+	server, err := utils.StartLocalTiDBServer("nightly")
+	must(err)
+	defer server.Release()
+	dsn := server.DSN()
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	must(err)
 
@@ -93,7 +97,10 @@ func TestReadTableSchemas(t *testing.T) {
 }
 
 func TestReadTableNames(t *testing.T) {
-	dsn := "root:@tcp(127.0.0.1:4000)/test"
+	server, err := utils.StartLocalTiDBServer("nightly")
+	must(err)
+	defer server.Release()
+	dsn := server.DSN()
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	must(err)
 
