@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -124,5 +125,11 @@ func TestReadTableNames(t *testing.T) {
 func must(err error) {
 	if err != nil {
 		panic(err)
+	}
+}
+
+func mustTrue(b bool, args ...interface{}) {
+	if !b {
+		panic(fmt.Sprintf("%v", args))
 	}
 }

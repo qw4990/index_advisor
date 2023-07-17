@@ -34,24 +34,7 @@ func NewAdviseOnlineCmd() *cobra.Command {
 		Long:  `advise some indexes for the specified workload`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
-
-			db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
-			if err != nil {
-				return err
-			}
-			if err := PreCheck(db); err != nil {
-				return err
-			}
-
-			info, err := prepareWorkloadOnlineMode(db, opt)
-			if err != nil {
-				return err
-			}
-
-			indexes, err := advisor.IndexAdvise(db, *info, advisor.Parameter{
-				MaxNumberIndexes: opt.maxNumIndexes,
-				MaxIndexWidth:    opt.maxIndexWidth,
-			})
+			indexes, info, db, err := adviseOnlineMode(opt)
 			if err != nil {
 				return err
 			}
@@ -73,13 +56,37 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	return cmd
 }
 
+func adviseOnlineMode(opt adviseOnlineCmdOpt) (utils.Set[utils.Index], *utils.WorkloadInfo, optimizer.WhatIfOptimizer, error) {
+	db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := PreCheck(db); err != nil {
+		return nil, nil, nil, err
+	}
+
+	info, err := prepareWorkloadOnlineMode(db, opt)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	result, err := advisor.IndexAdvise(db, *info, advisor.Parameter{
+		MaxNumberIndexes: opt.maxNumIndexes,
+		MaxIndexWidth:    opt.maxIndexWidth,
+	})
+	return result, info, db, err
+}
+
 func prepareWorkloadOnlineMode(db optimizer.WhatIfOptimizer, opt adviseOnlineCmdOpt) (*utils.WorkloadInfo, error) {
 	var err error
 	var queries utils.Set[utils.Query]
-	if opt.queryPath != "" {
+	if opt.queryPath == "" {
 		queries, err = readQueriesFromStatementSummary(db, opt)
 		if err != nil {
 			return nil, err
+		}
+		if queries.Size() == 0 {
+			return nil, errors.New("no queries are found")
 		}
 	} else {
 		_, dbName := utils.GetDBNameFromDSN(opt.dsn)
@@ -113,7 +120,7 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, opt adviseOnl
 	var condition []string
 	condition = append(condition, "stmt_type='Select'")
 	if len(opt.querySchemas) == 0 {
-		return nil, errors.New("query-schemas is required")
+		return nil, errors.New("query-schemas is not specified")
 	}
 	condition = append(condition, fmt.Sprintf("SCHEMA_NAME in ('%s')", strings.Join(opt.querySchemas, "', '")))
 	if opt.queryExecTimeThreshold > 0 {
