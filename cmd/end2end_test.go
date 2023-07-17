@@ -80,8 +80,7 @@ func TestOnlineModeSimple(t *testing.T) {
 		queryPath:               "",
 	})
 	must(err)
-	mustTrue(result.Size() == 1)
-	mustTrue(result.ToList()[0].DDL() == "CREATE INDEX idx_a_b ON test.t (a, b)")
+	checkAdviseResult(result, []string{"CREATE INDEX idx_a_b ON test.t (a, b)"})
 }
 
 func TestOnlineModeCrossDBQuery(t *testing.T) {
