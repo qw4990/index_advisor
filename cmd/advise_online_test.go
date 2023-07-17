@@ -9,7 +9,9 @@ import (
 )
 
 func TestReadQueries(t *testing.T) {
-	dsn := "root:@tcp(127.0.0.1:4000)/test"
+	server, err := utils.StartLocalTiDBServer("nightly")
+	must(err)
+	dsn := server.DSN()
 	db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 	must(err)
 
@@ -33,7 +35,7 @@ func TestReadQueries(t *testing.T) {
 	must(db.Execute(`select * from information_schema.statements_summary`))
 	must(db.Execute(`use mysql`))
 	must(db.Execute(`select * from bind_info`))
-	sqls, _ := readQueriesFromStatementSummary(db, []string{"read_queries_test"})
+	sqls, _ := readQueriesFromStatementSummary(db, adviseOnlineCmdOpt{querySchemas: []string{"read_queries_test"}})
 	sqls, _ = filterSQLAccessingSystemTables(sqls)
 	if sqls.Size() != len(queries) {
 		t.Fatalf("expect %+v, got %+v", queries, sqls)
