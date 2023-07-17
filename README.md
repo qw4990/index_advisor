@@ -308,6 +308,10 @@ After creating these indexes, the total workload plan cost is reduced by `-75%`:
 
 ![web3bench_total](doc/evaluation_web3bench_total.png)
 
+Below are several queries with significant improvement:
+
+![web3bench_query](doc/evaluation_web3bench_query.png)
+
 ## Usages
 
 ### Specify query file manually on online-mode
