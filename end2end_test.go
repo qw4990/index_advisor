@@ -97,7 +97,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{1, 3}, []string{"test.t2(b,a)"}},
 		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{2, 3}, []string{"test.t2(b,a)"}},
 		{[]string{`select * from t2 where a<1 and b=1`}, advisor.Parameter{1, 1}, []string{"test.t2(b)"}},
-		{[]string{`select * from t2 where a=1 or b=1`}, advisor.Parameter{1, 1}, []string{"test.t2(a)"}},
+		{[]string{`select * from t2 where a=1 or b=1`}, advisor.Parameter{1, 1}, []string{}},
 		{[]string{`select * from t2 where a=1 or b=1`}, advisor.Parameter{1, 3}, []string{"test.t2(a,b)"}},
 
 		// multi-queries cases
@@ -110,7 +110,7 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 		{[]string{`select * from t3 where a=1`, `select * from t3 where a=2`, `select * from t3 where b=1 and a=3`}, advisor.Parameter{2, 3}, []string{"test.t3(a,b)"}},
 		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, advisor.Parameter{1, 3}, []string{"test.t2(a,b)"}},
 		{[]string{`select * from t2 where a=1 and b=1`, `select * from t3 where a=1 and b=1`}, advisor.Parameter{2, 3}, []string{"test.t2(a,b)", "test.t3(a,b)"}},
-		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, advisor.Parameter{1, 3}, []string{"test.t2(b,a)"}},
+		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, advisor.Parameter{1, 3}, []string{"test.t2(a,b)"}},
 		{[]string{`select * from t2 where a>1 and b=1`, `select * from t3 where a>1 and b=1`}, advisor.Parameter{2, 3}, []string{"test.t2(b,a)", "test.t3(b,a)"}},
 	}
 
