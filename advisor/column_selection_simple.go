@@ -50,14 +50,13 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 	case *ast.ColumnNameExpr:
 		v.collectColumn(x.Name)
 	case *ast.ColumnName:
-		var schemaName, tableName, colName string
+		var schemaName string
 		if x.Schema.L != "" {
 			schemaName = x.Schema.L
 		} else {
 			schemaName = v.currentSQL.SchemaName
 		}
-		colName = x.Name.L
-		possibleColumns, err := v.matchPossibleColumns(schemaName, colName)
+		possibleColumns, err := v.matchPossibleColumns(schemaName, x.Name.L)
 		if err != nil {
 			// TODO: log or return this error?
 		}
@@ -68,10 +67,8 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 			if !v.checkColumnIndexableByType(c) {
 				continue
 			}
-			tableName = c.TableName
-			col := utils.NewColumn(schemaName, tableName, colName)
-			v.cols.Add(col)
-			v.currentCols.Add(col)
+			v.cols.Add(c)
+			v.currentCols.Add(c)
 		}
 	}
 }
@@ -91,8 +88,8 @@ func (v *simpleIndexableColumnsVisitor) checkColumnIndexableByType(c utils.Colum
 	return false
 }
 
-func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnName string) (cols []utils.Column, err error) {
-	relatedTableNames, err := utils.CollectTableNamesFromSQL(schemaName, v.currentSQL.Text)
+func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(defaultSchemaName, columnName string) (cols []utils.Column, err error) {
+	relatedTableNames, err := utils.CollectTableNamesFromSQL(defaultSchemaName, v.currentSQL.Text)
 	if err != nil {
 		return nil, err
 	}
