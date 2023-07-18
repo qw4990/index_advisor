@@ -97,7 +97,7 @@ func (v *simpleIndexableColumnsVisitor) matchPossibleColumns(schemaName, columnN
 		return nil, err
 	}
 	for _, table := range v.tables.ToList() {
-		if table.SchemaName != schemaName || !relatedTableNames.Contains(utils.TableName{schemaName, table.TableName}) {
+		if !relatedTableNames.Contains(utils.TableName{table.SchemaName, table.TableName}) {
 			continue
 		}
 		for _, col := range table.Columns {
