@@ -60,9 +60,16 @@ func TestFindIndexableColumnsCase3(t *testing.T) {
 }
 
 func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
+	t1, err := utils.ParseCreateTableStmt("tpch", `CREATE TABLE tpch.nation (
+                               N_NATIONKEY bigint(20) NOT NULL,
+                               N_NAME char(25) NOT NULL,
+                               N_REGIONKEY bigint(20) NOT NULL,
+                               N_COMMENT varchar(152) DEFAULT NULL,
+                               PRIMARY KEY (N_NATIONKEY) /*T![clustered_index] CLUSTERED */)`)
+	must(err)
+
 	workload := utils.WorkloadInfo{
-		TableSchemas: utils.ListToSet(
-			utils.TableSchema{"tpch", "nation", utils.NewColumns("tpch", "nation", "N_NATIONKEY", "N_NAME", "N_REGIONKEY", "N_COMMENT"), nil, ""}),
+		TableSchemas: utils.ListToSet(t1),
 		Queries: utils.ListToSet(
 			utils.Query{"", "tpch", `select
 	supp_nation,
@@ -104,10 +111,7 @@ order by
 	cust_nation,
 	l_year`, 1, nil})}
 	must(IndexableColumnsSelectionSimple(&workload))
-	fmt.Println(workload.IndexableColumns.ToList())
-	for _, sql := range workload.Queries.ToList() {
-		fmt.Println(sql.IndexableColumns.ToList())
-	}
+	checkIndexableCols(workload.IndexableColumns, []string{"tpch.nation.n_name", "tpch.nation.n_nationkey"})
 }
 
 func checkIndexableCols(got utils.Set[utils.Column], expected []string) {
