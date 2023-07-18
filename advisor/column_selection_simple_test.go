@@ -16,16 +16,19 @@ func must(err error) {
 }
 
 func TestFindIndexableColumnsCase1(t *testing.T) {
+	tt, err := utils.ParseCreateTableStmt("test", "create table t (a int, b int, c int, d int, e int)")
+	must(err)
+
 	workload := utils.WorkloadInfo{
-		TableSchemas: utils.ListToSet(utils.TableSchema{"test", "t", utils.NewColumns("test", "t", "a", "b", "c", "d", "e"), nil, ""}),
-		Queries: utils.ListToSet(utils.Query{"", "test", "select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
-			utils.Query{"", "test", "select * from t where c in (1, 2, 3) order by d", 1, nil}),
+		TableSchemas: utils.ListToSet(tt),
+		Queries: utils.ListToSet(
+			utils.Query{"", "test",
+				"select * from t where a<1 and b>1 and e like 'abc'", 1, nil},
+			utils.Query{"", "test",
+				"select * from t where c in (1, 2, 3) order by d", 1, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
-	fmt.Println(workload.IndexableColumns.ToList())
-	for _, sql := range workload.Queries.ToList() {
-		fmt.Println(sql.IndexableColumns.ToList())
-	}
+	checkIndexableCols(workload.IndexableColumns, []string{"test.t.a", "test.t.b", "test.t.c", "test.t.d"})
 }
 
 func TestFindIndexableColumnsCase2(t *testing.T) {
@@ -35,10 +38,11 @@ func TestFindIndexableColumnsCase2(t *testing.T) {
 	must(err)
 	workload := utils.WorkloadInfo{
 		TableSchemas: utils.ListToSet(t1, t2),
-		Queries:      utils.ListToSet(utils.Query{"", "test", "select * from t2 tx where a<1", 1, nil}),
+		Queries: utils.ListToSet(utils.Query{"", "test",
+			"select * from t2 tx where a<1", 1, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
-	fmt.Println(workload.IndexableColumns.ToList())
+	checkIndexableCols(workload.IndexableColumns, []string{"test.t2.a"})
 }
 
 func TestFindIndexableColumnsCase3(t *testing.T) {

@@ -60,9 +60,6 @@ func (v *simpleIndexableColumnsVisitor) collectColumn(n ast.Node) {
 		if err != nil {
 			// TODO: log or return this error?
 		}
-		if len(possibleColumns) == 0 || schemaName == "" {
-			return // ignore this column
-		}
 		for _, c := range possibleColumns {
 			if !v.checkColumnIndexableByType(c) {
 				continue
