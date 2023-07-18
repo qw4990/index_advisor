@@ -2,6 +2,8 @@ package advisor
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/qw4990/index_advisor/utils"
@@ -50,9 +52,7 @@ func TestFindIndexableColumnsCase3(t *testing.T) {
 			"select * from db2.t2 where a2<1", 1, nil}),
 	}
 	must(IndexableColumnsSelectionSimple(&workload))
-	if len(workload.IndexableColumns.ToList()) != 1 {
-		panic("should have 1 indexable column")
-	}
+	checkIndexableCols(workload.IndexableColumns, []string{"db2.t2.a2"})
 }
 
 func TestFindIndexableColumnsSimpleTPCH(t *testing.T) {
@@ -103,5 +103,19 @@ order by
 	fmt.Println(workload.IndexableColumns.ToList())
 	for _, sql := range workload.Queries.ToList() {
 		fmt.Println(sql.IndexableColumns.ToList())
+	}
+}
+
+func checkIndexableCols(got utils.Set[utils.Column], expected []string) {
+	var gotCols []string
+	for _, c := range got.ToList() {
+		gotCols = append(gotCols, c.Key())
+	}
+	sort.Strings(gotCols)
+	sort.Strings(expected)
+	gotStr := strings.Join(gotCols, ",\n")
+	expectedStr := strings.Join(expected, ",\n")
+	if gotStr != expectedStr {
+		panic(fmt.Sprintf("got %s, expected %s", gotStr, expectedStr))
 	}
 }
