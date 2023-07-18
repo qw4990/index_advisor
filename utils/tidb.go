@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"syscall"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -21,19 +22,13 @@ type LocalTiDBServer struct {
 
 func (s *LocalTiDBServer) Release() error {
 	Infof("Kill TiDB process pid: %v", s.cmd.Process.Pid)
-	err := s.cmd.Process.Kill()
+	err := syscall.Kill(s.cmd.Process.Pid, syscall.SIGQUIT)
 	if err != nil {
 		return err
 	}
 
-	//Infof("wait for TiDB to close")
-	//for i := 0; i < 10; i++ {
-	//	if !PingLocalTiDB(s.DSN()) {
-	//		break
-	//	}
-	//	time.Sleep(time.Second * 2)
-	//	Infof("wait for TiDB to close")
-	//}
+	Infof("wait for TiDB to close")
+	time.Sleep(time.Second * 3)
 
 	Infof("Clean tmpDir: %v", s.tmpDir)
 	os.RemoveAll(s.tmpDir)
