@@ -83,6 +83,11 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		return nil, err
 	}
 
+	currentBestIndexes, err = aa.cutDown(currentBestIndexes, workload, aa.optimizer, aa.maxIndexes)
+	if err != nil {
+		return nil, err
+	}
+
 	// try to add more indexes if the number of indexes is less than maxIndexes
 	for limit := 0; limit < 3 && currentBestIndexes.Size() < aa.maxIndexes; limit++ {
 		potentialIndexes = utils.DiffSet(potentialIndexes, currentBestIndexes)
@@ -102,6 +107,34 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 	}
 
 	return currentBestIndexes, nil
+}
+
+// cutDown removes indexes from candidateIndexes until the number of indexes is less than or equal to maxIndexes.
+func (aa *autoAdmin) cutDown(candidateIndexes utils.Set[utils.Index],
+	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer, maxIndexes int) (utils.Set[utils.Index], error) {
+	if candidateIndexes.Size() <= maxIndexes {
+		return candidateIndexes, nil
+	}
+
+	// find the target index to remove, which is the one that has the least impact on the cost.
+	var bestCost utils.IndexConfCost
+	var targetIndex utils.Index
+	for i, idx := range candidateIndexes.ToList() {
+		candidateIndexes.Remove(idx)
+		cost, err := evaluateIndexConfCost(w, op, candidateIndexes)
+		if err != nil {
+			return nil, err
+		}
+		candidateIndexes.Add(idx)
+
+		if i == 0 || cost.Less(bestCost) {
+			bestCost = cost
+			targetIndex = idx
+		}
+	}
+
+	candidateIndexes.Remove(targetIndex)
+	return aa.cutDown(candidateIndexes, w, op, maxIndexes)
 }
 
 func (aa *autoAdmin) heuristicCoveredIndexes(candidateIndexes utils.Set[utils.Index],
