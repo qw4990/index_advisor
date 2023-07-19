@@ -106,6 +106,9 @@ func (s *setImpl[T]) Remove(item T) {
 }
 
 func (s *setImpl[T]) Size() int {
+	if s == nil {
+		return 0
+	}
 	return len(s.s)
 }
 

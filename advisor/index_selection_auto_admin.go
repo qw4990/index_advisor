@@ -157,7 +157,7 @@ func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Inde
 		if err != nil {
 			return nil, err
 		}
-		if dnfCols.Size() == 0 {
+		if dnfCols == nil || dnfCols.Size() == 0 {
 			continue
 		}
 
