@@ -1,7 +1,8 @@
 package utils
 
 import (
-	"fmt"
+	"github.com/pingcap/parser/opcode"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 	"strings"
 
 	"github.com/pingcap/parser"
@@ -140,25 +141,59 @@ func IsTiDBSystemTableName(t TableName) bool {
 // ParseDNFColumnsFromQuery parses the given Query text and returns the DNF columns.
 // For a query `select ... where c1=1 or c2=2 or c3=3`, the DNF columns are `c1`, `c2` and `c3`.
 func ParseDNFColumnsFromQuery(q Query) (Set[Column], error) {
+	t, err := CollectTableNamesFromSQL(q.SchemaName, q.Text)
+	if err != nil {
+		return nil, err
+	}
+	if t.Size() != 1 { // unsupported yet
+		return nil, nil
+	}
 	node, err := ParseOneSQL(q.Text)
 	if err != nil {
 		return nil, err
 	}
-	e := &dnfColExtractor{}
+	e := &dnfColExtractor{
+		dnfCols: NewSet[Column](),
+		t:       t.ToList()[0],
+	}
 	node.Accept(e)
 	return e.dnfCols, nil
 }
 
 type dnfColExtractor struct {
 	dnfCols Set[Column]
-	q       Query
+	t       TableName
 }
 
 func (d *dnfColExtractor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if d.dnfCols.Size() > 0 { // already collected
+		return n, true
+	}
 	switch x := n.(type) {
-	case *ast.FuncCallExpr:
-		if x.FnName.L == ast.LogicOr {
-			fmt.Println("-->> ", x.Args)
+	case *ast.SelectStmt:
+		cnf := flattenCNF(x.Where)
+		for _, expr := range cnf {
+			dnf := flattenDNF(expr)
+			if len(dnf) <= 1 {
+				continue
+			}
+			// c1=1 or c2=2 or c3=3
+			var dnfCols []*ast.ColumnNameExpr
+			fail := false
+			for _, dnfExpr := range dnf {
+				col, _ := flattenColEQConst(dnfExpr)
+				if col == nil {
+					fail = true
+					break
+				}
+				dnfCols = append(dnfCols, col)
+			}
+			if fail {
+				continue
+			}
+			for _, col := range dnfCols {
+				d.dnfCols.Add(Column{SchemaName: d.t.SchemaName, TableName: d.t.TableName, ColumnName: col.Name.Name.O})
+			}
 		}
 	}
 	return n, false
@@ -166,4 +201,43 @@ func (d *dnfColExtractor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
 
 func (d *dnfColExtractor) Leave(n ast.Node) (node ast.Node, ok bool) {
 	return n, true
+}
+
+func flattenColEQConst(expr ast.ExprNode) (*ast.ColumnNameExpr, *driver.ValueExpr) {
+	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.EQ {
+		l, r := op.L, op.R
+		_, lIsCol := l.(*ast.ColumnNameExpr)
+		_, lIsCon := l.(*driver.ValueExpr)
+		_, rIsCol := r.(*ast.ColumnNameExpr)
+		_, rIsCon := r.(*driver.ValueExpr)
+		if lIsCol && rIsCon {
+			return l.(*ast.ColumnNameExpr), r.(*driver.ValueExpr)
+		}
+		if lIsCon && rIsCol {
+			return r.(*ast.ColumnNameExpr), l.(*driver.ValueExpr)
+		}
+	}
+	return nil, nil
+}
+
+func flattenCNF(expr ast.ExprNode) []ast.ExprNode {
+	var cnf []ast.ExprNode
+	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.LogicAnd {
+		cnf = append(cnf, flattenCNF(op.L)...)
+		cnf = append(cnf, flattenCNF(op.R)...)
+	} else {
+		cnf = append(cnf, expr)
+	}
+	return cnf
+}
+
+func flattenDNF(expr ast.ExprNode) []ast.ExprNode {
+	var cnf []ast.ExprNode
+	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.LogicOr {
+		cnf = append(cnf, flattenDNF(op.L)...)
+		cnf = append(cnf, flattenDNF(op.R)...)
+	} else {
+		cnf = append(cnf, expr)
+	}
+	return cnf
 }
