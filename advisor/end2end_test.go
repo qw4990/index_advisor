@@ -108,6 +108,15 @@ func TestIndexSelectionEnd2End(t *testing.T) {
 
 		// index merge cases
 		{[]string{`select * from t2 where a=1 or b=1`}, Parameter{2, 3}, []string{"test.t2(a)", "test.t2(b,a)"}},
+		{[]string{`select * from t3 where a=1 or b=1 or c=1`}, Parameter{3, 3}, []string{"test.t3(a)", "test.t3(b)", "test.t3(c)"}},
+
+		// cover-index cases
+		{[]string{`select a from t1`}, Parameter{1, 3}, []string{"test.t1(a)"}},
+		{[]string{`select a, b from t3`}, Parameter{1, 3}, []string{"test.t3(a,b)"}},
+		{[]string{`select c, a, b from t3`}, Parameter{1, 3}, []string{"test.t3(a,b,c)"}},
+		{[]string{`select a from t3 where b=1`}, Parameter{1, 3}, []string{"test.t3(b,a)"}},
+		{[]string{`select a, c from t3 where b=1`}, Parameter{1, 3}, []string{"test.t3(b,a,c)"}},
+		{[]string{`select a from t3 where b=1 and c=1`}, Parameter{1, 3}, []string{"test.t3(b,c,a)"}},
 	}
 
 	for i, c := range cases {
