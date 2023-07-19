@@ -6,6 +6,37 @@ import (
 	"testing"
 )
 
+func TestParseSelectColumnsFromQuery(t *testing.T) {
+	cases := []struct {
+		q string
+		c []string
+	}{
+		{`select a, b, c from t where a = 1 or b = 2 or 3=c`,
+			[]string{"test.t.a", "test.t.b", "test.t.c"}},
+		{`select a, b from t where a = 1 or b = 2`,
+			[]string{"test.t.a", "test.t.b"}},
+		{`select a from t where b = 1`,
+			[]string{"test.t.a"}},
+		{`select * from t where a = 1`,
+			[]string{}},
+		{`select c from t where a = 1 and b =1`,
+			[]string{"test.t.c"}},
+		{`select b, c from t where a = 1 and (b =1 or c=1)`,
+			[]string{"test.t.b", "test.t.c"}},
+		{`select * from t1, t2 where b =1 or c=1`,
+			[]string{}}, // unsupported
+	}
+
+	for _, c := range cases {
+		result, err := ParseSelectColumnsFromQuery(Query{
+			SchemaName: "test",
+			Text:       c.q,
+		})
+		must(err)
+		checkDNFColResult(result, c.c)
+	}
+}
+
 func TestParseDNFColumnsFromQuery(t *testing.T) {
 	cases := []struct {
 		q string

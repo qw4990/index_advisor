@@ -138,6 +138,56 @@ func IsTiDBSystemTableName(t TableName) bool {
 		schemaName == "mysql"
 }
 
+type selectColExtractor struct {
+	selectCols       Set[Column]
+	t                TableName
+	underSelectField bool
+}
+
+func (e *selectColExtractor) Enter(n ast.Node) (out ast.Node, skipChildren bool) {
+	switch x := n.(type) {
+	case *ast.SelectField:
+		e.underSelectField = true
+	case *ast.ColumnNameExpr:
+		if e.underSelectField {
+			e.selectCols.Add(Column{
+				SchemaName: e.t.SchemaName,
+				TableName:  e.t.TableName,
+				ColumnName: x.Name.Name.O})
+		}
+	}
+	return n, false
+}
+
+func (e *selectColExtractor) Leave(n ast.Node) (out ast.Node, ok bool) {
+	switch n.(type) {
+	case *ast.SelectField:
+		e.underSelectField = false
+	}
+	return n, true
+}
+
+// ParseSelectColumnsFromQuery returns all column names in select field.
+func ParseSelectColumnsFromQuery(q Query) (Set[Column], error) {
+	t, err := CollectTableNamesFromSQL(q.SchemaName, q.Text)
+	if err != nil {
+		return nil, err
+	}
+	if t.Size() != 1 { // unsupported yet
+		return nil, nil
+	}
+	node, err := ParseOneSQL(q.Text)
+	if err != nil {
+		return nil, err
+	}
+	e := &selectColExtractor{
+		selectCols: NewSet[Column](),
+		t:          t.ToList()[0],
+	}
+	node.Accept(e)
+	return e.selectCols, nil
+}
+
 // ParseDNFColumnsFromQuery parses the given Query text and returns the DNF columns.
 // For a query `select ... where c1=1 or c2=2 or c3=3`, the DNF columns are `c1`, `c2` and `c3`.
 func ParseDNFColumnsFromQuery(q Query) (Set[Column], error) {
