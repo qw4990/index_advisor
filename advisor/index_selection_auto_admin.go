@@ -73,12 +73,13 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 	}
 
 	utils.Infof("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
-	limit := 0
 	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
 	if err != nil {
 		return nil, err
 	}
-	for currentBestIndexes.Size() < aa.maxIndexes {
+
+	// try to add more indexes if the number of indexes is less than maxIndexes
+	for limit := 0; limit < 3 && currentBestIndexes.Size() < aa.maxIndexes; limit++ {
 		potentialIndexes = utils.DiffSet(potentialIndexes, currentBestIndexes)
 		currentCost, err := evaluateIndexConfCost(workload, aa.optimizer, currentBestIndexes)
 		if err != nil {
@@ -92,10 +93,6 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		currentBestIndexes, err = aa.filterIndexes(workload, currentBestIndexes)
 		if err != nil {
 			return nil, err
-		}
-		limit++
-		if limit > 5 {
-			break
 		}
 	}
 
