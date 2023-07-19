@@ -69,11 +69,6 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 			// Update potential indexes for the next iteration
 			potentialIndexes = currentBestIndexes
 			potentialIndexes.AddSet(aa.createMultiColumnIndexes(workload, currentBestIndexes))
-			//potentialIndexes, err = aa.mergeCandidates(workload, potentialIndexes)
-			//if err != nil {
-			//	return nil, err
-			//}
-			//utils.Infof("auto-admin algorithm: the number of best candidate indexes after merge is %v", potentialIndexes.Size())
 		}
 	}
 
@@ -189,62 +184,6 @@ func (aa *autoAdmin) filterIndexes(workload utils.WorkloadInfo, indexes utils.Se
 	return filteredIndexes, nil
 }
 
-//// mergeCandidates merges some index candidates.
-//// Rule 1: if candidate index X has no benefit, then remove X.
-//// Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
-//// Rule 3(TBD): if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
-//func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
-//	mergedCandidates := utils.NewSet[utils.Index]()
-//	candidatesList := candidates.ToList()
-//	var candidateCosts []utils.IndexConfCost
-//	for _, c := range candidatesList {
-//		cost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c))
-//		if err != nil {
-//			return nil, err
-//		}
-//		candidateCosts = append(candidateCosts, cost)
-//	}
-//	originalCost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[utils.Index]())
-//	if err != nil {
-//		return nil, err
-//	}
-//	for i, x := range candidatesList {
-//		// rule 1
-//		if originalCost.Less(candidateCosts[i]) {
-//			continue
-//		}
-//
-//		// rule 2
-//		table, ok := workload.TableSchemas.Find(utils.TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
-//		if !ok {
-//			panic("table not found")
-//		}
-//		for _, existingIndex := range table.Indexes {
-//			if existingIndex.PrefixContain(x) {
-//				continue
-//			}
-//		}
-//
-//		//// rule 3
-//		//hitRule3 := false
-//		//for j, y := range candidatesList {
-//		//	if i == j {
-//		//		continue
-//		//	}
-//		//	// X is a prefix of Y and Y's cost is less than X's
-//		//	if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
-//		//		hitRule3 = true
-//		//		break
-//		//	}
-//		//}
-//		//if hitRule3 {
-//		//	continue
-//		//}
-//		mergedCandidates.Add(x)
-//	}
-//	return mergedCandidates, nil
-//}
-
 // selectIndexCandidates selects the best indexes for each single-query.
 func (aa *autoAdmin) selectIndexCandidates(workload utils.WorkloadInfo, potentialIndexes utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
 	utils.Debugf("auto-admin algorithm: select best index from %v candidates for each single query(total %v)", potentialIndexes.Size(), workload.Queries.Size())
@@ -358,3 +297,59 @@ func (aa *autoAdmin) potentialIndexesForQuery(query utils.Query, potentialIndexe
 	}
 	return indexes
 }
+
+//// mergeCandidates merges some index candidates.
+//// Rule 1: if candidate index X has no benefit, then remove X.
+//// Rule 2: if candidate index X is a prefix of some existing index in the workload, then remove X.
+//// Rule 3(TBD): if candidate index X is a prefix of another candidate Y and Y's workload cost is less than X's, then remove X.
+//func (aa *autoAdmin) mergeCandidates(workload utils.WorkloadInfo, candidates utils.Set[utils.Index]) (utils.Set[utils.Index], error) {
+//	mergedCandidates := utils.NewSet[utils.Index]()
+//	candidatesList := candidates.ToList()
+//	var candidateCosts []utils.IndexConfCost
+//	for _, c := range candidatesList {
+//		cost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.ListToSet(c))
+//		if err != nil {
+//			return nil, err
+//		}
+//		candidateCosts = append(candidateCosts, cost)
+//	}
+//	originalCost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.NewSet[utils.Index]())
+//	if err != nil {
+//		return nil, err
+//	}
+//	for i, x := range candidatesList {
+//		// rule 1
+//		if originalCost.Less(candidateCosts[i]) {
+//			continue
+//		}
+//
+//		// rule 2
+//		table, ok := workload.TableSchemas.Find(utils.TableSchema{SchemaName: x.SchemaName, TableName: x.TableName})
+//		if !ok {
+//			panic("table not found")
+//		}
+//		for _, existingIndex := range table.Indexes {
+//			if existingIndex.PrefixContain(x) {
+//				continue
+//			}
+//		}
+//
+//		//// rule 3
+//		//hitRule3 := false
+//		//for j, y := range candidatesList {
+//		//	if i == j {
+//		//		continue
+//		//	}
+//		//	// X is a prefix of Y and Y's cost is less than X's
+//		//	if y.PrefixContain(x) && candidateCosts[j].Less(candidateCosts[i]) {
+//		//		hitRule3 = true
+//		//		break
+//		//	}
+//		//}
+//		//if hitRule3 {
+//		//	continue
+//		//}
+//		mergedCandidates.Add(x)
+//	}
+//	return mergedCandidates, nil
+//}
