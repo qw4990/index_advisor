@@ -76,6 +76,10 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 	if err != nil {
 		return nil, err
 	}
+	currentBestIndexes, err = aa.heuristicCoveredIndexes(currentBestIndexes, workload, aa.optimizer)
+	if err != nil {
+		return nil, err
+	}
 
 	utils.Infof("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
 	currentBestIndexes, err = aa.filterIndexes(workload, currentBestIndexes)
@@ -138,9 +142,77 @@ func (aa *autoAdmin) cutDown(candidateIndexes utils.Set[utils.Index],
 }
 
 func (aa *autoAdmin) heuristicCoveredIndexes(candidateIndexes utils.Set[utils.Index],
-	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) utils.Set[utils.Index] {
-	// TODO: build an index (b, a) for `select a from t where b=1` to convert IndexLookup to IndexScan
-	return candidateIndexes
+	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
+	// build an index (b, a) for `select a from t where b=1` to convert IndexLookup to IndexScan
+	currentCost, err := evaluateIndexConfCost(w, op, candidateIndexes)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, q := range w.Queries.ToList() {
+		// parse select columns
+		selectCols, err := utils.ParseSelectColumnsFromQuery(q)
+		if err != nil {
+			return nil, err
+		}
+		if selectCols == nil || selectCols.Size() == 0 || selectCols.Size() > aa.maxIndexWidth {
+			continue
+		}
+		schemaName, tableName := selectCols.ToList()[0].SchemaName, selectCols.ToList()[0].TableName
+
+		// generate cover-index candidates
+		coverIndexSet := utils.NewSet[utils.Index]()
+		coverIndexSet.Add(utils.Index{
+			SchemaName: schemaName,
+			TableName:  tableName,
+			IndexName:  tempIndexName(selectCols.ToList()...),
+			Columns:    selectCols.ToList(),
+		})
+		for _, idx := range candidateIndexes.ToList() {
+			if idx.SchemaName != schemaName || idx.TableName != tableName {
+				continue // not for the same table
+			}
+			if len(idx.Columns)+selectCols.Size() > aa.maxIndexWidth {
+				continue // exceed the max-index-width limitation
+			}
+			// try this cover-index: idx-cols + select-cols
+			// TODO: remove duplicated columns
+			var cols []utils.Column
+			cols = append(cols, idx.Columns...)
+			cols = append(cols, selectCols.ToList()...)
+			coverIndexSet.Add(utils.Index{
+				SchemaName: schemaName,
+				TableName:  tableName,
+				IndexName:  tempIndexName(cols...),
+				Columns:    cols,
+			})
+		}
+
+		// select the best cover-index
+		var bestCoverIndex utils.Index
+		var bestCoverIndexCost utils.IndexConfCost
+		for i, coverIndex := range coverIndexSet.ToList() {
+			candidateIndexes.Add(coverIndex)
+			cost, err := evaluateIndexConfCost(w, op, candidateIndexes)
+			if err != nil {
+				return nil, err
+			}
+			candidateIndexes.Remove(coverIndex)
+
+			if i == 0 || cost.Less(bestCoverIndexCost) {
+				bestCoverIndexCost = cost
+				bestCoverIndex = coverIndex
+			}
+		}
+
+		// check whether this cover-index can bring any benefits
+		if bestCoverIndexCost.Less(currentCost) {
+			candidateIndexes.Add(bestCoverIndex)
+			currentCost = bestCoverIndexCost
+		}
+	}
+
+	return candidateIndexes, nil
 }
 
 func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Index],
