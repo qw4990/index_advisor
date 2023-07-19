@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pingcap/parser"
@@ -134,4 +135,35 @@ func IsTiDBSystemTableName(t TableName) bool {
 		schemaName == "metrics_schema" ||
 		schemaName == "performance_schema" ||
 		schemaName == "mysql"
+}
+
+// ParseDNFColumnsFromQuery parses the given Query text and returns the DNF columns.
+// For a query `select ... where c1=1 or c2=2 or c3=3`, the DNF columns are `c1`, `c2` and `c3`.
+func ParseDNFColumnsFromQuery(q Query) (Set[Column], error) {
+	node, err := ParseOneSQL(q.Text)
+	if err != nil {
+		return nil, err
+	}
+	e := &dnfColExtractor{}
+	node.Accept(e)
+	return e.dnfCols, nil
+}
+
+type dnfColExtractor struct {
+	dnfCols Set[Column]
+	q       Query
+}
+
+func (d *dnfColExtractor) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	switch x := n.(type) {
+	case *ast.FuncCallExpr:
+		if x.FnName.L == ast.LogicOr {
+			fmt.Println("-->> ", x.Args)
+		}
+	}
+	return n, false
+}
+
+func (d *dnfColExtractor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }

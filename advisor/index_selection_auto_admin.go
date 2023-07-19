@@ -72,6 +72,8 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		}
 	}
 
+	//currentBestIndexes, err :=
+
 	utils.Infof("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
 	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
 	if err != nil {
@@ -97,6 +99,64 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 	}
 
 	return currentBestIndexes, nil
+}
+
+func (aa *autoAdmin) heuristicCoveredIndexes(candidateIndexes utils.Set[utils.Index],
+	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) utils.Set[utils.Index] {
+	// TODO
+	return candidateIndexes
+}
+
+func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Index],
+	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
+	// try to build index set {(col1), (col2)} for predicate like `where col1=1 or col2=2` so that index-merge can be applied.
+	currentCost, err := evaluateIndexConfCost(w, op, candidateIndexes)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, q := range w.Queries.ToList() {
+		// get all DNF columns from the query
+		dnfCols, err := utils.ParseDNFColumnsFromQuery(q)
+		if err != nil {
+			return nil, err
+		}
+		if dnfCols.Size() == 0 {
+			continue
+		}
+
+		// create indexes for these DNF columns
+		newIndexes := utils.NewSet[utils.Index]()
+		for _, col := range dnfCols.ToList() {
+			idx := utils.NewIndex(col.SchemaName, col.TableName, tempIndexName(col), col.ColumnName)
+			contained := false
+			for _, existingIndex := range candidateIndexes.ToList() {
+				if existingIndex.PrefixContain(idx) {
+					contained = true
+					continue
+				}
+			}
+			if !contained {
+				newIndexes.Add(idx)
+			}
+		}
+		if newIndexes.Size() == 0 {
+			continue
+		}
+
+		// check whether these new indexes for IndexMerge can bring some benefits.
+		newCandidateIndexes := utils.UnionSet(candidateIndexes, newIndexes)
+		newCost, err := evaluateIndexConfCost(w, op, newCandidateIndexes)
+		if err != nil {
+			return nil, err
+		}
+		if newCost.Less(currentCost) {
+			currentCost = newCost
+			candidateIndexes = newCandidateIndexes
+		}
+	}
+
+	return candidateIndexes, nil
 }
 
 func (aa *autoAdmin) createMultiColumnIndexes(workload utils.WorkloadInfo, indexes utils.Set[utils.Index]) utils.Set[utils.Index] {
