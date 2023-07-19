@@ -23,6 +23,14 @@ func TestParseDNFColumnsFromQuery(t *testing.T) {
 			[]string{"test.t.b", "test.t.c"}},
 		{`select * from t1, t2 where b =1 or c=1`,
 			[]string{}}, // unsupported
+		{
+			`SELECT * FROM t WHERE
+  				timestamp >= 1647469098 AND timestamp <= 1679005097
+  				AND ( from_address = "eth:aaa" OR to_address = "eth:bbb" )
+  				AND from_address <> to_address
+				ORDER BY timestamp DESC LIMIT 200`,
+			[]string{"test.t.from_address", "test.t.to_address"},
+		},
 	}
 
 	for _, c := range cases {
