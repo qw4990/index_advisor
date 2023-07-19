@@ -21,6 +21,8 @@ func TestParseDNFColumnsFromQuery(t *testing.T) {
 			[]string{}},
 		{`select * from t where a = 1 and (b =1 or c=1)`,
 			[]string{"test.t.b", "test.t.c"}},
+		{`select * from t1, t2 where b =1 or c=1`,
+			[]string{}}, // unsupported
 	}
 
 	for _, c := range cases {
@@ -35,8 +37,10 @@ func TestParseDNFColumnsFromQuery(t *testing.T) {
 
 func checkDNFColResult(got Set[Column], want []string) {
 	var gotStr []string
-	for _, c := range got.ToList() {
-		gotStr = append(gotStr, c.Key())
+	if got != nil {
+		for _, c := range got.ToList() {
+			gotStr = append(gotStr, c.Key())
+		}
 	}
 	sort.Strings(gotStr)
 	sort.Strings(want)
