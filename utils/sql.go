@@ -204,6 +204,10 @@ func (d *dnfColExtractor) Leave(n ast.Node) (node ast.Node, ok bool) {
 }
 
 func flattenColEQConst(expr ast.ExprNode) (*ast.ColumnNameExpr, *driver.ValueExpr) {
+	if _, ok := expr.(*ast.ParenthesesExpr); ok {
+		return flattenColEQConst(expr.(*ast.ParenthesesExpr).Expr)
+	}
+
 	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.EQ {
 		l, r := op.L, op.R
 		_, lIsCol := l.(*ast.ColumnNameExpr)
@@ -221,6 +225,10 @@ func flattenColEQConst(expr ast.ExprNode) (*ast.ColumnNameExpr, *driver.ValueExp
 }
 
 func flattenCNF(expr ast.ExprNode) []ast.ExprNode {
+	if _, ok := expr.(*ast.ParenthesesExpr); ok {
+		return flattenCNF(expr.(*ast.ParenthesesExpr).Expr)
+	}
+
 	var cnf []ast.ExprNode
 	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.LogicAnd {
 		cnf = append(cnf, flattenCNF(op.L)...)
@@ -232,6 +240,10 @@ func flattenCNF(expr ast.ExprNode) []ast.ExprNode {
 }
 
 func flattenDNF(expr ast.ExprNode) []ast.ExprNode {
+	if _, ok := expr.(*ast.ParenthesesExpr); ok {
+		return flattenDNF(expr.(*ast.ParenthesesExpr).Expr)
+	}
+
 	var cnf []ast.ExprNode
 	if op, ok := expr.(*ast.BinaryOperationExpr); ok && op.Op == opcode.LogicOr {
 		cnf = append(cnf, flattenDNF(op.L)...)

@@ -19,8 +19,8 @@ func TestParseDNFColumnsFromQuery(t *testing.T) {
 			[]string{}},
 		{`select * from t where a = 1 and b =1`,
 			[]string{}},
-		//{`select * from t where a = 1 and (b =1 or c=1)`,
-		//	[]string{"test.t.b", "test.t.c"}},
+		{`select * from t where a = 1 and (b =1 or c=1)`,
+			[]string{"test.t.b", "test.t.c"}},
 	}
 
 	for _, c := range cases {
