@@ -6,7 +6,8 @@ Index selection is an important part of database performance tuning. However, it
 Even experienced experts can hardly guarantee to find the best index scheme accurately and quickly when facing a complex
 workload containing dozens or even hundreds of tables and thousands of SQLs.
 
-TiDB Index Advisor (beta) is a command-line tool that can automatically recommend indexes based on the workload, statistics, and execution plan
+TiDB Index Advisor (beta) is a command-line tool that can automatically recommend indexes based on the workload,
+statistics, and execution plan
 cost in TiDB, which can greatly reduce the workload of index maintenance in performance tuning.
 
 ## How it works
@@ -50,7 +51,8 @@ Generally speaking:
 
 ### Installation
 
-If you are going to use the offline-mode, you need to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview) first. Please use the following command to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview):
+If you are going to use the offline-mode, you need to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview)
+first. Please use the following command to install [TiUP](https://docs.pingcap.com/tidb/dev/tiup-overview):
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
@@ -75,7 +77,8 @@ In online mode, Index Advisor will directly access your TiDB instance, so you ne
   so you need to ensure that the `Statement Summary` feature has been enabled and the `tidb_redact_log` feature has been
   disabled, otherwise the query cannot be obtained from it.
 
-You can use `index_advisor precheck --dsn='root:@tcp(127.0.0.1:4000)'` to check whether your cluster can meet the above conditions.
+You can use `index_advisor precheck --dsn='root:@tcp(127.0.0.1:4000)'` to check whether your cluster can meet the above
+conditions.
 
 The following is an example of using online mode:
 
@@ -145,7 +148,8 @@ The meaning of each parameter is as follows:
 - `max-num-indexes`: the maximum number of recommended indexes, default `5`.
 - `output`: the path to save the output result, optional; if it is empty, it will be printed directly on the terminal.
 
-To simplify, you can also put all required files on the same directory, and then just use `--dir-path=examples/tpch_example1`.
+To simplify, you can also put all required files on the same directory, and then just
+use `--dir-path=examples/tpch_example1`.
 
 ### Output
 
@@ -189,11 +193,15 @@ Some explanations:
 - This tool can work for both new systems (no indexes) and existing systems. For existing systems, it will not recommend
   indexes that already exist.
 - Usually, this tool takes a few minutes to finish the recommendation.
-- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for both on-premise and cloud.
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query, while this tool can recommend indexes for a
-    workload.
-  - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) works as a diagnostic tool triggered by slow queries, while this is a physical database design tool.
+- There is another alternative tool called [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) that works
+  as a diagnostic tool for index recommendation in TiDB Clinic, here are the differences:
+    - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) is only for cloud, while this tool can work for
+      both on-premise and cloud.
+    - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) can only recommend indexes for a single query,
+      while this tool can recommend indexes for a
+      workload.
+    - [index-insight](https://docs.pingcap.com/tidbcloud/index-insight) works as a diagnostic tool triggered by slow
+      queries, while this is a physical database design tool.
 
 Below are some restrictions:
 
@@ -304,13 +312,23 @@ CREATE INDEX idx_hash ON ethereum.transactions (hash);
 CREATE INDEX idx_to_address_block_timestamp_value ON ethereum.transactions (to_address, block_timestamp, `value`);
 ```
 
-After creating these indexes, the total workload plan cost is reduced by `-75%`:
+After creating these indexes, the total workload execution time is reduced by `-85%`:
 
 ![web3bench_total](doc/evaluation_web3bench_total.png)
 
 Below are several queries with significant improvement:
 
 ![web3bench_query](doc/evaluation_web3bench_query.png)
+
+### A Web3 Customer Workload
+
+After creating a few recommended indexes, the total workload plan cost is reduced by `-75%`:
+
+![web3_customer_total](doc/evaluation_web3_customer_total.png)
+
+Below are several queries with significant improvement:
+
+![web3_customer_query](doc/evaluation_web3_customer_query.png)
 
 ## Usages
 
