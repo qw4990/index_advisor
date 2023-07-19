@@ -72,10 +72,13 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 		}
 	}
 
-	//currentBestIndexes, err :=
+	currentBestIndexes, err := aa.heuristicMergeIndexes(currentBestIndexes, workload, aa.optimizer)
+	if err != nil {
+		return nil, err
+	}
 
 	utils.Infof("auto-admin algorithm: the number of candidate indexes before filter is %v", currentBestIndexes.Size())
-	currentBestIndexes, err := aa.filterIndexes(workload, currentBestIndexes)
+	currentBestIndexes, err = aa.filterIndexes(workload, currentBestIndexes)
 	if err != nil {
 		return nil, err
 	}
@@ -103,13 +106,13 @@ func (aa *autoAdmin) calculateBestIndexes(workload utils.WorkloadInfo) (utils.Se
 
 func (aa *autoAdmin) heuristicCoveredIndexes(candidateIndexes utils.Set[utils.Index],
 	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) utils.Set[utils.Index] {
-	// TODO
+	// TODO: build an index (b, a) for `select a from t where b=1` to convert IndexLookup to IndexScan
 	return candidateIndexes
 }
 
 func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Index],
 	w utils.WorkloadInfo, op optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
-	// try to build index set {(col1), (col2)} for predicate like `where col1=1 or col2=2` so that index-merge can be applied.
+	// try to build index set {(c1), (c2)} for predicate like `where c1=1 or c2=2` so that index-merge can be applied.
 	currentCost, err := evaluateIndexConfCost(w, op, candidateIndexes)
 	if err != nil {
 		return nil, err
@@ -152,7 +155,10 @@ func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Inde
 		}
 		if newCost.Less(currentCost) {
 			currentCost = newCost
-			candidateIndexes = newCandidateIndexes
+			candidateIndexes, err = aa.filterIndexes(w, newCandidateIndexes)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
