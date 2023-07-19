@@ -176,10 +176,22 @@ func (aa *autoAdmin) heuristicCoveredIndexes(candidateIndexes utils.Set[utils.In
 				continue // exceed the max-index-width limitation
 			}
 			// try this cover-index: idx-cols + select-cols
-			// TODO: remove duplicated columns
+			var newCols []utils.Column
+			for _, col := range selectCols.ToList() {
+				duplicated := false
+				for _, idxCol := range idx.Columns {
+					if col.Key() == idxCol.Key() {
+						duplicated = true
+						break
+					}
+				}
+				if !duplicated {
+					newCols = append(newCols, col)
+				}
+			}
 			var cols []utils.Column
 			cols = append(cols, idx.Columns...)
-			cols = append(cols, selectCols.ToList()...)
+			cols = append(cols, newCols...)
 			coverIndexSet.Add(utils.Index{
 				SchemaName: schemaName,
 				TableName:  tableName,
