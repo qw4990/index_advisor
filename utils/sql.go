@@ -188,6 +188,59 @@ func ParseSelectColumnsFromQuery(q Query) (Set[Column], error) {
 	return e.selectCols, nil
 }
 
+type orderByColExtractor struct {
+	orderByCols []Column
+	t           TableName
+	exit        bool
+}
+
+func (e *orderByColExtractor) Enter(n ast.Node) (out ast.Node, skipChildren bool) {
+	if e.exit {
+		return n, true
+	}
+	switch x := n.(type) {
+	case *ast.OrderByClause:
+		for _, byItem := range x.Items {
+			colExpr, ok := byItem.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				e.orderByCols = nil
+				e.exit = true
+				return n, true
+			}
+			e.orderByCols = append(e.orderByCols, Column{
+				SchemaName: e.t.SchemaName,
+				TableName:  e.t.TableName,
+				ColumnName: colExpr.Name.Name.O})
+		}
+	}
+	return n, false
+}
+
+func (e *orderByColExtractor) Leave(n ast.Node) (out ast.Node, ok bool) {
+	return n, true
+}
+
+// ParseOrderByColumnsFromQuery returns all column names in order by field.
+// For a query `select ... order by c1, c2, c3`, the order by columns are `c1`, `c2` and `c3`.
+func ParseOrderByColumnsFromQuery(q Query) ([]Column, error) {
+	t, err := CollectTableNamesFromSQL(q.SchemaName, q.Text)
+	if err != nil {
+		return nil, err
+	}
+	if t.Size() != 1 { // unsupported yet
+		return nil, nil
+	}
+	node, err := ParseOneSQL(q.Text)
+	if err != nil {
+		return nil, err
+	}
+	e := &orderByColExtractor{
+		t: t.ToList()[0],
+	}
+	node.Accept(e)
+	return e.orderByCols, nil
+}
+
 // ParseDNFColumnsFromQuery parses the given Query text and returns the DNF columns.
 // For a query `select ... where c1=1 or c2=2 or c3=3`, the DNF columns are `c1`, `c2` and `c3`.
 func ParseDNFColumnsFromQuery(q Query) (Set[Column], error) {

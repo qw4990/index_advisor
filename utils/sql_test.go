@@ -6,6 +6,47 @@ import (
 	"testing"
 )
 
+func TestParseOrderByColumnsFromQuery(t *testing.T) {
+	cases := []struct {
+		q string
+		c []string
+	}{
+		{`select * from t where a = 1 or b = 2 or 3=c order by a, b, c`,
+			[]string{"test.t.a", "test.t.b", "test.t.c"}},
+		{`select * from t where a = 1 or b = 2 order by a, b`,
+			[]string{"test.t.a", "test.t.b"}},
+		{`select * from t where a = 1 order by a`,
+			[]string{"test.t.a"}},
+		{`select * from t where a = 1 and b =1 order by a, b`,
+			[]string{"test.t.a", "test.t.b"}},
+		{`select * from t where a = 1 and (b =1 or c=1) order by a, b, c`,
+			[]string{"test.t.a", "test.t.b", "test.t.c"}},
+		// unsupported
+		{`select * from t1, t2 where b =1 or c=1 order by a, b, c`,
+			[]string{}},
+		{`select * from t where a = 1 and b =1 order by a+1, b`,
+			[]string{}},
+	}
+
+	for _, c := range cases {
+		result, err := ParseOrderByColumnsFromQuery(Query{
+			SchemaName: "test",
+			Text:       c.q,
+		})
+		must(err)
+
+		var getColStrs []string
+		for _, col := range result {
+			getColStrs = append(getColStrs, col.Key())
+		}
+		get := strings.Join(getColStrs, ",")
+		expected := strings.Join(c.c, ",")
+		if get != expected {
+			t.Errorf("ParseOrderByColumnsFromQuery(%s) = %s, expected %s", c.q, get, expected)
+		}
+	}
+}
+
 func TestParseSelectColumnsFromQuery(t *testing.T) {
 	cases := []struct {
 		q string
