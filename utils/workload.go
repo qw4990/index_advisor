@@ -107,6 +107,14 @@ func NewIndex(schemaName, tableName, indexName string, columns ...string) Index 
 	return Index{SchemaName: strings.ToLower(schemaName), TableName: strings.ToLower(tableName), IndexName: strings.ToLower(indexName), Columns: NewColumns(schemaName, tableName, columns...)}
 }
 
+func NewIndexWithColumns(indexName string, columns ...Column) Index {
+	names := make([]string, len(columns))
+	for i, col := range columns {
+		names[i] = col.ColumnName
+	}
+	return NewIndex(columns[0].SchemaName, columns[0].TableName, indexName, names...)
+}
+
 // ColumnNames returns the column names of the index.
 func (i Index) ColumnNames() []string {
 	var names []string

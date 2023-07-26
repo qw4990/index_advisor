@@ -244,12 +244,37 @@ func (aa *autoAdmin) heuristicMergeIndexes(candidateIndexes utils.Set[utils.Inde
 		if dnfCols == nil || dnfCols.Size() == 0 {
 			continue
 		}
+		orderByCols, err := utils.ParseOrderByColumnsFromQuery(q)
+		if err != nil {
+			return nil, err
+		}
 
 		// create indexes for these DNF columns
 		newIndexes := utils.NewSet[utils.Index]()
 		for _, col := range dnfCols.ToList() {
 			idx := utils.NewIndex(col.SchemaName, col.TableName, tempIndexName(col), col.ColumnName)
 			contained := false
+			for _, existingIndex := range candidateIndexes.ToList() {
+				if existingIndex.PrefixContain(idx) {
+					contained = true
+					continue
+				}
+			}
+			if !contained {
+				newIndexes.Add(idx)
+			}
+
+			// index with DNF column + order-by column
+			if len(orderByCols) == 0 {
+				continue
+			}
+			cols := []utils.Column{col}
+			cols = append(cols, orderByCols...)
+			if len(cols) > aa.maxIndexWidth {
+				cols = cols[:aa.maxIndexWidth]
+			}
+			idx = utils.NewIndexWithColumns(tempIndexName(cols...), cols...)
+			contained = false
 			for _, existingIndex := range candidateIndexes.ToList() {
 				if existingIndex.PrefixContain(idx) {
 					contained = true
