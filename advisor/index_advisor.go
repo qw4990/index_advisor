@@ -61,7 +61,7 @@ func validateParameter(p Parameter) Parameter {
 
 // IndexAdvise is the entry point of index advisor.
 func IndexAdvise(db optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, param Parameter) (utils.Set[utils.Index], error) {
-	utils.Infof("starting index advise for %v queries, %v tables", workload.Queries.Size(), workload.TableSchemas.Size())
+	utils.Infof("start index advise for %v queries, %v tables", workload.Queries.Size(), workload.TableSchemas.Size())
 	param = validateParameter(param)
 
 	compress := compressAlgorithms["none"]
@@ -73,9 +73,10 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, para
 	if err := indexable(&compressedWorkloadInfo); err != nil {
 		return nil, err
 	}
-	utils.Infof("finding %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
+	utils.Infof("find %v indexable columns", compressedWorkloadInfo.IndexableColumns.Size())
 
 	checkWorkloadInfo(compressedWorkloadInfo)
 	recommendedIndexes, err := selection(compressedWorkloadInfo, param, db)
+	utils.Infof("finish index advise with %v recommended indexes", recommendedIndexes.Size())
 	return recommendedIndexes, err
 }
