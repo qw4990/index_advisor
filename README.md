@@ -189,7 +189,6 @@ workload, and the expected benefits of the top 5 queries.
 Some explanations:
 
 - We'll integrate this tool into our cloud platform in the future to make it more convenient to use on cloud.
-- This tool considers secondary indexes with 1, 2 and 3 columns.
 - This tool can work for both new systems (no indexes) and existing systems. For existing systems, it will not recommend
   indexes that already exist.
 - Usually, this tool takes a few minutes to finish the recommendation.
