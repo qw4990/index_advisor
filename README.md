@@ -205,8 +205,8 @@ Some explanations:
 
 Below are some restrictions:
 
-- It cannot recommend primary keys and indexes with more than 3 columns.
-- The maximum number of indexes to recommend at a time is `20`.
+- It cannot recommend primary keys.
+- The maximum number of indexes to recommend at a time is `20`, and the maximum index width is `5`, otherwise it will take too long.
 - If the target workload is too simple, it may not recommend the `max-num-indexes` indexes.
 - Restrictions of Online Mode:
     - The TiDB Version must be equal or larger than `v7.2`. (see workaround
