@@ -212,6 +212,10 @@ Below are some restrictions:
       on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature)
     - The `tidb_redact_log` must be set to `false`.
 
+### Others: Export workload information using `workload-export`
+
+coming soon...
+
 ## Evaluation
 
 We use multiple workloads to evaluate the Index Advisor.
