@@ -70,7 +70,7 @@ Currently, to use this tool, you have to build it from the source code (we'll pr
 
 In online mode, Index Advisor will directly access your TiDB instance, so you need to ensure the following conditions:
 
-- The TiDB version needs to be higher than v7.2, so that the `Hypo Index` feature can be used. (See workaround
+- The TiDB version needs to be equal or higher than v7.3, so that the `Hypo Index` feature can be used. (See workaround
   on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature) if you are using a lower version of
   TiDB)
 - Index Advisor will read the query information from `Statement Summary` (if the query file is not manually specified),
@@ -127,7 +127,7 @@ Offline mode requires the following data:
 After preparing the above files, you can directly use Index Advisor for index recommendation, such as:
 
 ```shell
-index_advisor advise-offline --tidb-version=v7.2.0 \
+index_advisor advise-offline --tidb-version=v7.3.0 \
 --query-path=examples/tpch_example1/queries \
 --schema-path=examples/tpch_example1/schema.sql \
 --stats-path=examples/tpch_example1/stats \
@@ -208,7 +208,7 @@ Below are some restrictions:
 - The maximum number of indexes to recommend at a time is `20`, and the maximum index width is `5`, otherwise it will take too long.
 - If the target workload is too simple, it may not recommend the `max-num-indexes` indexes.
 - Restrictions of Online Mode:
-    - The TiDB Version must be equal or larger than `v7.2`. (see workaround
+    - The TiDB Version must be equal or larger than `v7.3`. (see workaround
       on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature)
     - The `tidb_redact_log` must be set to `false`.
 
@@ -357,7 +357,7 @@ index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
 ### Error `your TiDB version does not support hypothetical index feature`
 
 This error occurs when the TiDB version is too low, and the hypothetical index feature is not supported. Please make
-sure your TiDB version is large or equal to `v7.2`.
+sure your TiDB version is equal or large equal to `v7.3`.
 
 A workaround is to use offline-mode with the latest version of TiDB(`-tidb-version='nightly'`), the result is also of
 high reference value.
@@ -383,3 +383,4 @@ CREATE TABLE `customer`
 
 - Support index deletion recommendation
 - Integrate this tool with `TiUP` and `TiDB Cloud`
+- Support exporting workload info from an online cluster
