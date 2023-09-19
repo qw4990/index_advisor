@@ -378,3 +378,8 @@ CREATE TABLE `customer`
 );
 ...
 ```
+
+## Future Plans
+
+- Support index deletion recommendation
+- Integrate this tool with `TiUP` and `TiDB Cloud`
