@@ -284,6 +284,10 @@ func filterSQLAccessingSystemTables(sqls utils.Set[utils.Query]) (utils.Set[util
 		if err != nil {
 			return nil, err
 		}
+		if tables.Size() == 0 {
+			// `select @@some_var` or `select some_func()`
+			continue
+		}
 		for _, t := range tables.ToList() {
 			if utils.IsTiDBSystemTableName(t) {
 				accessSystemTable = true
