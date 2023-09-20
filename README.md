@@ -212,9 +212,27 @@ Below are some restrictions:
       on [FAQs](#error-your-tidb-version-does-not-support-hypothetical-index-feature)
     - The `tidb_redact_log` must be set to `false`.
 
-### Others: Export workload information using `workload-export`
+### Export workload information using `workload-export`
 
-coming soon...
+You can use the command `workload-export` to load workload info required by offline-mode from your cluster, here is an example:
+
+```shell
+./index_advisor workload-export \
+--dsn='root:@tcp(127.0.0.1:4000)/test' \
+--status_address='http://127.0.0.1:10080' \
+--output=./examples/workload_export_output
+```
+
+Here is its [output](examples/workload-export). And then you can use the offline mode directly:
+
+```shell
+./index_advisor advise-offline --tidb-version=nightly \
+--dir-path=./examples/workload_export_output \
+--max-num-indexes=2 \
+--output=./examples/workload_export_output/output
+```
+
+And here is the [advisor result](examples/workload_export_output/output).
 
 ## Evaluation
 
