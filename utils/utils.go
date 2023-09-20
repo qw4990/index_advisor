@@ -20,6 +20,13 @@ func FileExists(filename string) (exist, isDir bool) {
 	return true, info.IsDir()
 }
 
+func CleanDir(dirPath string) error {
+	if err := os.RemoveAll(dirPath); err != nil {
+		return err
+	}
+	return os.MkdirAll(dirPath, 0755)
+}
+
 // GetDBNameFromDSN extracts the database name from the given DSN.
 func GetDBNameFromDSN(dsn string) (dsnWithoutDB, dbName string) {
 	idx := strings.Index(dsn, "/")

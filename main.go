@@ -19,6 +19,7 @@ func init() {
 	rootCmd.AddCommand(cmd.NewAdviseOfflineCmd())
 	rootCmd.AddCommand(cmd.NewPreCheckCmd())
 	rootCmd.AddCommand(cmd.NewEvaluateCmd())
+	rootCmd.AddCommand(cmd.NewWorkloadExportCmd())
 }
 
 func main() {

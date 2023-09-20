@@ -1,16 +1,20 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
 	"github.com/spf13/cobra"
+	"path"
+	"strings"
 )
 
 type workloadExportCmdOpt struct {
-	dsn      string
-	output   string
-	logLevel string
-
-	querySchemas []string
+	dsn        string
+	statusAddr string
+	output     string
+	logLevel   string
 }
 
 func NewWorkloadExportCmd() *cobra.Command {
@@ -28,13 +32,80 @@ How it work:
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
-			return nil
+			return exportWorkload(opt)
 		},
 	}
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
-	cmd.Flags().StringSliceVar(&opt.querySchemas, "query-schemas", []string{}, "a list of schema(database), e.g. 'test1, test2', queries that are running under these schemas will be considered")
 	return cmd
+}
+
+func exportWorkload(opt workloadExportCmdOpt) error {
+	if err := utils.CleanDir(opt.output); err != nil {
+		return err
+	}
+	db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
+	if err != nil {
+		return err
+	}
+	queries, err := readQueriesFromStatementSummary(db, nil, 0, 0)
+	if err != nil {
+		return err
+	}
+	queries, err = filterSQLAccessingSystemTables(queries)
+	if err != nil {
+		return err
+	}
+	if err := saveQueries(opt, queries); err != nil {
+		return err
+	}
+
+	tableNames, err := utils.CollectTableNamesFromQueries(queries)
+	if err != nil {
+		return err
+	}
+	tables, err := getTableSchemas(db, tableNames)
+	if err != nil {
+		return err
+	}
+	return saveTableSchemas(opt, tables)
+}
+
+func fetchTableStats(opt workloadExportCmdOpt, table utils.TableName) ([]byte, error) {
+	// http://${tidb-server-ip}:${tidb-server-status-port}/stats/dump/${db_name}/${table_name}
+	return nil, nil
+}
+
+func saveQueries(opt workloadExportCmdOpt, queries utils.Set[utils.Query]) error {
+	var buf bytes.Buffer
+	for _, q := range queries.ToList() {
+		buf.WriteString(fmt.Sprintf("use %s;\n", q.SchemaName))
+		text := strings.TrimSpace(q.Text)
+		buf.WriteString(text)
+		if !strings.HasSuffix(text, ";") {
+			buf.WriteString(";")
+		}
+		buf.WriteString("\n\n")
+	}
+	return utils.SaveContentTo(path.Join(opt.output, "queries.sql"), buf.String())
+}
+
+func saveTableSchemas(opt workloadExportCmdOpt, tables utils.Set[utils.TableSchema]) error {
+	var buf bytes.Buffer
+	for _, t := range tables.ToList() {
+		buf.WriteString(fmt.Sprintf("create database if not exists %s;\n", t.SchemaName))
+		buf.WriteString(fmt.Sprintf("use %s;\n", t.SchemaName))
+		text := strings.TrimSpace(t.CreateStmtText)
+		buf.WriteString(text)
+		if !strings.HasSuffix(text, ";") {
+			buf.WriteString(";")
+		}
+		buf.WriteString("\n\n")
+	}
+	return utils.SaveContentTo(path.Join(opt.output, "schemas.sql"), buf.String())
+}
+
+func saveTableStats(opt workloadExportCmdOpt, table utils.TableName) {
 }

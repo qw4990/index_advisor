@@ -49,7 +49,7 @@ func TestReadQueries(t *testing.T) {
 	must(db.Execute(`select * from bind_info`))
 
 	check := func(expected []string, opt adviseOnlineCmdOpt) {
-		sqls, _ := readQueriesFromStatementSummary(db, opt)
+		sqls, _ := readQueriesFromStatementSummary(db, opt.querySchemas, opt.queryExecTimeThreshold, opt.queryExecCountThreshold)
 		sqls, _ = filterSQLAccessingSystemTables(sqls)
 		if sqls.Size() != len(expected) {
 			t.Fatalf("expect %+v, got %+v", expected, sqls)
