@@ -61,8 +61,8 @@ func adviseOnlineMode(opt adviseOnlineCmdOpt) (utils.Set[utils.Index], *utils.Wo
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err := PreCheck(db); err != nil {
-		return nil, nil, nil, err
+	if reason := checkOnlineModeSupport(db); reason != "" {
+		return nil, nil, nil, errors.New("online mode is not supported: " + reason)
 	}
 
 	info, err := prepareWorkloadOnlineMode(db, opt)

@@ -38,7 +38,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
-			s, db, err := startTiDBAndPreCheck(opt.tidbVersion)
+			s, db, err := startTiDB(opt.tidbVersion)
 			if s != nil {
 				defer s.Release()
 			}
@@ -125,7 +125,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	return cmd
 }
 
-func startTiDBAndPreCheck(ver string) (*utils.LocalTiDBServer, optimizer.WhatIfOptimizer, error) {
+func startTiDB(ver string) (*utils.LocalTiDBServer, optimizer.WhatIfOptimizer, error) {
 	s, err := utils.StartLocalTiDBServer(ver)
 	if err != nil {
 		return nil, nil, err
@@ -135,9 +135,6 @@ func startTiDBAndPreCheck(ver string) (*utils.LocalTiDBServer, optimizer.WhatIfO
 	db, err := optimizer.NewTiDBWhatIfOptimizer(s.DSN()) // the DB may not exist yet
 	if err != nil {
 		return s, nil, err
-	}
-	if err := PreCheck(db); err != nil {
-		return s, db, err
 	}
 	return s, db, nil
 }
