@@ -66,7 +66,7 @@ func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 		fmt.Println(sql)
 	}
 	_, err := o.db.Exec(sql)
-	if err != nil {
+	if o.debugFlag && err != nil {
 		utils.Errorf("error %v when executing query %v", err, sql)
 	}
 	return err

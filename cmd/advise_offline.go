@@ -34,7 +34,15 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "advise-offline",
 		Short: "advise some indexes for the specified workload",
-		Long:  `advise some indexes for the specified workload`,
+		Long: `advise some indexes for the specified workload.
+How it work:
+1. start a local TiDB server through TiUP and connect to it
+2. load all necessary information(table schema, table statistics) into this TiDB server
+3. read all queries from the specified query file
+4. analyze those queries and generate a series of candidate indexes
+5. evaluate those candidate indexes on your online TiDB cluster through a feature named 'hypothetical index' (or 'what-if index')
+6. recommend you the best set of indexes based on the evaluation result
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 
@@ -111,7 +119,7 @@ func NewAdviseOfflineCmd() *cobra.Command {
 	cmd.Flags().IntVar(&opt.maxNumIndexes, "max-num-indexes", 5, "max number of indexes to recommend, 1~20")
 	cmd.Flags().IntVar(&opt.maxIndexWidth, "max-index-width", 3, "the max number of columns in recommended indexes")
 
-	cmd.Flags().StringVar(&opt.tidbVersion, "tidb-version", "nightly", "tidb version, one of 'nightly', 'v7.1.0', 'v6.5.1'")
+	cmd.Flags().StringVar(&opt.tidbVersion, "tidb-version", "nightly", "tidb version, one of 'nightly', 'v7.3.0'")
 	cmd.Flags().StringVar(&opt.queryPath, "query-path", "", "(required) query file or dictionary path, e.g. './examples/tpch_example1/queries' or 'examples/tpch_example2/query.sql'")
 	cmd.Flags().StringVar(&opt.schemaPath, "schema-path", "", "(optional) schema file path, e.g. './examples/tpch_example1/schema.sql'")
 	cmd.Flags().StringVar(&opt.statsPath, "stats-path", "", "(optional) stats dictionary path, e.g. './examples/tpch_example1/stats'")

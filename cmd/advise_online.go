@@ -27,7 +27,14 @@ func NewAdviseOnlineCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "advise-online",
 		Short: "advise some indexes for the specified workload",
-		Long:  `advise some indexes for the specified workload`,
+		Long: `advise some indexes for the specified workload.
+How it work:
+1. connect to your online TiDB cluster through the DSN
+2. read all queries from the 'STATEMENT_SUMMARY' system table
+3. analyze those queries and generate a series of candidate indexes
+4. evaluate those candidate indexes on your online TiDB cluster through a feature named 'hypothetical index' (or 'what-if index')
+5. recommend you the best set of indexes based on the evaluation result
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 			indexes, info, db, err := adviseOnlineMode(opt)

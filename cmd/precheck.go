@@ -21,10 +21,10 @@ How it work:
 			}
 			reason := checkOnlineModeSupport(db)
 			if reason == "" {
-				cmd.Println("You can use online mode and offline mode on your cluster.")
+				cmd.Println("[pre-check] you can use online mode and offline mode on your cluster.")
 			} else {
-				cmd.Println("You can only use offline mode on your cluster.")
-				cmd.Println("Your TiDB cluster does not support Index Advisor Online Mode, reason:", reason)
+				cmd.Println("[pre-check] you can only use offline mode on your cluster.")
+				cmd.Println("[pre-check] your TiDB cluster does not support Index Advisor Online Mode, reason:", reason)
 			}
 			return nil
 		},
