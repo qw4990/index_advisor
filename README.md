@@ -214,7 +214,7 @@ Below are some restrictions:
 
 ### Export workload information using `workload-export`
 
-You can use the command `workload-export` to load workload info required by offline-mode from your cluster, here is an example:
+You can use the command `workload-export` to export workload info required by offline-mode from your cluster, here is an example:
 
 ```shell
 ./index_advisor workload-export \
@@ -225,7 +225,7 @@ You can use the command `workload-export` to load workload info required by offl
 
 The tool will read all queries and table schemas from the TiDB specified by `DSN` and export all table statistics through `status_address` (see [stats export on TiDB](https://docs.pingcap.com/tidb/dev/statistics#import-and-export-statistics) for more details).
 
-Here is its [output](examples/workload-export). And then you can use the offline mode directly:
+Here is its [output](examples/workload_export_output). And then you can use the offline mode directly:
 
 ```shell
 ./index_advisor advise-offline --tidb-version=nightly \
