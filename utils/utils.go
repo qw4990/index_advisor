@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -20,11 +23,29 @@ func FileExists(filename string) (exist, isDir bool) {
 	return true, info.IsDir()
 }
 
-func CleanDir(dirPath string) error {
+func PrepareDir(dirPath string) error {
 	if err := os.RemoveAll(dirPath); err != nil {
 		return err
 	}
 	return os.MkdirAll(dirPath, 0755)
+}
+
+func ReadURL(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("get %v error: %v", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("get %v error: status code is %v not OK(200)", url, resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read %v response body error: %v", url, err)
+	}
+	return data, nil
 }
 
 // GetDBNameFromDSN extracts the database name from the given DSN.

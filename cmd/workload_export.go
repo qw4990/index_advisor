@@ -34,7 +34,13 @@ How it work:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
 			fmt.Printf("[workload-export] start exporting workload information from TiDB cluster %v to %v\n", opt.dsn, opt.output)
-			return exportWorkload(opt)
+			err := exportWorkload(opt)
+			if err == nil {
+				fmt.Printf("[workload-export] export workload information successfully into %s\n", opt.output)
+			} else {
+				fmt.Printf("[workload-export] export workload information failed: %v\n", err)
+			}
+			return err
 		},
 	}
 
@@ -46,8 +52,8 @@ How it work:
 }
 
 func exportWorkload(opt workloadExportCmdOpt) error {
-	fmt.Printf("[workload-export] clean up %v\n", opt.output)
-	if err := utils.CleanDir(opt.output); err != nil {
+	fmt.Printf("[workload-export] prepare dir %v\n", opt.output)
+	if err := utils.PrepareDir(opt.output); err != nil {
 		return err
 	}
 	fmt.Printf("[workload-export] connect to %v\n", opt.dsn)
@@ -76,12 +82,40 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	if err != nil {
 		return err
 	}
-	return saveTableSchemas(opt, tables)
+	if err := saveTableSchemas(opt, tables); err != nil {
+		return err
+	}
+
+	fmt.Printf("[workload-export] start dumping table statistics for %v tables\n", tableNames.Size())
+	statsDir := path.Join(opt.output, "stats")
+	fmt.Printf("[workload-export] prepare stats dir %v\n", statsDir)
+	if err := utils.PrepareDir(statsDir); err != nil {
+		return err
+	}
+	for _, t := range tableNames.ToList() {
+		stats, err := fetchTableStats(opt, t)
+		if err != nil {
+			return err
+		}
+		fpath := path.Join(statsDir, fmt.Sprintf("%s_%s.json", t.SchemaName, t.TableName))
+		if err := utils.SaveContentTo(fpath, string(stats)); err != nil {
+			return err
+		}
+		fmt.Printf("[workload-export] save table statistics for %v to %v\n", t.Key(), fpath)
+	}
+	return nil
 }
 
 func fetchTableStats(opt workloadExportCmdOpt, table utils.TableName) ([]byte, error) {
 	// http://${tidb-server-ip}:${tidb-server-status-port}/stats/dump/${db_name}/${table_name}
-	return nil, nil
+	url := fmt.Sprintf("%s/stats/dump/%s/%s", opt.statusAddr, table.SchemaName, table.TableName)
+	stats, err := utils.ReadURL(url)
+	if err != nil {
+		fmt.Printf("[workload-export] fail to dump statistics for %v from %v, err: %v\n", table.Key(), url, err)
+		return nil, err
+	}
+	fmt.Printf("[workload-export] succeed to dump statistics for %v from %v\n", table.Key(), url)
+	return stats, err
 }
 
 func saveQueries(opt workloadExportCmdOpt, queries utils.Set[utils.Query]) error {
@@ -115,7 +149,4 @@ func saveTableSchemas(opt workloadExportCmdOpt, tables utils.Set[utils.TableSche
 	fpath := path.Join(opt.output, "schemas.sql")
 	fmt.Printf("[workload-export] save table schema into %s\n", fpath)
 	return utils.SaveContentTo(fpath, buf.String())
-}
-
-func saveTableStats(opt workloadExportCmdOpt, table utils.TableName) {
 }
