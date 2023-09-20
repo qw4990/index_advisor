@@ -79,6 +79,14 @@ func LoadQueries(schemaName, queryPath string) (Set[Query], error) {
 			return nil, err
 		}
 		for i, rawSQL := range rawSQLs {
+			stmtType := GetStmtType(rawSQL)
+			if stmtType == StmtUseDB {
+				schemaName = GetDBNameFromUseDBStmt(rawSQL)
+			}
+			if stmtType != StmtSelect {
+				continue
+			}
+
 			queries.Add(Query{
 				Alias:      fmt.Sprintf("q%v", i+1),
 				SchemaName: schemaName, // Notice: for simplification, assume all Queries are under the same schema here.

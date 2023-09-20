@@ -77,6 +77,9 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, para
 
 	checkWorkloadInfo(compressedWorkloadInfo)
 	recommendedIndexes, err := selection(compressedWorkloadInfo, param, db)
+	if err != nil {
+		return nil, err
+	}
 	utils.Infof("finish index advise with %v recommended indexes", recommendedIndexes.Size())
 	return recommendedIndexes, err
 }

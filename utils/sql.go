@@ -17,6 +17,7 @@ const (
 	StmtUseDB
 	StmtCreateTable
 	StmtCreateIndex
+	StmtSelect
 	StmtUnknown
 )
 
@@ -38,6 +39,8 @@ func GetStmtType(stmt string) StmtType {
 		return StmtCreateTable
 	} else if containAll(stmt, "create", "index") {
 		return StmtCreateIndex
+	} else if containAll(stmt, "select", "from") {
+		return StmtSelect
 	} else if containAll(stmt, "use") {
 		return StmtUseDB
 	}
