@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"sort"
 	"strings"
@@ -218,8 +217,9 @@ func outputAdviseResult(indexes utils.Set[utils.Index], workload utils.WorkloadI
 
 	fmt.Println(summaryContent)
 	if savePath != "" {
-		os.RemoveAll(savePath) // clear all existing data
-		os.MkdirAll(savePath, 0777)
+		if err := utils.PrepareDir(savePath); err != nil {
+			return err
+		}
 
 		// summary
 		if err := utils.SaveContentTo(path.Join(savePath, "summary.txt"), summaryContent); err != nil {
@@ -268,6 +268,9 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 	sqls := workload.Queries.ToList()
 	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
+		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
+			return nil, err
+		}
 		p, err := optimizer.Explain(sql.Text)
 		if err != nil {
 			return nil, err
@@ -280,6 +283,9 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 		}
 	}
 	for _, sql := range sqls {
+		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
+			return nil, err
+		}
 		p, err := optimizer.Explain(sql.Text)
 		if err != nil {
 			return nil, err

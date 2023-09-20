@@ -6,6 +6,28 @@ import (
 	"testing"
 )
 
+func TestNormalizeQueryWithDB(t *testing.T) {
+	cases := []struct {
+		q      string
+		result string
+	}{
+		{`select * from t`, "select * from test.t"},
+		{`select * from t1, t2 where t1.a<10`, "select * from test.t1, test.t2 where t1.a<10"},
+		{`select * from t1, xxx.t2 where t1.a<10`, "select * from test.t1, xxx.t2 where t1.a<10"},
+		{`select * from xxx.t1, t2 where t1.a<10`, "select * from xxx.t1, test.t2 where t1.a<10"},
+	}
+
+	for _, c := range cases {
+		nq, err := NormalizeQueryWithDB(c.q, "test")
+		if err != nil {
+			t.Errorf("NormalizeQueryWithDB(%s) error: %v", c.q, err)
+		}
+		if nq != c.result {
+			t.Errorf("NormalizeQueryWithDB(%s) = %s, expected %s", c.q, nq, c.result)
+		}
+	}
+}
+
 func TestParseOrderByColumnsFromQuery(t *testing.T) {
 	cases := []struct {
 		q string

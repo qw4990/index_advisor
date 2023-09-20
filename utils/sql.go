@@ -1,13 +1,14 @@
 package utils
 
 import (
-	"github.com/pingcap/parser/opcode"
-	driver "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/pingcap/parser/format"
 	"strings"
 
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/opcode"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 type StmtType int
@@ -71,6 +72,21 @@ func ParseOneSQL(sqlText string) (ast.StmtNode, error) {
 // NormalizeDigest normalizes the given Query text and returns the normalized Query text and its digest.
 func NormalizeDigest(sqlText string) (string, string) {
 	return parser.NormalizeDigest(sqlText)
+}
+
+// NormalizeQueryWithDB `select * from t` --> `select * from db.t`
+func NormalizeQueryWithDB(queryText, db string) (normalizedText string, err error) {
+	stmt, err := ParseOneSQL(queryText)
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	ctx := format.NewRestoreCtx(format.RestoreStringSingleQuotes|format.RestoreKeyWordLowercase|format.RestoreSpacesAroundBinaryOperation|format.RestoreStringWithoutCharset, &sb)
+	ctx.DefaultDB = db
+	if err := stmt.Restore(ctx); err != nil {
+		return "", err
+	}
+	return sb.String(), nil
 }
 
 type tableNameCollector struct {

@@ -33,12 +33,12 @@ How it work:
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
-			fmt.Printf("[workload-export] start exporting workload information from TiDB cluster %v to %v\n", opt.dsn, opt.output)
+			utils.Infof("[workload-export] start exporting workload information from TiDB cluster %v to %v", opt.dsn, opt.output)
 			err := exportWorkload(opt)
 			if err == nil {
-				fmt.Printf("[workload-export] export workload information successfully into %s\n", opt.output)
+				utils.Infof("[workload-export] export workload information successfully into %s", opt.output)
 			} else {
-				fmt.Printf("[workload-export] export workload information failed: %v\n", err)
+				utils.Infof("[workload-export] export workload information failed: %v", err)
 			}
 			return err
 		},
@@ -52,11 +52,11 @@ How it work:
 }
 
 func exportWorkload(opt workloadExportCmdOpt) error {
-	fmt.Printf("[workload-export] prepare dir %v\n", opt.output)
+	utils.Infof("[workload-export] prepare dir %v", opt.output)
 	if err := utils.PrepareDir(opt.output); err != nil {
 		return err
 	}
-	fmt.Printf("[workload-export] connect to %v\n", opt.dsn)
+	utils.Infof("[workload-export] connect to %v", opt.dsn)
 	db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[workload-export] read %v queries\n", queries.Size())
+	utils.Infof("[workload-export] read %v queries", queries.Size())
 	if err := saveQueries(opt, queries); err != nil {
 		return err
 	}
@@ -86,9 +86,9 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 		return err
 	}
 
-	fmt.Printf("[workload-export] start dumping table statistics for %v tables\n", tableNames.Size())
+	utils.Infof("[workload-export] start dumping table statistics for %v tables", tableNames.Size())
 	statsDir := path.Join(opt.output, "stats")
-	fmt.Printf("[workload-export] prepare stats dir %v\n", statsDir)
+	utils.Infof("[workload-export] prepare stats dir %v", statsDir)
 	if err := utils.PrepareDir(statsDir); err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 		if err := utils.SaveContentTo(fpath, string(stats)); err != nil {
 			return err
 		}
-		fmt.Printf("[workload-export] save table statistics for %v to %v\n", t.Key(), fpath)
+		utils.Infof("[workload-export] save table statistics for %v to %v", t.Key(), fpath)
 	}
 	return nil
 }
@@ -111,10 +111,10 @@ func fetchTableStats(opt workloadExportCmdOpt, table utils.TableName) ([]byte, e
 	url := fmt.Sprintf("%s/stats/dump/%s/%s", opt.statusAddr, table.SchemaName, table.TableName)
 	stats, err := utils.ReadURL(url)
 	if err != nil {
-		fmt.Printf("[workload-export] fail to dump statistics for %v from %v, err: %v\n", table.Key(), url, err)
+		utils.Infof("[workload-export] fail to dump statistics for %v from %v, err: %v", table.Key(), url, err)
 		return nil, err
 	}
-	fmt.Printf("[workload-export] succeed to dump statistics for %v from %v\n", table.Key(), url)
+	utils.Infof("[workload-export] succeed to dump statistics for %v from %v", table.Key(), url)
 	return stats, err
 }
 
@@ -130,7 +130,7 @@ func saveQueries(opt workloadExportCmdOpt, queries utils.Set[utils.Query]) error
 		buf.WriteString("\n\n")
 	}
 	fpath := path.Join(opt.output, "queries.sql")
-	fmt.Printf("[workload-export] save queries to %v\n", fpath)
+	utils.Infof("[workload-export] save queries to %v", fpath)
 	return utils.SaveContentTo(fpath, buf.String())
 }
 
@@ -146,7 +146,7 @@ func saveTableSchemas(opt workloadExportCmdOpt, tables utils.Set[utils.TableSche
 		}
 		buf.WriteString("\n\n")
 	}
-	fpath := path.Join(opt.output, "schemas.sql")
-	fmt.Printf("[workload-export] save table schema into %s\n", fpath)
+	fpath := path.Join(opt.output, "schema.sql")
+	utils.Infof("[workload-export] save table schema into %s", fpath)
 	return utils.SaveContentTo(fpath, buf.String())
 }
