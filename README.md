@@ -223,6 +223,8 @@ You can use the command `workload-export` to load workload info required by offl
 --output=./examples/workload_export_output
 ```
 
+The tool will read all queries and table schemas from the TiDB specified by `DSN` and export all table statistics through `status_address` (see [stats export on TiDB](https://docs.pingcap.com/tidb/dev/statistics#import-and-export-statistics) for more details).
+
 Here is its [output](examples/workload-export). And then you can use the offline mode directly:
 
 ```shell
@@ -407,4 +409,3 @@ CREATE TABLE `customer`
 
 - Support index deletion recommendation
 - Integrate this tool with `TiUP` and `TiDB Cloud`
-- Support exporting workload info from an online cluster
