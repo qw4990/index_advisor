@@ -3,11 +3,12 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"path"
+	"strings"
+
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
 	"github.com/spf13/cobra"
-	"path"
-	"strings"
 )
 
 type workloadExportCmdOpt struct {
@@ -32,20 +33,24 @@ How it work:
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.SetLogLevel(opt.logLevel)
+			fmt.Printf("[workload-export] start exporting workload information from TiDB cluster %v to %v\n", opt.dsn, opt.output)
 			return exportWorkload(opt)
 		},
 	}
 
 	cmd.Flags().StringVar(&opt.dsn, "dsn", "root:@tcp(127.0.0.1:4000)/test", "dsn")
+	cmd.Flags().StringVar(&opt.statusAddr, "status_address", "http://127.0.0.1:10080", "status address used to download table statistics")
 	cmd.Flags().StringVar(&opt.output, "output", "", "output directory to save the result")
 	cmd.Flags().StringVar(&opt.logLevel, "log-level", "info", "log level, one of 'debug', 'info', 'warning', 'error'")
 	return cmd
 }
 
 func exportWorkload(opt workloadExportCmdOpt) error {
+	fmt.Printf("[workload-export] clean up %v\n", opt.output)
 	if err := utils.CleanDir(opt.output); err != nil {
 		return err
 	}
+	fmt.Printf("[workload-export] connect to %v\n", opt.dsn)
 	db, err := optimizer.NewTiDBWhatIfOptimizer(opt.dsn)
 	if err != nil {
 		return err
@@ -58,6 +63,7 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("[workload-export] read %v queries\n", queries.Size())
 	if err := saveQueries(opt, queries); err != nil {
 		return err
 	}
@@ -89,7 +95,9 @@ func saveQueries(opt workloadExportCmdOpt, queries utils.Set[utils.Query]) error
 		}
 		buf.WriteString("\n\n")
 	}
-	return utils.SaveContentTo(path.Join(opt.output, "queries.sql"), buf.String())
+	fpath := path.Join(opt.output, "queries.sql")
+	fmt.Printf("[workload-export] save queries to %v\n", fpath)
+	return utils.SaveContentTo(fpath, buf.String())
 }
 
 func saveTableSchemas(opt workloadExportCmdOpt, tables utils.Set[utils.TableSchema]) error {
@@ -104,7 +112,9 @@ func saveTableSchemas(opt workloadExportCmdOpt, tables utils.Set[utils.TableSche
 		}
 		buf.WriteString("\n\n")
 	}
-	return utils.SaveContentTo(path.Join(opt.output, "schemas.sql"), buf.String())
+	fpath := path.Join(opt.output, "schemas.sql")
+	fmt.Printf("[workload-export] save table schema into %s\n", fpath)
+	return utils.SaveContentTo(fpath, buf.String())
 }
 
 func saveTableStats(opt workloadExportCmdOpt, table utils.TableName) {

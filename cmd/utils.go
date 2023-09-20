@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -180,10 +179,9 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, querySchemas 
 	queryExecTimeThreshold, queryExecCountThreshold int) (utils.Set[utils.Query], error) {
 	var condition []string
 	condition = append(condition, "stmt_type='Select'")
-	if len(querySchemas) == 0 {
-		return nil, errors.New("query-schemas is not specified")
+	if len(querySchemas) > 0 {
+		condition = append(condition, fmt.Sprintf("SCHEMA_NAME in ('%s')", strings.Join(querySchemas, "', '")))
 	}
-	condition = append(condition, fmt.Sprintf("SCHEMA_NAME in ('%s')", strings.Join(querySchemas, "', '")))
 	if queryExecTimeThreshold > 0 {
 		condition = append(condition, fmt.Sprintf("AVG_LATENCY >= %v", queryExecTimeThreshold*1000))
 	}
