@@ -381,8 +381,10 @@ index_advisor advise-online --dsn='root:@tcp(127.0.0.1:4000)\
 This error occurs when the TiDB version is too low, and the hypothetical index feature is not supported. Please make
 sure your TiDB version is equal or large equal to `v7.3`.
 
-A workaround is to use offline-mode with the latest version of TiDB(`-tidb-version='nightly'`), the result is also of
+A workaround is to use `workload-export` to load workload information from your online cluster, and then use `offline-mode` with the latest version of TiDB(`-tidb-version='nightly'`), the result is also of
 high reference value.
+
+See an example in [workload-export section](#export-workload-information-using-workload-export).
 
 ### Error `table 'db.t' doesn't exist` on offline-mode
 
