@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/spf13/cobra"
 )
@@ -10,15 +8,25 @@ import (
 func NewPreCheckCmd() *cobra.Command {
 	var dsn string
 	cmd := &cobra.Command{
-		Use:   "precheck",
-		Short: "check whether this cluster is suitable for online-mode",
-		Long:  `check whether this cluster is suitable for index advisor online-mode`,
+		Use:   "pre-check",
+		Short: "check what kind of index advisor mode can fit your cluster, use `index_advisor pre-check --help` to see more details",
+		Long: `check what kind of index advisor mode can fit your cluster.
+How it work:
+1. connect to your TiDB cluster through the DSN
+2. check whether you can run online-mode index advisor on your cluster`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			db, err := optimizer.NewTiDBWhatIfOptimizer(dsn)
 			if err != nil {
 				return err
 			}
-			return PreCheck(db)
+			reason := checkOnlineModeSupport(db)
+			if reason == "" {
+				cmd.Println("You can use online mode and offline mode on your cluster.")
+			} else {
+				cmd.Println("You can only use offline mode on your cluster.")
+				cmd.Println("Your TiDB cluster does not support Index Advisor Online Mode, reason:", reason)
+			}
+			return nil
 		},
 	}
 
@@ -27,12 +35,12 @@ func NewPreCheckCmd() *cobra.Command {
 }
 
 // PreCheck checks whether this cluster is suitable for online-mode.
-func PreCheck(db optimizer.WhatIfOptimizer) error {
+func checkOnlineModeSupport(db optimizer.WhatIfOptimizer) (reason string) {
 	if !supportHypoIndex(db) {
-		return errors.New("your TiDB version does not support hypothetical index feature, which is required by Index Advisor")
+		return "your TiDB version does not support hypothetical index feature, which is required by Index Advisor Online Mode"
 	}
 	if redactLogEnabled(db) {
-		return errors.New("redact log is enabled, the Advisor probably cannot get the full SQL text")
+		return "redact log is enabled, the Advisor probably cannot get the full SQL text if you use Index Advisor Online Mode"
 	}
-	return nil
+	return ""
 }
