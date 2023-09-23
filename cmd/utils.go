@@ -189,13 +189,13 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, querySchemas 
 	if queryExecCountThreshold > 0 {
 		condition = append(condition, fmt.Sprintf("EXEC_COUNT >= %v", queryExecCountThreshold))
 	}
+	// TODO: consider Execute statements
 
 	s := utils.NewSet[utils.Query]()
 	for _, table := range []string{
 		`information_schema.statements_summary`,
 		`information_schema.statements_summary_history`,
 	} {
-		// TODO: consider Execute statements
 		q := fmt.Sprintf(`select SCHEMA_NAME, DIGEST, QUERY_SAMPLE_TEXT, EXEC_COUNT, AVG_LATENCY from %v where %v`,
 			table, strings.Join(condition, " AND "))
 		rows, err := db.Query(q)
@@ -211,6 +211,7 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, querySchemas 
 			if err != nil {
 				return nil, err
 			}
+			// TODO: what if this query's database has been dropped?
 			// TODO: skip this query if it has '?' when redact log is enabled.
 			s.Add(utils.Query{
 				Alias:      digest.String,
