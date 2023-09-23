@@ -113,6 +113,10 @@ func prepareWorkloadOnlineMode(db optimizer.WhatIfOptimizer, opt adviseOnlineCmd
 	if err != nil {
 		return nil, err
 	}
+	queries, err = filterSQLAccessingDroppedTable(queries, tables)
+	if err != nil {
+		return nil, err
+	}
 	return &utils.WorkloadInfo{
 		Queries:      queries,
 		TableSchemas: tables,

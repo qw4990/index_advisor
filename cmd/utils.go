@@ -302,3 +302,36 @@ func filterSQLAccessingSystemTables(sqls utils.Set[utils.Query]) (utils.Set[util
 	}
 	return s, nil
 }
+
+func filterSQLAccessingDroppedTable(sqls utils.Set[utils.Query], tables utils.Set[utils.TableSchema]) (utils.Set[utils.Query], error) {
+	tableNames := utils.NewSet[utils.TableName]()
+	for _, t := range tables.ToList() {
+		tableNames.Add(utils.TableName{
+			SchemaName: t.SchemaName,
+			TableName:  t.TableName,
+		})
+	}
+
+	s := utils.NewSet[utils.Query]()
+	for _, sql := range sqls.ToList() {
+		tables, err := utils.CollectTableNamesFromSQL(sql.SchemaName, sql.Text)
+		if err != nil {
+			return nil, err
+		}
+		noTableFlag := false
+		for _, t := range tables.ToList() {
+			if !tableNames.Contains(utils.TableName{
+				SchemaName: t.SchemaName,
+				TableName:  t.TableName,
+			}) {
+				noTableFlag = true
+				break
+			}
+		}
+		if noTableFlag {
+			continue
+		}
+		s.Add(sql)
+	}
+	return s, nil
+}

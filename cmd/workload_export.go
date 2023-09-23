@@ -69,11 +69,6 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	if err != nil {
 		return err
 	}
-	utils.Infof("[workload-export] read %v queries", queries.Size())
-	if err := saveQueries(opt, queries); err != nil {
-		return err
-	}
-
 	tableNames, err := utils.CollectTableNamesFromQueries(queries)
 	if err != nil {
 		return err
@@ -82,17 +77,25 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	if err != nil {
 		return err
 	}
+	queries, err = filterSQLAccessingDroppedTable(queries, tables)
+	if err != nil {
+		return err
+	}
+	utils.Infof("[workload-export] read %v queries", queries.Size())
+	if err := saveQueries(opt, queries); err != nil {
+		return err
+	}
 	if err := saveTableSchemas(opt, tables); err != nil {
 		return err
 	}
 
-	utils.Infof("[workload-export] start dumping table statistics for %v tables", tableNames.Size())
+	utils.Infof("[workload-export] start dumping table statistics for %v tables", tables.Size())
 	statsDir := path.Join(opt.output, "stats")
 	utils.Infof("[workload-export] prepare stats dir %v", statsDir)
 	if err := utils.PrepareDir(statsDir); err != nil {
 		return err
 	}
-	for _, t := range tableNames.ToList() {
+	for _, t := range tables.ToList() {
 		stats, err := fetchTableStats(opt, t)
 		if err != nil {
 			return err
@@ -106,7 +109,7 @@ func exportWorkload(opt workloadExportCmdOpt) error {
 	return nil
 }
 
-func fetchTableStats(opt workloadExportCmdOpt, table utils.TableName) ([]byte, error) {
+func fetchTableStats(opt workloadExportCmdOpt, table utils.TableSchema) ([]byte, error) {
 	// http://${tidb-server-ip}:${tidb-server-status-port}/stats/dump/${db_name}/${table_name}
 	url := fmt.Sprintf("%s/stats/dump/%s/%s", opt.statusAddr, table.SchemaName, table.TableName)
 	stats, err := utils.ReadURL(url)
