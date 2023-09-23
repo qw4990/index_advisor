@@ -70,23 +70,23 @@ How it work:
 			if err != nil {
 				return err
 			}
+			queries, err := utils.LoadQueries(dbName, opt.queryPath)
+			if err != nil {
+				return err
+			}
+			if opt.qWhiteList != "" || opt.qBlackList != "" {
+				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
+			}
+			if queries.Size() == 0 {
+				utils.Infof("no query needs to be analyzed")
+				return nil
+			}
+
 			if err := loadStatsIntoCluster(db, opt.statsPath); err != nil {
 				return err
 			}
 			if err := db.Execute(`use ` + dbName); err != nil {
 				return err
-			}
-
-			queries, err := utils.LoadQueries(dbName, opt.queryPath)
-			if err != nil {
-				return err
-			}
-			if queries.Size() == 0 {
-				utils.Infof("no query, %s is empty", opt.queryPath)
-				return nil
-			}
-			if opt.qWhiteList != "" || opt.qBlackList != "" {
-				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
 			}
 
 			tableNames, err := utils.CollectTableNamesFromQueries(queries)

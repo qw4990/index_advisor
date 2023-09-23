@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	logger = l.New(os.Stdout, "", l.LstdFlags)
+	logger = l.New(os.Stdout, "", l.LstdFlags|l.Lshortfile)
 }
 
 // SetLogLevel sets the log level.
