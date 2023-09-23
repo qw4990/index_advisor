@@ -211,6 +211,11 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, querySchemas 
 			if err != nil {
 				return nil, err
 			}
+			if _, err := utils.ParseOneSQL(text.String); err != nil {
+				// some queries may be truncated, we skip them.
+				continue
+			}
+
 			// TODO: what if this query's database has been dropped?
 			// TODO: skip this query if it has '?' when redact log is enabled.
 			s.Add(utils.Query{
