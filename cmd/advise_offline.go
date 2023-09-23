@@ -268,10 +268,7 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 	sqls := workload.Queries.ToList()
 	var oriPlans, optPlans []utils.Plan
 	for _, sql := range sqls {
-		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
-			return nil, err
-		}
-		p, err := optimizer.Explain(sql.Text)
+		p, err := optimizer.ExplainQ(sql)
 		if err != nil {
 			return nil, err
 		}
@@ -283,10 +280,7 @@ func getPlanChanges(optimizer optimizer.WhatIfOptimizer, workload utils.Workload
 		}
 	}
 	for _, sql := range sqls {
-		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
-			return nil, err
-		}
-		p, err := optimizer.Explain(sql.Text)
+		p, err := optimizer.ExplainQ(sql)
 		if err != nil {
 			return nil, err
 		}

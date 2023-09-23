@@ -19,10 +19,7 @@ func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOp
 	}
 	var workloadCost float64
 	for _, sql := range info.Queries.ToList() { // TODO: run them concurrently to save time
-		if err := optimizer.Execute(`use ` + sql.SchemaName); err != nil {
-			return utils.IndexConfCost{}, err
-		}
-		p, err := optimizer.Explain(sql.Text)
+		p, err := optimizer.ExplainQ(sql)
 		if err != nil {
 			return utils.IndexConfCost{}, err
 		}
@@ -66,7 +63,7 @@ func checkWorkloadInfo(w utils.WorkloadInfo) {
 		}
 	}
 	for _, sql := range w.Queries.ToList() {
-		if sql.SchemaName == "" || sql.Text == "" {
+		if sql.Text == "" {
 			panic(fmt.Sprintf("invalid sql: %v", sql))
 		}
 		for _, col := range sql.IndexableColumns.ToList() {

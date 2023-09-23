@@ -94,6 +94,15 @@ func (o *TiDBWhatIfOptimizer) DropHypoIndex(index utils.Index) error {
 	return o.Execute(fmt.Sprintf("drop hypo index %v on %v.%v", index.IndexName, index.SchemaName, index.TableName))
 }
 
+func (o *TiDBWhatIfOptimizer) ExplainQ(query utils.Query) (plan utils.Plan, err error) {
+	if query.SchemaName != "" {
+		if err := o.Execute(fmt.Sprintf("use %v", query.SchemaName)); err != nil {
+			return nil, err
+		}
+	}
+	return o.Explain(query.Text)
+}
+
 // Explain returns the execution plan of the specified query.
 func (o *TiDBWhatIfOptimizer) Explain(query string) (plan utils.Plan, err error) {
 	defer o.recordStats(time.Now(), &o.stats.GetCostTime, &o.stats.GetCostCount)

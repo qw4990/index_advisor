@@ -121,7 +121,9 @@ func fetchTableStats(opt workloadExportCmdOpt, table utils.TableName) ([]byte, e
 func saveQueries(opt workloadExportCmdOpt, queries utils.Set[utils.Query]) error {
 	var buf bytes.Buffer
 	for _, q := range queries.ToList() {
-		buf.WriteString(fmt.Sprintf("use %s;\n", q.SchemaName))
+		if q.SchemaName != "" {
+			buf.WriteString(fmt.Sprintf("use %s;\n", q.SchemaName))
+		}
 		text := strings.TrimSpace(q.Text)
 		buf.WriteString(text)
 		if !strings.HasSuffix(text, ";") {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -202,19 +203,19 @@ func readQueriesFromStatementSummary(db optimizer.WhatIfOptimizer, querySchemas 
 			return nil, err
 		}
 		for rows.Next() {
-			var schemaName, digest, text, execCountStr, avgLatStr string
+			var schemaName, digest, text, execCountStr, avgLatStr sql.NullString
 			if err := rows.Scan(&schemaName, &digest, &text, &execCountStr, &avgLatStr); err != nil {
 				return nil, err
 			}
-			execCount, err := strconv.Atoi(execCountStr)
+			execCount, err := strconv.Atoi(execCountStr.String)
 			if err != nil {
 				return nil, err
 			}
 			// TODO: skip this query if it has '?' when redact log is enabled.
 			s.Add(utils.Query{
-				Alias:      digest,
-				SchemaName: schemaName,
-				Text:       text,
+				Alias:      digest.String,
+				SchemaName: schemaName.String, // can be empty (null)
+				Text:       text.String,
 				Frequency:  execCount,
 			})
 		}
