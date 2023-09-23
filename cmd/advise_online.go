@@ -41,6 +41,9 @@ How it work:
 			if err != nil {
 				return err
 			}
+			if indexes == nil {
+				return nil
+			}
 			return outputAdviseResult(indexes, *info, db, opt.output)
 		},
 	}
@@ -71,6 +74,10 @@ func adviseOnlineMode(opt adviseOnlineCmdOpt) (utils.Set[utils.Index], *utils.Wo
 	info, err := prepareWorkloadOnlineMode(db, opt)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if info.Queries.Size() == 0 {
+		utils.Infof("no query is found")
+		return nil, nil, nil, nil
 	}
 
 	result, err := advisor.IndexAdvise(db, *info, advisor.Parameter{

@@ -81,6 +81,10 @@ How it work:
 			if err != nil {
 				return err
 			}
+			if queries.Size() == 0 {
+				utils.Infof("no query, %s is empty", opt.queryPath)
+				return nil
+			}
 			if opt.qWhiteList != "" || opt.qBlackList != "" {
 				queries = utils.FilterQueries(queries, strings.Split(opt.qWhiteList, ","), strings.Split(opt.qBlackList, ","))
 			}
