@@ -52,6 +52,9 @@ How it work:
 			if err != nil {
 				return err
 			}
+			if err := db.Execute(`set sql_mode=''`); err != nil {
+				return err
+			}
 
 			if opt.dirPath != "" {
 				opt.schemaPath = path.Join(opt.dirPath, "schema.sql")
