@@ -13,6 +13,7 @@ import (
 
 func evaluateIndexConfCostConcurrently(info utils.WorkloadInfo, optimizers []optimizer.WhatIfOptimizer,
 	indexes []utils.Set[utils.Index]) (bestSet utils.Set[utils.Index], bestCost utils.IndexConfCost, err error) {
+	bestSet = utils.NewSet[utils.Index]()
 	errPointer := new(atomic.Pointer[error])
 	costs := make([]utils.IndexConfCost, len(indexes))
 	var wg sync.WaitGroup

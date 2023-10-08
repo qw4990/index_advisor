@@ -465,25 +465,25 @@ func (aa *autoAdmin) enumerateCombinations(workload utils.WorkloadInfo,
 // enumerateGreedy finds the best combination of indexes with a greedy algorithm.
 func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes utils.Set[utils.Index],
 	currentCost utils.IndexConfCost, candidateIndexes utils.Set[utils.Index], numberIndexes int) (utils.Set[utils.Index], utils.IndexConfCost, error) {
-	if currentIndexes.Size() >= numberIndexes {
+	if currentIndexes.Size() >= numberIndexes || candidateIndexes.Size() == 0 {
 		return currentIndexes, currentCost, nil
 	}
 
-	// TODO: make this process concurrent
-	var bestIndex utils.Index
-	var bestCost utils.IndexConfCost
+	indexCombinations := make([]utils.Set[utils.Index], 0, 128)
 	for _, index := range candidateIndexes.ToList() {
-		cost, err := evaluateIndexConfCost(workload, aa.optimizer, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
-		if err != nil {
-			return nil, utils.IndexConfCost{}, err
-		}
-		if cost.Less(bestCost) {
-			bestIndex, bestCost = index, cost
-		}
+		indexCombinations = append(indexCombinations, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
 	}
+	bestSet, bestCost, err := evaluateIndexConfCostConcurrently(workload, aa.tmpOptimizers, indexCombinations)
+	if err != nil {
+		return nil, bestCost, err
+	}
+	if bestSet.Size() == 0 {
+		return currentIndexes, currentCost, nil
+	}
+	bestNewIndex := utils.DiffSet(bestSet, currentIndexes).ToList()[0]
 	if bestCost.Less(currentCost) {
-		currentIndexes.Add(bestIndex)
-		candidateIndexes.Remove(bestIndex)
+		currentIndexes.Add(bestNewIndex)
+		candidateIndexes.Remove(bestNewIndex)
 		currentCost = bestCost
 		return aa.enumerateGreedy(workload, currentIndexes, currentCost, candidateIndexes, numberIndexes)
 	}
