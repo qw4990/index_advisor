@@ -469,10 +469,20 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 		return currentIndexes, currentCost, nil
 	}
 
+	// iterate all unused indexes and add one into the current set
 	indexCombinations := make([]utils.Set[utils.Index], 0, 128)
 	for _, index := range candidateIndexes.ToList() {
-		indexCombinations = append(indexCombinations, utils.UnionSet(currentIndexes, utils.ListToSet(index)))
+		newCombination := utils.UnionSet(currentIndexes, utils.ListToSet(index))
+		if newCombination.Size() != currentIndexes.Size()+1 {
+			continue // duplicated index
+		}
+		indexCombinations = append(indexCombinations, newCombination)
 	}
+	if len(indexCombinations) == 0 {
+		return currentIndexes, currentCost, nil
+	}
+
+	// find the best set
 	bestSet, bestCost, err := evaluateIndexConfCostConcurrently(workload, aa.tmpOptimizers, indexCombinations)
 	if err != nil {
 		return nil, bestCost, err
