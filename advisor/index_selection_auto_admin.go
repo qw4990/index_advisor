@@ -477,18 +477,31 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index], numberIndexesNaive int) (utils.Set[utils.Index], utils.IndexConfCost, error) {
 	lowestCostIndexes := utils.NewSet[utils.Index]()
 	var lowestCost utils.IndexConfCost
+
+	// get all index combinations
+	indexCombinations := make([]utils.Set[utils.Index], 0, 128)
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
-		for _, indexCombination := range utils.CombSet(candidateIndexes, numberOfIndexes) {
-			cost, err := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
-			if err != nil {
-				return nil, utils.IndexConfCost{}, err
-			}
-			if cost.Less(lowestCost) {
-				lowestCostIndexes = indexCombination
-				lowestCost = cost
-			}
+		indexCombinations = append(indexCombinations, utils.CombSet(candidateIndexes, numberOfIndexes)...)
+	}
+	if len(indexCombinations) > 32 {
+		utils.Infof("auto-admin algorithm: find %v index combinations", len(indexCombinations))
+	}
+
+	// TODO: make this process concurrent
+	for _, indexCombination := range indexCombinations {
+		cost, err := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
+		if err != nil {
+			return nil, utils.IndexConfCost{}, err
+		}
+		if cost.Less(lowestCost) {
+			lowestCostIndexes = indexCombination
+			lowestCost = cost
 		}
 	}
+	if len(indexCombinations) > 32 {
+		utils.Infof("auto-admin algorithm: find the best combination from %v combinations", len(indexCombinations))
+	}
+
 	return lowestCostIndexes, lowestCost, nil
 }
 
