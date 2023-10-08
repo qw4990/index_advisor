@@ -452,6 +452,7 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 		return currentIndexes, currentCost, nil
 	}
 
+	// TODO: make this process concurrent
 	var bestIndex utils.Index
 	var bestCost utils.IndexConfCost
 	for _, index := range candidateIndexes.ToList() {
