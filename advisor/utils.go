@@ -4,11 +4,48 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/qw4990/index_advisor/optimizer"
 	"github.com/qw4990/index_advisor/utils"
 )
+
+func evaluateIndexConfCostConcurrently(info utils.WorkloadInfo, optimizers []optimizer.WhatIfOptimizer,
+	indexes []utils.Set[utils.Index]) (bestSet utils.Set[utils.Index], bestCost utils.IndexConfCost, err error) {
+	errPointer := new(atomic.Pointer[error])
+	costs := make([]utils.IndexConfCost, len(indexes))
+	var wg sync.WaitGroup
+	for id := 0; id < len(optimizers); id++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for i := id; i < len(indexes); i += len(optimizers) {
+				cost, err := evaluateIndexConfCost(info, optimizers[id], indexes[i])
+				if err != nil {
+					errPointer.CompareAndSwap(nil, &err)
+					return
+				}
+				if errPointer.Load() != nil {
+					return
+				}
+				costs[i] = cost
+			}
+		}(id)
+	}
+	wg.Wait()
+	if errPointer.Load() != nil {
+		return nil, bestCost, *errPointer.Load()
+	}
+
+	for i := 0; i < len(indexes); i++ {
+		if costs[i].Less(bestCost) {
+			bestSet = indexes[i]
+			bestCost = costs[i]
+		}
+	}
+	return bestSet, bestCost, nil
+}
 
 // evaluateIndexConfCost evaluates the workload cost under the given indexes.
 func evaluateIndexConfCost(info utils.WorkloadInfo, optimizer optimizer.WhatIfOptimizer, indexes utils.Set[utils.Index]) (utils.IndexConfCost, error) {

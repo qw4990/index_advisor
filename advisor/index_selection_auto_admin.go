@@ -14,25 +14,44 @@ import (
 */
 
 // SelectIndexAAAlgo implements the auto-admin algorithm.
-func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, optimizer optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
+func SelectIndexAAAlgo(workload utils.WorkloadInfo, parameter Parameter, op optimizer.WhatIfOptimizer) (utils.Set[utils.Index], error) {
+	concurrency := 8 // TODO: make it configurable
+	tmpOptimizers := make([]optimizer.WhatIfOptimizer, concurrency)
+	for i := 0; i < concurrency; i++ {
+		var err error
+		tmpOptimizers[i], err = op.Clone()
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer func() {
+		for _, tOpt := range tmpOptimizers {
+			if tOpt != nil {
+				tOpt.Close()
+			}
+		}
+	}()
+
 	aa := &autoAdmin{
-		optimizer:     optimizer,
+		optimizer:     op,
+		tmpOptimizers: tmpOptimizers,
 		maxIndexes:    parameter.MaxNumberIndexes,
 		maxIndexWidth: parameter.MaxIndexWidth,
 	}
 	utils.Infof("starting auto-admin algorithm with max-indexes %d, max index-width %d", aa.maxIndexes, aa.maxIndexWidth)
 
-	optimizer.ResetStats()
+	op.ResetStats()
 	bestIndexes, err := aa.calculateBestIndexes(workload)
 	if err != nil {
 		return nil, err
 	}
-	utils.Infof("what-if optimizer stats: %v", optimizer.Stats().Format())
+	utils.Infof("what-if optimizer stats: %v", op.Stats().Format())
 	return bestIndexes, nil
 }
 
 type autoAdmin struct {
-	optimizer optimizer.WhatIfOptimizer
+	optimizer     optimizer.WhatIfOptimizer
+	tmpOptimizers []optimizer.WhatIfOptimizer // used to run SQLs concurrently
 
 	maxIndexes    int // The algorithm stops as soon as it has selected #max_indexes indexes
 	maxIndexWidth int // The number of columns an index can contain at maximum.
@@ -474,9 +493,6 @@ func (aa *autoAdmin) enumerateGreedy(workload utils.WorkloadInfo, currentIndexes
 
 // enumerateNaive enumerates all possible combinations of indexes with at most numberIndexesNaive indexes and returns the best one.
 func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexes utils.Set[utils.Index], numberIndexesNaive int) (utils.Set[utils.Index], utils.IndexConfCost, error) {
-	lowestCostIndexes := utils.NewSet[utils.Index]()
-	var lowestCost utils.IndexConfCost
-
 	// get all index combinations
 	indexCombinations := make([]utils.Set[utils.Index], 0, 128)
 	for numberOfIndexes := 1; numberOfIndexes <= numberIndexesNaive; numberOfIndexes++ {
@@ -486,16 +502,9 @@ func (aa *autoAdmin) enumerateNaive(workload utils.WorkloadInfo, candidateIndexe
 		utils.Infof("auto-admin algorithm: find %v index combinations", len(indexCombinations))
 	}
 
-	// TODO: make this process concurrent
-	for _, indexCombination := range indexCombinations {
-		cost, err := evaluateIndexConfCost(workload, aa.optimizer, indexCombination)
-		if err != nil {
-			return nil, utils.IndexConfCost{}, err
-		}
-		if cost.Less(lowestCost) {
-			lowestCostIndexes = indexCombination
-			lowestCost = cost
-		}
+	lowestCostIndexes, lowestCost, err := evaluateIndexConfCostConcurrently(workload, aa.tmpOptimizers, indexCombinations)
+	if err != nil {
+		return nil, lowestCost, err
 	}
 	if len(indexCombinations) > 32 {
 		utils.Infof("auto-admin algorithm: find the best combination from %v combinations", len(indexCombinations))
