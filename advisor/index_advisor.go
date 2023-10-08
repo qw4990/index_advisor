@@ -64,11 +64,12 @@ func IndexAdvise(db optimizer.WhatIfOptimizer, workload utils.WorkloadInfo, para
 	utils.Infof("start index advise for %v queries, %v tables", workload.Queries.Size(), workload.TableSchemas.Size())
 	param = validateParameter(param)
 
-	compress := compressAlgorithms["none"]
+	compress := compressAlgorithms["digest"]
 	indexable := findIndexableColsAlgorithms["simple"]
 	selection := selectIndexAlgorithms["auto_admin"]
 
 	compressedWorkloadInfo := compress(workload)
+	utils.Infof("compress %v queries to %v queries", workload.Queries.Size(), compressedWorkloadInfo.Queries.Size())
 
 	if err := indexable(&compressedWorkloadInfo); err != nil {
 		return nil, err
