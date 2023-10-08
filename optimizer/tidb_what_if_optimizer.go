@@ -14,6 +14,8 @@ import (
 type TiDBWhatIfOptimizer struct {
 	db        *sql.DB
 	stats     WhatIfOptimizerStats
+	setStmts  []string // used to clone this session
+	dsn       string
 	debugFlag bool
 }
 
@@ -30,7 +32,7 @@ func NewTiDBWhatIfOptimizer(DSN string) (WhatIfOptimizer, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}, false}, nil
+	return &TiDBWhatIfOptimizer{db, WhatIfOptimizerStats{}, nil, DSN, false}, nil
 }
 
 // ResetStats resets the statistics.
@@ -69,7 +71,24 @@ func (o *TiDBWhatIfOptimizer) Execute(sql string) error {
 	if o.debugFlag && err != nil {
 		utils.Errorf("error %v when executing query %v", err, sql)
 	}
+	if err == nil && strings.HasPrefix(strings.ToLower(strings.TrimSpace(sql)), "set") {
+		o.setStmts = append(o.setStmts, sql)
+	}
 	return err
+}
+
+// Clone clones this optimizer.
+func (o *TiDBWhatIfOptimizer) Clone() (WhatIfOptimizer, error) {
+	cloned, err := NewTiDBWhatIfOptimizer(o.dsn)
+	if err != nil {
+		return nil, fmt.Errorf("clone optimizer err: %v", err)
+	}
+	for _, setStmt := range o.setStmts {
+		if err := cloned.Execute(setStmt); err != nil {
+			return nil, fmt.Errorf("clone optimizer err: %v", err)
+		}
+	}
+	return cloned, err
 }
 
 // Close releases the underlying database connection.

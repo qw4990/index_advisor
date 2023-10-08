@@ -29,7 +29,9 @@ func (s WhatIfOptimizerStats) Format() string {
 type WhatIfOptimizer interface {
 	Query(sql string) (*sql.Rows, error) // execute the specified Query statement and return the result
 	Execute(sql string) error            // execute the specified Query statement
-	Close() error                        // release the underlying database connection
+
+	Close() error                    // release the underlying database connection
+	Clone() (WhatIfOptimizer, error) // clone this optimizer
 
 	CreateHypoIndex(index utils.Index) error // create a hypothetical index
 	DropHypoIndex(index utils.Index) error   // drop a hypothetical index
