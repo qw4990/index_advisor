@@ -62,5 +62,5 @@ func Errorf(format string, args ...interface{}) {
 }
 
 func log(level, format string, args ...interface{}) {
-	logger.Output(4, fmt.Sprintf("[%v] %v\n", level, fmt.Sprintf(format, args...)))
+	logger.Output(3, fmt.Sprintf("[%v] %v\n", level, fmt.Sprintf(format, args...)))
 }
